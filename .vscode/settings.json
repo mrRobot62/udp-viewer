@@ -1,0 +1,13 @@
+{
+    "python.defaultInterpreterPath": "/Users/bernhardklein/workspace/venv/udp-viewer/bin/python",
+    "python.terminal.activateEnvironment": true,
+    "python.terminal.activateEnvInCurrentTerminal": true,
+    "python.envFile": "${workspaceFolder}/.env",
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/src"
+    ],
+    "terminal.integrated.env.osx": {
+        "VIRTUAL_ENV": "/Users/bernhardklein/workspace/venv/udp-viewer",
+        "PATH": "/Users/bernhardklein/workspace/venv/udp-viewer/bin:${env:PATH}"
+    }
+}

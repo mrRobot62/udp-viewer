@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "UDP Viewer (debug)",
+            "type": "python",
+            "request": "launch",
+            "module": "udp_log_viewer.main",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true
+        }
+    ]
+}
