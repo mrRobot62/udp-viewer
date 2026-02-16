@@ -1025,6 +1025,7 @@ class MainWindow(QMainWindow):
                 f"Listener: ON — {self._ui_state.bind_ip}:{self._ui_state.port} — "
                 f"pkts={packets} lines={lines} — shown={self.log.document().blockCount()} "
                 f"dropped={self._trimmed_lines_total} — HL={len(self._hl_rules)}"
+                + (f" — {self._live_status_snippet()}" if getattr(self, "_live_log_path", None) else "")
             )
 
     def _flush_log_queue(self) -> None:
@@ -1142,6 +1143,7 @@ class MainWindow(QMainWindow):
                 f"Listener: ON — {self._ui_state.bind_ip}:{self._ui_state.port} — "
                 f"pkts={self._rx_packets} lines={self._rx_lines} — shown={self.log.document().blockCount()} "
                 f"dropped={self._trimmed_lines_total} — HL={len(self._hl_rules)}"
+                + (f" — {self._live_status_snippet()}" if getattr(self, "_live_log_path", None) else "")
             )
         else:
             self.btn_connect.setText("CONNECT")
@@ -1150,6 +1152,27 @@ class MainWindow(QMainWindow):
                 f"Listener: OFF — {self._ui_state.bind_ip}:{self._ui_state.port} — "
                 f"shown={self.log.document().blockCount()} dropped={self._trimmed_lines_total} — HL={len(self._hl_rules)}"
             )
+
+    # --- Step 6.3 live logfile status ---
+    @staticmethod
+    def _format_bytes(n: int) -> str:
+        if n < 1024:
+            return f"{n} B"
+        if n < 1024 * 1024:
+            return f"{n/1024.0:.1f} KB"
+        if n < 1024 * 1024 * 1024:
+            return f"{n/(1024.0*1024.0):.1f} MB"
+        return f"{n/(1024.0*1024.0*1024.0):.2f} GB"
+
+    def _live_status_snippet(self) -> str:
+        if getattr(self, "_live_log_path", None) is None:
+            return ""
+        try:
+            size = self._live_log_path.stat().st_size
+        except Exception:
+            size = 0
+        return f"LIVE: {self._live_log_path.name} ({self._format_bytes(size)})"
+
 
     # ---------------- Qt overrides ----------------
 
