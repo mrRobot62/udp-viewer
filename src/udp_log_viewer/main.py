@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Deque, List, Optional, Tuple
 
 from PyQt5.QtCore import Qt, QSettings, QTimer
-from PyQt5.QtGui import QFont, QIntValidator
+from PyQt5.QtGui import QFont, QIntValidator, QTextCursor
 from PyQt5.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -38,9 +38,12 @@ from .highlighter import HighlightRule, LogHighlighter
 
 APP_ORG = "LocalTools"
 APP_NAME = "UdpLogViewer"
-APP_VERSION = "0.5-step4.4-optionB1-chips"
+APP_VERSION = "0.6-step5.1-log-limits"
 
 HIGHLIGHT_SLOTS = 5
+
+DEFAULT_MAX_LINES = 20000
+DEFAULT_TRIM_CHUNK = 2000
 
 
 @dataclass
@@ -53,6 +56,8 @@ class UiState:
     include_mode: str = "Substring"
     exclude_text: str = ""
     exclude_mode: str = "Substring"
+
+    max_lines: int = DEFAULT_MAX_LINES
 
 
 @dataclass
@@ -144,8 +149,11 @@ class MainWindow(QMainWindow):
         self._hl_slots: List[HighlightSlot] = [HighlightSlot() for _ in range(HIGHLIGHT_SLOTS)]
         self._hl_rules: List[HighlightRule] = []
 
+        # Log limit counters
+        self._trimmed_lines_total = 0
+
         self.setWindowTitle(f"UDP Log Viewer — {APP_VERSION}")
-        self.resize(1100, 750)
+        self.resize(1100, 760)
 
         self._build_actions()
         self._build_ui()
@@ -239,10 +247,19 @@ class MainWindow(QMainWindow):
         self.ed_port.setPlaceholderText("10514")
         self.ed_port.editingFinished.connect(self.on_settings_edited)
 
+        lbl_max = QLabel("Max lines:")
+        self.ed_max_lines = QLineEdit()
+        self.ed_max_lines.setValidator(QIntValidator(1000, 500000, self))
+        self.ed_max_lines.setPlaceholderText(str(DEFAULT_MAX_LINES))
+        self.ed_max_lines.editingFinished.connect(self.on_settings_edited)
+
         settings_layout.addWidget(lbl_bind, 0, 0)
         settings_layout.addWidget(self.ed_bind_ip, 0, 1)
         settings_layout.addWidget(lbl_port, 0, 2)
         settings_layout.addWidget(self.ed_port, 0, 3)
+        settings_layout.addWidget(lbl_max, 0, 4)
+        settings_layout.addWidget(self.ed_max_lines, 0, 5)
+
         settings_layout.setColumnStretch(1, 1)
 
         root_layout.addWidget(settings_frame)
@@ -327,7 +344,7 @@ class MainWindow(QMainWindow):
         root_layout.addWidget(self.log, 1)
 
         self.statusBar().showMessage("Ready")
-        self.log.appendPlainText("[MAIN/INFO] Step 4.4 (Option B1 chips) ready.")
+        self.log.appendPlainText("[MAIN/INFO] Step 5.1 (log limits) ready.")
 
     # ---------------- Settings ----------------
 
@@ -342,6 +359,8 @@ class MainWindow(QMainWindow):
         self._ui_state.exclude_text = s.value("filter/exclude_text", "", type=str)
         self._ui_state.exclude_mode = s.value("filter/exclude_mode", "Substring", type=str)
 
+        self._ui_state.max_lines = s.value("log/max_lines", self._ui_state.max_lines, type=int)
+
     def _save_settings(self) -> None:
         s = self._settings
         s.setValue("net/bind_ip", self._ui_state.bind_ip)
@@ -352,6 +371,8 @@ class MainWindow(QMainWindow):
         s.setValue("filter/include_mode", self._ui_state.include_mode)
         s.setValue("filter/exclude_text", self._ui_state.exclude_text)
         s.setValue("filter/exclude_mode", self._ui_state.exclude_mode)
+
+        s.setValue("log/max_lines", int(self._ui_state.max_lines))
 
         self._save_highlight_slots()
 
@@ -365,6 +386,26 @@ class MainWindow(QMainWindow):
         self.ed_exclude.setText(self._ui_state.exclude_text)
         self.cb_exclude_mode.setCurrentText(self._ui_state.exclude_mode)
 
+        self.ed_max_lines.setText(str(self._ui_state.max_lines))
+
+    def on_settings_edited(self) -> None:
+        self._ui_state.bind_ip = self.ed_bind_ip.text().strip() or "0.0.0.0"
+        try:
+            self._ui_state.port = int(self.ed_port.text().strip())
+        except Exception:
+            pass
+
+        try:
+            ml = int(self.ed_max_lines.text().strip())
+            ml = max(1000, min(500000, ml))
+            self._ui_state.max_lines = ml
+        except Exception:
+            pass
+
+        # persist quickly (user expects it)
+        self._save_settings()
+        self._update_connection_ui()
+
     # ---------------- Filter ----------------
 
     def _rebuild_filter_patterns(self) -> None:
@@ -377,6 +418,7 @@ class MainWindow(QMainWindow):
         self._ui_state.exclude_text = self.ed_exclude.text()
         self._ui_state.exclude_mode = self.cb_exclude_mode.currentText()
         self._rebuild_filter_patterns()
+        self._save_settings()
 
     # ---------------- Highlight (B1 chips) ----------------
 
@@ -548,6 +590,32 @@ class MainWindow(QMainWindow):
         if self._ui_state.autoscroll:
             self.log.verticalScrollBar().setValue(self.log.verticalScrollBar().maximum())
 
+    # ---------------- Log limits ----------------
+
+    def _enforce_log_limit(self) -> None:
+        max_lines = int(self._ui_state.max_lines) if self._ui_state.max_lines else DEFAULT_MAX_LINES
+        if max_lines < 1000:
+            max_lines = 1000
+
+        doc = self.log.document()
+        blocks = doc.blockCount()
+        if blocks <= max_lines:
+            return
+
+        # Remove old blocks in chunks to avoid UI stalls
+        remove_n = min(DEFAULT_TRIM_CHUNK, blocks - max_lines)
+        if remove_n <= 0:
+            return
+
+        cursor = QTextCursor(doc)
+        cursor.movePosition(QTextCursor.Start)
+        for _ in range(remove_n):
+            cursor.select(QTextCursor.LineUnderCursor)
+            cursor.removeSelectedText()
+            cursor.deleteChar()  # remove newline
+
+        self._trimmed_lines_total += remove_n
+
     # ---------------- UDP listener ----------------
 
     def _start_listener(self) -> bool:
@@ -618,7 +686,9 @@ class MainWindow(QMainWindow):
         self._rx_lines = lines
         if self._listener is not None:
             self.statusBar().showMessage(
-                f"Listener: ON — {self._ui_state.bind_ip}:{self._ui_state.port} — pkts={packets} lines={lines} — HL={len(self._hl_rules)}"
+                f"Listener: ON — {self._ui_state.bind_ip}:{self._ui_state.port} — "
+                f"pkts={packets} lines={lines} — shown={self.log.document().blockCount()} "
+                f"dropped={self._trimmed_lines_total} — HL={len(self._hl_rules)}"
             )
 
     def _flush_log_queue(self) -> None:
@@ -629,6 +699,10 @@ class MainWindow(QMainWindow):
             return
         for line in batch:
             self.log.appendPlainText(line)
+
+        # enforce line limit after appending
+        self._enforce_log_limit()
+
         if self._ui_state.autoscroll:
             self.log.verticalScrollBar().setValue(self.log.verticalScrollBar().maximum())
 
@@ -656,6 +730,7 @@ class MainWindow(QMainWindow):
 
     def on_clear_clicked(self) -> None:
         self.log.clear()
+        self._trimmed_lines_total = 0
         self.statusBar().showMessage("Cleared", 2000)
 
     def on_copy_clicked(self) -> None:
@@ -686,14 +761,8 @@ class MainWindow(QMainWindow):
 
     def on_autoscroll_changed(self) -> None:
         self._ui_state.autoscroll = self.chk_autoscroll.isChecked()
+        self._save_settings()
         self.statusBar().showMessage(f"Auto-Scroll: {'ON' if self._ui_state.autoscroll else 'OFF'}", 2000)
-
-    def on_settings_edited(self) -> None:
-        self._ui_state.bind_ip = self.ed_bind_ip.text().strip() or "0.0.0.0"
-        try:
-            self._ui_state.port = int(self.ed_port.text().strip())
-        except Exception:
-            pass
 
     def _update_connection_ui(self) -> None:
         connected = self._listener is not None
@@ -702,13 +771,16 @@ class MainWindow(QMainWindow):
             self.btn_connect.setText("CONNECTED")
             self.btn_connect.setStyleSheet("QToolButton { background-color: #2ecc71; font-weight: bold; }")
             self.statusBar().showMessage(
-                f"Listener: ON — {self._ui_state.bind_ip}:{self._ui_state.port} — pkts={self._rx_packets} lines={self._rx_lines} — HL={len(self._hl_rules)}"
+                f"Listener: ON — {self._ui_state.bind_ip}:{self._ui_state.port} — "
+                f"pkts={self._rx_packets} lines={self._rx_lines} — shown={self.log.document().blockCount()} "
+                f"dropped={self._trimmed_lines_total} — HL={len(self._hl_rules)}"
             )
         else:
             self.btn_connect.setText("CONNECT")
             self.btn_connect.setStyleSheet("QToolButton { background-color: #b0b0b0; font-weight: bold; }")
             self.statusBar().showMessage(
-                f"Listener: OFF — {self._ui_state.bind_ip}:{self._ui_state.port} — HL={len(self._hl_rules)}"
+                f"Listener: OFF — {self._ui_state.bind_ip}:{self._ui_state.port} — "
+                f"shown={self.log.document().blockCount()} dropped={self._trimmed_lines_total} — HL={len(self._hl_rules)}"
             )
 
     # ---------------- Qt overrides ----------------
