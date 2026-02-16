@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import json
 import sys
 from collections import deque
 from dataclasses import dataclass
-from typing import Deque, Optional
+from typing import Deque, List, Optional
 
 from PyQt5.QtCore import Qt, QSettings, QTimer
 from PyQt5.QtGui import QFont, QIntValidator
@@ -28,13 +29,13 @@ from PyQt5.QtWidgets import (
     QFrame,
 )
 
-from .udp_log_utils import drain_queue, compile_patterns, match_include, match_exclude
 from .udp_listener import UdpListenerThread
-from .udp_log_utils import drain_queue
+from .udp_log_utils import drain_queue, compile_patterns, match_include, match_exclude
+from .highlighter import HighlightRule, LogHighlighter
 
 APP_ORG = "LocalTools"
 APP_NAME = "UdpLogViewer"
-APP_VERSION = "0.2-step2"
+APP_VERSION = "0.3-step4"
 
 
 @dataclass
@@ -44,11 +45,11 @@ class UiState:
     autoscroll: bool = True
 
     include_text: str = ""
-    include_mode: str = "Substring"  # Step 3
+    include_mode: str = "Substring"
     exclude_text: str = ""
-    exclude_mode: str = "Substring"  # Step 3
+    exclude_mode: str = "Substring"
 
-    hl_text: str = ""                # Step 4
+    hl_text: str = ""
     hl_mode: str = "Substring"
     hl_color: str = "None"
 
@@ -60,20 +61,24 @@ class MainWindow(QMainWindow):
         self._settings = QSettings(APP_ORG, APP_NAME)
         self._ui_state = UiState()
 
-        # Step 2: real listener thread + queue + batching
+        # UDP listener
         self._listener: Optional[UdpListenerThread] = None
         self._rx_packets = 0
         self._rx_lines = 0
 
+        # Queue + batching
         self._queue: Deque[str] = deque()
+        self._flush_timer = QTimer(self)
+        self._flush_timer.setInterval(50)
+        self._flush_timer.timeout.connect(self._flush_log_queue)
+        self._flush_timer.start()
+
+        # Filter state (Step 3)
         self._include_patterns = []
         self._exclude_patterns = []
 
-
-        self._flush_timer = QTimer(self)
-        self._flush_timer.setInterval(50)  # ms
-        self._flush_timer.timeout.connect(self._flush_log_queue)
-        self._flush_timer.start()
+        # Highlight rules (Step 4)
+        self._hl_rules: List[HighlightRule] = []
 
         self.setWindowTitle(f"UDP Log Viewer — {APP_VERSION}")
         self.resize(1100, 750)
@@ -83,6 +88,14 @@ class MainWindow(QMainWindow):
 
         self._load_settings()
         self._apply_state_to_widgets()
+
+        # Compile filter patterns after widgets loaded
+        self._rebuild_filter_patterns()
+
+        # Load highlight rules + apply
+        self._load_highlight_rules()
+        self._apply_highlighter()
+
         self._update_connection_ui()
 
     # ---------------- UI construction ----------------
@@ -110,7 +123,7 @@ class MainWindow(QMainWindow):
         root_layout.setContentsMargins(10, 10, 10, 10)
         root_layout.setSpacing(10)
 
-        # --- Top toolbar row ---
+        # --- Top row ---
         top_row = QHBoxLayout()
         top_row.setSpacing(8)
 
@@ -142,7 +155,7 @@ class MainWindow(QMainWindow):
 
         root_layout.addLayout(top_row)
 
-        # --- Settings row (Bind-IP / Port) ---
+        # --- Settings row ---
         settings_frame = QFrame()
         settings_frame.setFrameShape(QFrame.StyledPanel)
         settings_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
@@ -171,7 +184,7 @@ class MainWindow(QMainWindow):
 
         root_layout.addWidget(settings_frame)
 
-        # --- Filter panel (Step 3 logic) ---
+        # --- Filter panel ---
         filter_frame = QFrame()
         filter_frame.setFrameShape(QFrame.StyledPanel)
 
@@ -182,9 +195,7 @@ class MainWindow(QMainWindow):
 
         lbl_inc = QLabel("Include:")
         self.ed_include = QLineEdit()
-        self.ed_include.setPlaceholderText(
-            'e.g. "[OVEN/INFO] [T11]"  or  "[HOST/INFO];mask=0x1000"'
-        )
+        self.ed_include.setPlaceholderText('e.g. "[OVEN/INFO] [T11]"  or  "[HOST/INFO];mask=0x1000"')
         self.ed_include.textChanged.connect(self.on_filter_ui_changed)
 
         self.cb_include_mode = QComboBox()
@@ -210,7 +221,7 @@ class MainWindow(QMainWindow):
 
         root_layout.addWidget(filter_frame)
 
-        # --- Highlight panel (Step 4 logic) ---
+        # --- Highlight panel ---
         hl_frame = QFrame()
         hl_frame.setFrameShape(QFrame.StyledPanel)
 
@@ -252,7 +263,7 @@ class MainWindow(QMainWindow):
 
         root_layout.addWidget(hl_frame)
 
-        # --- Content log ---
+        # --- Content ---
         self.log = QPlainTextEdit()
         self.log.setReadOnly(True)
         self.log.setLineWrapMode(QPlainTextEdit.NoWrap)
@@ -262,12 +273,13 @@ class MainWindow(QMainWindow):
         mono.setPointSize(11)
         self.log.setFont(mono)
 
+        # Highlighter attached to QTextDocument
+        self._highlighter = LogHighlighter(self.log.document())
+
         root_layout.addWidget(self.log, 1)
 
-        # Status bar
         self.statusBar().showMessage("Ready")
-
-        self.log.appendPlainText("[MAIN/INFO] Step 2 ready. Press CONNECT to start UDP listener.")
+        self.log.appendPlainText("[MAIN/INFO] Step 4 ready. Highlight rules via SET/UNSET/RESET.")
 
     # ---------------- Settings persistence ----------------
 
@@ -301,6 +313,8 @@ class MainWindow(QMainWindow):
         s.setValue("hl/mode", self._ui_state.hl_mode)
         s.setValue("hl/color", self._ui_state.hl_color)
 
+        self._save_highlight_rules()
+
     def _apply_state_to_widgets(self) -> None:
         self.ed_bind_ip.setText(self._ui_state.bind_ip)
         self.ed_port.setText(str(self._ui_state.port))
@@ -315,7 +329,121 @@ class MainWindow(QMainWindow):
         self.cb_hl_mode.setCurrentText(self._ui_state.hl_mode)
         self.cb_hl_color.setCurrentText(self._ui_state.hl_color)
 
-    # ---------------- Step 2: Listener handling ----------------
+    # ---------------- Filter (Step 3) ----------------
+
+    def _rebuild_filter_patterns(self) -> None:
+        self._include_patterns = compile_patterns(self._ui_state.include_text, self._ui_state.include_mode)
+        self._exclude_patterns = compile_patterns(self._ui_state.exclude_text, self._ui_state.exclude_mode)
+
+    def on_filter_ui_changed(self) -> None:
+        self._ui_state.include_text = self.ed_include.text()
+        self._ui_state.include_mode = self.cb_include_mode.currentText()
+        self._ui_state.exclude_text = self.ed_exclude.text()
+        self._ui_state.exclude_mode = self.cb_exclude_mode.currentText()
+        self._rebuild_filter_patterns()
+
+    # ---------------- Highlight (Step 4) ----------------
+
+    def _apply_highlighter(self) -> None:
+        self._highlighter.set_rules(self._hl_rules)
+        self.statusBar().showMessage(f"Highlight rules: {len(self._hl_rules)}", 2500)
+
+    def _load_highlight_rules(self) -> None:
+        raw = self._settings.value("hl/rules_json", "", type=str)
+        if not raw:
+            self._hl_rules = []
+            return
+        try:
+            items = json.loads(raw)
+            rules: List[HighlightRule] = []
+            if isinstance(items, list):
+                for it in items:
+                    if not isinstance(it, dict):
+                        continue
+                    pat = str(it.get("pattern", "")).strip()
+                    mode = str(it.get("mode", "Substring")).strip()
+                    col = str(it.get("color", "None")).strip()
+                    if not pat:
+                        continue
+                    if mode not in ("Substring", "Regex"):
+                        mode = "Substring"
+                    rules.append(HighlightRule.create(pat, mode, col))
+            self._hl_rules = rules
+        except Exception:
+            self._hl_rules = []
+
+    def _save_highlight_rules(self) -> None:
+        items = []
+        for r in self._hl_rules:
+            items.append({"pattern": r.pattern_text, "mode": r.mode, "color": r.color_name})
+        self._settings.setValue("hl/rules_json", json.dumps(items))
+
+    def on_highlight_ui_changed(self) -> None:
+        self._ui_state.hl_text = self.ed_hl.text()
+        self._ui_state.hl_mode = self.cb_hl_mode.currentText()
+        self._ui_state.hl_color = self.cb_hl_color.currentText()
+
+    def on_highlight_set_clicked(self) -> None:
+        pat = self.ed_hl.text().strip()
+        mode = self.cb_hl_mode.currentText().strip()
+        col = self.cb_hl_color.currentText().strip()
+
+        if not pat:
+            self.statusBar().showMessage("Highlight: pattern is empty", 3000)
+            return
+        if col.lower() == "none":
+            self.statusBar().showMessage("Highlight: color is None (choose a color)", 3000)
+            return
+        if mode not in ("Substring", "Regex"):
+            mode = "Substring"
+
+        # Upsert: same (pattern_text + mode) -> update color
+        updated = False
+        new_rules: List[HighlightRule] = []
+        for r in self._hl_rules:
+            if r.pattern_text == pat and r.mode == mode:
+                new_rules.append(HighlightRule.create(pat, mode, col))
+                updated = True
+            else:
+                new_rules.append(r)
+        if not updated:
+            new_rules.append(HighlightRule.create(pat, mode, col))
+
+        self._hl_rules = new_rules
+        self._apply_highlighter()
+        self.log.appendPlainText(f"[UI/INFO] Highlight SET: mode={mode} color={col} pattern='{pat}'")
+
+        if self._ui_state.autoscroll:
+            self.log.verticalScrollBar().setValue(self.log.verticalScrollBar().maximum())
+
+    def on_highlight_unset_clicked(self) -> None:
+        pat = self.ed_hl.text().strip()
+        mode = self.cb_hl_mode.currentText().strip()
+        if not pat:
+            self.statusBar().showMessage("Highlight: pattern is empty", 3000)
+            return
+        if mode not in ("Substring", "Regex"):
+            mode = "Substring"
+
+        before = len(self._hl_rules)
+        self._hl_rules = [r for r in self._hl_rules if not (r.pattern_text == pat and r.mode == mode)]
+        after = len(self._hl_rules)
+
+        self._apply_highlighter()
+        self.log.appendPlainText(f"[UI/INFO] Highlight UNSET: removed={before - after} pattern='{pat}' (mode={mode})")
+
+        if self._ui_state.autoscroll:
+            self.log.verticalScrollBar().setValue(self.log.verticalScrollBar().maximum())
+
+    def on_highlight_reset_clicked(self) -> None:
+        self._hl_rules = []
+        self._apply_highlighter()
+        self.log.appendPlainText("[UI/INFO] Highlight RESET: cleared all rules")
+
+        if self._ui_state.autoscroll:
+            self.log.verticalScrollBar().setValue(self.log.verticalScrollBar().maximum())
+
+    # ---------------- UDP listener ----------------
 
     def _start_listener(self) -> bool:
         if self._listener is not None:
@@ -358,18 +486,16 @@ class MainWindow(QMainWindow):
         t = self._listener
         self._listener = None
 
-        t.line_received.disconnect()
-        t.status_changed.disconnect()
-        t.error.disconnect()
-        t.rx_stats.disconnect()
-
-        t.stop()
-        t.wait(800)
+        try:
+            t.stop()
+            t.wait(800)
+        except Exception:
+            pass
 
     def _on_line_received(self, line: str) -> None:
+        # Apply filter before queueing
         if not match_include(line, self._include_patterns):
             return
-
         if match_exclude(line, self._exclude_patterns):
             return
 
@@ -389,7 +515,7 @@ class MainWindow(QMainWindow):
         self._rx_lines = lines
         if self._listener is not None:
             self.statusBar().showMessage(
-                f"Listener: ON — {self._ui_state.bind_ip}:{self._ui_state.port} — pkts={packets} lines={lines}"
+                f"Listener: ON — {self._ui_state.bind_ip}:{self._ui_state.port} — pkts={packets} lines={lines} — HL={len(self._hl_rules)}"
             )
 
     def _flush_log_queue(self) -> None:
@@ -400,7 +526,6 @@ class MainWindow(QMainWindow):
         if not batch:
             return
 
-        # Append in one go (still line-by-line but within UI loop tick)
         for line in batch:
             self.log.appendPlainText(line)
 
@@ -470,43 +595,6 @@ class MainWindow(QMainWindow):
         except Exception:
             pass
 
-    def on_filter_ui_changed(self) -> None:
-        self._ui_state.include_text = self.ed_include.text()
-        self._ui_state.include_mode = self.cb_include_mode.currentText()
-        self._ui_state.exclude_text = self.ed_exclude.text()
-        self._ui_state.exclude_mode = self.cb_exclude_mode.currentText()
-
-        self._include_patterns = compile_patterns(
-            self._ui_state.include_text,
-            self._ui_state.include_mode
-        )
-
-        self._exclude_patterns = compile_patterns(
-            self._ui_state.exclude_text,
-            self._ui_state.exclude_mode
-        )
-
-    def on_highlight_ui_changed(self) -> None:
-        self._ui_state.hl_text = self.ed_hl.text()
-        self._ui_state.hl_mode = self.cb_hl_mode.currentText()
-        self._ui_state.hl_color = self.cb_hl_color.currentText()
-        # Step 4: highlighter will use these settings
-
-    def on_highlight_set_clicked(self) -> None:
-        self.log.appendPlainText("[UI/INFO] Highlight SET (not implemented yet; Step 4)")
-        if self._ui_state.autoscroll:
-            self.log.verticalScrollBar().setValue(self.log.verticalScrollBar().maximum())
-
-    def on_highlight_unset_clicked(self) -> None:
-        self.log.appendPlainText("[UI/INFO] Highlight UNSET (not implemented yet; Step 4)")
-        if self._ui_state.autoscroll:
-            self.log.verticalScrollBar().setValue(self.log.verticalScrollBar().maximum())
-
-    def on_highlight_reset_clicked(self) -> None:
-        self.log.appendPlainText("[UI/INFO] Highlight RESET (not implemented yet; Step 4)")
-        if self._ui_state.autoscroll:
-            self.log.verticalScrollBar().setValue(self.log.verticalScrollBar().maximum())
-
     def _update_connection_ui(self) -> None:
         connected = self._listener is not None
 
@@ -514,17 +602,16 @@ class MainWindow(QMainWindow):
             self.btn_connect.setText("CONNECTED")
             self.btn_connect.setStyleSheet("QToolButton { background-color: #2ecc71; font-weight: bold; }")
             self.statusBar().showMessage(
-                f"Listener: ON — {self._ui_state.bind_ip}:{self._ui_state.port} — pkts={self._rx_packets} lines={self._rx_lines}"
+                f"Listener: ON — {self._ui_state.bind_ip}:{self._ui_state.port} — pkts={self._rx_packets} lines={self._rx_lines} — HL={len(self._hl_rules)}"
             )
         else:
             self.btn_connect.setText("CONNECT")
             self.btn_connect.setStyleSheet("QToolButton { background-color: #b0b0b0; font-weight: bold; }")
-            self.statusBar().showMessage(f"Listener: OFF — {self._ui_state.bind_ip}:{self._ui_state.port}")
+            self.statusBar().showMessage(f"Listener: OFF — {self._ui_state.bind_ip}:{self._ui_state.port} — HL={len(self._hl_rules)}")
 
     # ---------------- Qt overrides ----------------
 
     def closeEvent(self, event) -> None:
-        # Stop listener cleanly on exit
         try:
             self._stop_listener()
         except Exception:
