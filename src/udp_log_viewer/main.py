@@ -1062,6 +1062,28 @@ class MainWindow(QMainWindow):
         if not path:
             return
 
+        # Step 6.2: Prefer saving the continuously written live logfile (if active).
+        # This avoids re-serializing the UI text and is robust for very large logs.
+        if self._live_log_path is not None and self._live_log_handle is not None:
+            try:
+                try:
+                    self._live_log_handle.flush()
+                    os.fsync(self._live_log_handle.fileno())
+                except Exception:
+                    # fsync may fail on some setups; flush is still helpful
+                    pass
+
+                # Copy the live logfile to the chosen destination.
+                # Keep the live logfile running (no rename/move) to avoid breaking the active session.
+                import shutil
+                shutil.copy2(str(self._live_log_path), path)
+                self.statusBar().showMessage(f"Saved (from live file): {path}", 4000)
+                return
+            except Exception as e:
+                QMessageBox.critical(self, "Save Failed", f"Could not save live logfile:\n{e}")
+                return
+
+        # Fallback: save current UI content (e.g., when not connected).
         try:
             content = self.log.toPlainText()
             with open(path, "w", encoding="utf-8", newline="\n") as f:
