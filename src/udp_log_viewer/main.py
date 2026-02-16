@@ -1,49 +1,55 @@
 from __future__ import annotations
 
+import datetime as _dt
 import json
+import os
 import sys
 from collections import deque
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Deque, List, Optional, Tuple
 
 from PyQt5.QtCore import Qt, QSettings, QTimer
 from PyQt5.QtGui import QFont, QIntValidator, QTextCursor
 from PyQt5.QtWidgets import (
-    QApplication,
-    QMainWindow,
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QGridLayout,
-    QLabel,
-    QLineEdit,
-    QPlainTextEdit,
-    QPushButton,
-    QToolButton,
     QAction,
-    QFileDialog,
-    QMessageBox,
+    QApplication,
     QCheckBox,
-    QSizePolicy,
-    QFrame,
+    QComboBox,
     QDialog,
     QDialogButtonBox,
+    QFileDialog,
+    QFrame,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QPlainTextEdit,
+    QSizePolicy,
     QSpinBox,
-    QComboBox,
+    QToolButton,
+    QVBoxLayout,
+    QWidget,
 )
 
-from .udp_listener import UdpListenerThread
-from .udp_log_utils import drain_queue, compile_patterns
 from .highlighter import HighlightRule, LogHighlighter
+from .udp_listener import UdpListenerThread
+from .udp_log_utils import compile_patterns, drain_queue
 
 APP_ORG = "LocalTools"
 APP_NAME = "UdpLogViewer"
-APP_VERSION = "0.8-step4.5c-final"
+APP_VERSION = "0.9-step6.0-replay-livefile"
 
 SLOT_COUNT = 5
 
 DEFAULT_MAX_LINES = 20000
 DEFAULT_TRIM_CHUNK = 2000
+
+REPLAY_TICK_MS = 25
+REPLAY_LINES_PER_TICK = 40
 
 
 @dataclass
@@ -58,7 +64,7 @@ class UiState:
 class PatternSlot:
     pattern: str = ""
     mode: str = "Substring"     # "Substring" | "Regex"
-    color: str = "None"         # UI chip color; for Highlight also drives log coloring
+    color: str = "None"         # chip tint; for Highlight also drives log coloring
 
 
 class PatternEditDialog(QDialog):
@@ -68,7 +74,7 @@ class PatternEditDialog(QDialog):
     - Slot: 1..5
     - Pattern: text
     - Mode: Substring / Regex
-    - Color: None / ... (for Filter & Exclude: chip-only; for Highlight: chip + log coloring)
+    - Color: None / ... (Filter & Exclude: chip-only; Highlight: chip + log coloring)
     """
 
     def __init__(self, parent: QWidget, title: str, slot_index: int, slot: PatternSlot, suggested_index: int) -> None:
@@ -138,27 +144,38 @@ class MainWindow(QMainWindow):
         self._rx_packets = 0
         self._rx_lines = 0
 
-        # Queue + batching
+        # Queue + batching for UI
         self._queue: Deque[str] = deque()
         self._flush_timer = QTimer(self)
         self._flush_timer.setInterval(50)
         self._flush_timer.timeout.connect(self._flush_log_queue)
         self._flush_timer.start()
 
-        # Slot-based Filter / Exclude / Highlight (Step 4.5c)
+        # Replay (inject without UDP)
+        self._replay_timer = QTimer(self)
+        self._replay_timer.setInterval(REPLAY_TICK_MS)
+        self._replay_timer.timeout.connect(self._replay_tick)
+        self._replay_lines: Deque[str] = deque()
+        self._replay_active = False
+
+        # Slot-based Filter / Exclude / Highlight
         self._filter_slots: List[PatternSlot] = [PatternSlot() for _ in range(SLOT_COUNT)]
         self._exclude_slots: List[PatternSlot] = [PatternSlot() for _ in range(SLOT_COUNT)]
         self._hl_slots: List[PatternSlot] = [PatternSlot() for _ in range(SLOT_COUNT)]
 
         # Compiled patterns per slot
-        self._filter_slot_patterns = []   # List[List[compiled]]
-        self._exclude_slot_patterns = []  # List[List[compiled]]
+        self._filter_slot_patterns: List[List[object]] = []
+        self._exclude_slot_patterns: List[List[object]] = []
 
         # Highlight rules
         self._hl_rules: List[HighlightRule] = []
 
         # Log limit counters
         self._trimmed_lines_total = 0
+
+        # Continuous file logging per connection
+        self._live_log_path: Optional[Path] = None
+        self._live_log_handle = None  # type: ignore[assignment]
 
         self.setWindowTitle(f"UDP Log Viewer — {APP_VERSION}")
         self.resize(1100, 760)
@@ -183,10 +200,78 @@ class MainWindow(QMainWindow):
 
         self._update_connection_ui()
 
+    # ---------------- Helpers ----------------
+
+    @staticmethod
+    def _now_stamp() -> str:
+        return _dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    def _default_save_name(self) -> str:
+        return f"udp_log_{self._now_stamp()}.txt"
+
+    def _ensure_data_logs_dir(self) -> Path:
+        # relative to current working directory (workspace root when launched from VS Code)
+        p = Path("data") / "logs"
+        p.mkdir(parents=True, exist_ok=True)
+        return p
+
+    def _open_new_live_log(self) -> None:
+        self._close_live_log()
+
+        logs_dir = self._ensure_data_logs_dir()
+        name = f"udp_live_{self._now_stamp()}.txt"
+        path = logs_dir / name
+
+        try:
+            f = open(path, "w", encoding="utf-8", newline="\n")
+            self._live_log_handle = f
+            self._live_log_path = path
+            f.write(f"# UDP Log Viewer live session — {self._now_stamp()}\n")
+            f.flush()
+            self.statusBar().showMessage(f"Live log: {path}", 3000)
+        except Exception as e:
+            self._live_log_handle = None
+            self._live_log_path = None
+            self.log.appendPlainText(f"[UI/ERROR] Could not create live logfile: {e}")
+            if self._ui_state.autoscroll:
+                self.log.verticalScrollBar().setValue(self.log.verticalScrollBar().maximum())
+
+    def _close_live_log(self) -> None:
+        try:
+            if self._live_log_handle is not None:
+                try:
+                    self._live_log_handle.flush()
+                except Exception:
+                    pass
+                self._live_log_handle.close()
+        except Exception:
+            pass
+        self._live_log_handle = None
+        self._live_log_path = None
+
+    def _append_to_live_log(self, line: str) -> None:
+        if self._live_log_handle is None:
+            return
+        try:
+            self._live_log_handle.write(line + "\n")
+        except Exception as e:
+            self.log.appendPlainText(f"[UI/ERROR] Live logfile write failed: {e}")
+            self._close_live_log()
+
     # ---------------- UI ----------------
 
     def _build_actions(self) -> None:
         file_menu = self.menuBar().addMenu("File")
+
+        self.act_open_log = QAction("Open Log…", self)
+        self.act_open_log.setShortcut("Ctrl+O")
+        self.act_open_log.triggered.connect(self.on_open_log_clicked)
+
+        self.act_replay_sample = QAction("Replay Sample", self)
+        self.act_replay_sample.triggered.connect(self.on_replay_sample_clicked)
+
+        self.act_stop_replay = QAction("Stop Replay", self)
+        self.act_stop_replay.triggered.connect(self.on_stop_replay_clicked)
 
         self.act_save = QAction("Save…", self)
         self.act_save.setShortcut("Ctrl+S")
@@ -196,6 +281,10 @@ class MainWindow(QMainWindow):
         self.act_quit.setShortcut("Ctrl+Q")
         self.act_quit.triggered.connect(self.close)
 
+        file_menu.addAction(self.act_open_log)
+        file_menu.addAction(self.act_replay_sample)
+        file_menu.addAction(self.act_stop_replay)
+        file_menu.addSeparator()
         file_menu.addAction(self.act_save)
         file_menu.addSeparator()
         file_menu.addAction(self.act_quit)
@@ -314,7 +403,6 @@ class MainWindow(QMainWindow):
 
         self.btn_filter_add = QToolButton()
         self.btn_filter_add.setText("FILTER")
-        self.btn_filter_add.setToolTip("Add/Edit filter rule (max 5 slots)")
         self.btn_filter_add.clicked.connect(self.on_filter_add_clicked)
         fx_row.addWidget(self.btn_filter_add)
 
@@ -334,7 +422,6 @@ class MainWindow(QMainWindow):
 
         self.btn_exclude_add = QToolButton()
         self.btn_exclude_add.setText("EXCLUDE")
-        self.btn_exclude_add.setToolTip("Add/Edit exclude rule (max 5 slots)")
         self.btn_exclude_add.clicked.connect(self.on_exclude_add_clicked)
         fx_row.addWidget(self.btn_exclude_add)
 
@@ -362,7 +449,6 @@ class MainWindow(QMainWindow):
 
         self.btn_hl_add = QToolButton()
         self.btn_hl_add.setText("HIGHLIGHT")
-        self.btn_hl_add.setToolTip("Add highlight rule (max 5 slots)")
         self.btn_hl_add.clicked.connect(self.on_hl_add_clicked)
         hl_row.addWidget(self.btn_hl_add)
 
@@ -393,7 +479,7 @@ class MainWindow(QMainWindow):
         root_layout.addWidget(self.log, 1)
 
         self.statusBar().showMessage("Ready")
-        self.log.appendPlainText("[MAIN/INFO] Step 4.5c (final) ready.")
+        self.log.appendPlainText("[MAIN/INFO] Step 6.0 ready (Replay + per-connection live file).")
 
     # ---------------- Settings ----------------
 
@@ -767,10 +853,78 @@ class MainWindow(QMainWindow):
         self._apply_highlighter()
         self._save_highlight_slots()
         self._refresh_highlight_chips()
-
         self.log.appendPlainText("[UI/INFO] Highlight RESET")
-        if self._ui_state.autoscroll:
-            self.log.verticalScrollBar().setValue(self.log.verticalScrollBar().maximum())
+
+    # ---------------- Replay / Inject ----------------
+
+    def _ingest_line(self, line: str) -> None:
+        if not self._match_include_slots(line):
+            return
+        if self._match_exclude_slots(line):
+            return
+        self._queue.append(line)
+
+    def _replay_tick(self) -> None:
+        if not self._replay_lines:
+            self._replay_timer.stop()
+            self._replay_active = False
+            self.statusBar().showMessage("Replay finished", 2000)
+            return
+
+        for _ in range(REPLAY_LINES_PER_TICK):
+            if not self._replay_lines:
+                break
+            self._ingest_line(self._replay_lines.popleft())
+
+    def on_open_log_clicked(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(self, "Open Log", "", "Text Files (*.txt);;All Files (*)")
+        if not path:
+            return
+
+        try:
+            with open(path, "r", encoding="utf-8", errors="replace") as f:
+                lines = [ln.rstrip("\r\n") for ln in f.readlines()]
+        except Exception as e:
+            QMessageBox.critical(self, "Open Log Failed", f"Could not open file:\n{e}")
+            return
+
+        self.on_stop_replay_clicked()
+        self._replay_lines = deque([ln for ln in lines if ln.strip() and not ln.startswith("#")])
+        self._replay_active = True
+        self._replay_timer.start()
+        self.statusBar().showMessage(f"Replay: {os.path.basename(path)} ({len(self._replay_lines)} lines)", 3000)
+
+    def on_replay_sample_clicked(self) -> None:
+        sample = [
+            "[MAIN/INFO] ======================================================",
+            "[MAIN/INFO] === ESP32-S3 + ST7701 480x480 + LVGL 9.4.x + Touch ===",
+            "[MAIN/INFO] ======================================================",
+            "[WIFI] Connected. IP: 192.168.0.103",
+            "[UDP] selftest: sending 3 packets...",
+            "[HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[203,0,0,0] tempRaw=203",
+            "[OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=20.30 core=23.15 ui=23.15 ctrl=23.15 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=0 heatRemMs=0 restRemMs=0",
+            "[OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=20.80 core=23.20 ui=23.20 ctrl=23.20 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=1 heatRemMs=2000 restRemMs=0",
+            "[HEATER/DBG] pwm=4000Hz duty=50%",
+            "[HOST/INFO] STATUS received, mask=0x1010 (    0x1010), adc=[205,0,0,0] tempRaw=205",
+            "[UI/INFO] Listener: ON — 0.0.0.0:10514",
+            "[UI/ERROR] UDP listener error: [Errno 9] Bad file descriptor",
+            "[OVEN/WARN] Door opened — entering WAIT",
+            "[OVEN/INFO] [T11] mode=1 door=1 lock=1 ntc=21.00 core=23.25 ui=23.25 ctrl=23.25 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=0 heatRemMs=0 restRemMs=3000",
+            "[MAIN/INFO] Sample done.",
+        ]
+
+        self.on_stop_replay_clicked()
+        self._replay_lines = deque(sample)
+        self._replay_active = True
+        self._replay_timer.start()
+        self.statusBar().showMessage("Replay: sample", 2000)
+
+    def on_stop_replay_clicked(self) -> None:
+        if self._replay_timer.isActive():
+            self._replay_timer.stop()
+        self._replay_lines.clear()
+        self._replay_active = False
+        self.statusBar().showMessage("Replay stopped", 1500)
 
     # ---------------- Log limits ----------------
 
@@ -832,6 +986,9 @@ class MainWindow(QMainWindow):
 
         self._listener = t
         t.start()
+
+        # Per connection: create a fresh live log file (NEW)
+        self._open_new_live_log()
         return True
 
     def _stop_listener(self) -> None:
@@ -846,12 +1003,10 @@ class MainWindow(QMainWindow):
         except Exception:
             pass
 
+        self._close_live_log()
+
     def _on_line_received(self, line: str) -> None:
-        if not self._match_include_slots(line):
-            return
-        if self._match_exclude_slots(line):
-            return
-        self._queue.append(line)
+        self._ingest_line(line)
 
     def _on_listener_status(self, msg: str) -> None:
         self.statusBar().showMessage(msg)
@@ -878,8 +1033,17 @@ class MainWindow(QMainWindow):
         batch = drain_queue(self._queue, max_items=300)
         if not batch:
             return
+
         for line in batch:
             self.log.appendPlainText(line)
+            if self._listener is not None:
+                self._append_to_live_log(line)
+
+        try:
+            if self._live_log_handle is not None:
+                self._live_log_handle.flush()
+        except Exception:
+            self._close_live_log()
 
         self._enforce_log_limit()
 
@@ -892,7 +1056,7 @@ class MainWindow(QMainWindow):
         path, _ = QFileDialog.getSaveFileName(
             self,
             "Save Log",
-            "udp_log.txt",
+            self._default_save_name(),
             "Text Files (*.txt);;All Files (*)",
         )
         if not path:
@@ -911,7 +1075,7 @@ class MainWindow(QMainWindow):
     def on_clear_clicked(self) -> None:
         self.log.clear()
         self._trimmed_lines_total = 0
-        self.statusBar().showMessage("Cleared", 2000)
+        self.statusBar().showMessage("Cleared (UI only)", 2000)
 
     def on_copy_clicked(self) -> None:
         cursor = self.log.textCursor()
@@ -933,6 +1097,8 @@ class MainWindow(QMainWindow):
                 self._update_connection_ui()
                 return
             self.log.appendPlainText(f"[UI/INFO] Listening on {self._ui_state.bind_ip}:{self._ui_state.port}")
+            if self._live_log_path is not None:
+                self.log.appendPlainText(f"[UI/INFO] Live logfile: {self._live_log_path}")
         else:
             self._stop_listener()
             self.log.appendPlainText("[UI/INFO] Listener stopped")
@@ -966,6 +1132,10 @@ class MainWindow(QMainWindow):
     # ---------------- Qt overrides ----------------
 
     def closeEvent(self, event) -> None:
+        try:
+            self.on_stop_replay_clicked()
+        except Exception:
+            pass
         try:
             self._stop_listener()
         except Exception:
