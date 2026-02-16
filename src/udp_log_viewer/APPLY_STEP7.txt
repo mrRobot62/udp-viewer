@@ -1,0 +1,4 @@
+Step 7 (fixed): Timestamp checkbox adds prefix to each shown line and live logfile.
+Checkbox disabled while connected.
+Based on step6_3_status_restore (known-good).
+Replace src/udp_log_viewer/main.py

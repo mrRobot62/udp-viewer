@@ -4,6 +4,7 @@ import datetime as _dt
 import json
 import os
 import sys
+from datetime import datetime
 from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
@@ -41,7 +42,7 @@ from .udp_log_utils import compile_patterns, drain_queue
 
 APP_ORG = "LocalTools"
 APP_NAME = "UdpLogViewer"
-APP_VERSION = "0.9-step6.0-replay-livefile"
+APP_VERSION = "0.12-step7.1-timestamp-ui-status"
 
 SLOT_COUNT = 5
 
@@ -57,6 +58,8 @@ class UiState:
     bind_ip: str = "0.0.0.0"
     port: int = 10514
     autoscroll: bool = True
+
+    timestamp_enabled: bool = False
     max_lines: int = DEFAULT_MAX_LINES
 
 
@@ -342,6 +345,9 @@ class MainWindow(QMainWindow):
 
         self.chk_autoscroll = QCheckBox("Auto-Scroll")
         self.chk_autoscroll.stateChanged.connect(self.on_autoscroll_changed)
+        
+        self.chk_timestamp = QCheckBox("Timestamp")
+        self.chk_timestamp.stateChanged.connect(self.on_timestamp_changed)
 
         top_row.addWidget(self.btn_save)
         top_row.addWidget(self.btn_clear)
@@ -350,6 +356,7 @@ class MainWindow(QMainWindow):
         top_row.addWidget(self.btn_connect)
         top_row.addSpacing(12)
         top_row.addWidget(self.chk_autoscroll)
+        top_row.addWidget(self.chk_timestamp)
         top_row.addStretch(1)
 
         root_layout.addLayout(top_row)
@@ -488,6 +495,7 @@ class MainWindow(QMainWindow):
         self._ui_state.bind_ip = s.value("net/bind_ip", self._ui_state.bind_ip, type=str)
         self._ui_state.port = s.value("net/port", self._ui_state.port, type=int)
         self._ui_state.autoscroll = s.value("ui/autoscroll", self._ui_state.autoscroll, type=bool)
+        self._ui_state.timestamp_enabled = s.value("ui/timestamp", self._ui_state.timestamp_enabled, type=bool)
         self._ui_state.max_lines = s.value("log/max_lines", self._ui_state.max_lines, type=int)
 
     def _save_settings(self) -> None:
@@ -495,6 +503,7 @@ class MainWindow(QMainWindow):
         s.setValue("net/bind_ip", self._ui_state.bind_ip)
         s.setValue("net/port", int(self._ui_state.port))
         s.setValue("ui/autoscroll", bool(self._ui_state.autoscroll))
+        s.setValue("ui/timestamp", bool(self._ui_state.timestamp_enabled))
         s.setValue("log/max_lines", int(self._ui_state.max_lines))
 
         self._save_filter_slots()
@@ -505,6 +514,7 @@ class MainWindow(QMainWindow):
         self.ed_bind_ip.setText(self._ui_state.bind_ip)
         self.ed_port.setText(str(self._ui_state.port))
         self.chk_autoscroll.setChecked(self._ui_state.autoscroll)
+        self.chk_timestamp.setChecked(self._ui_state.timestamp_enabled)
         self.ed_max_lines.setText(str(self._ui_state.max_lines))
 
     def on_settings_edited(self) -> None:
@@ -1006,13 +1016,31 @@ class MainWindow(QMainWindow):
         self._close_live_log()
 
     def _on_line_received(self, line: str) -> None:
-        self._ingest_line(line)
+        if not match_include(line, self._include_patterns):
+            return
+        if match_exclude(line, self._exclude_patterns):
+            return
+
+        out_line = line
+        if self._ui_state.timestamp_enabled:
+            out_line = f"{self._format_timestamp_prefix(datetime.now())} {line}"
+
+        self._queue.append(out_line)
+        try:
+            self._write_live_log_line(out_line)
+        except Exception:
+            pass
+
 
     def _on_listener_status(self, msg: str) -> None:
-        self.statusBar().showMessage(msg)
+        # The listener may emit transient status messages. Show briefly, then restore our rich status line.
+        self.statusBar().showMessage(msg, 1500)
+        if self._listener is not None:
+            QTimer.singleShot(1600, self._update_connection_ui)
+
 
     def _on_listener_error(self, msg: str) -> None:
-        self.log.appendPlainText(f"[UI/ERROR] {msg}")
+        self._append_log_line(f"[UI/ERROR] {msg}", write_live=True)
         if self._ui_state.autoscroll:
             self.log.verticalScrollBar().setValue(self.log.verticalScrollBar().maximum())
         self.statusBar().showMessage(msg, 5000)
@@ -1119,14 +1147,23 @@ class MainWindow(QMainWindow):
                 self.btn_connect.setChecked(False)
                 self._update_connection_ui()
                 return
-            self.log.appendPlainText(f"[UI/INFO] Listening on {self._ui_state.bind_ip}:{self._ui_state.port}")
+            self._append_log_line(f"[UI/INFO] Listening on {self._ui_state.bind_ip}:{self._ui_state.port}", write_live=True)
             if self._live_log_path is not None:
                 self.log.appendPlainText(f"[UI/INFO] Live logfile: {self._live_log_path}")
         else:
             self._stop_listener()
-            self.log.appendPlainText("[UI/INFO] Listener stopped")
+            self._append_log_line("[UI/INFO] Listener stopped", write_live=True)
 
         self._update_connection_ui()
+
+    def on_timestamp_changed(self) -> None:
+        # Must be toggled before CONNECT (UI disables it while connected).
+        self._ui_state.timestamp_enabled = self.chk_timestamp.isChecked()
+        self._save_settings()
+        self.statusBar().showMessage(
+            f"Timestamp: {'ON' if self._ui_state.timestamp_enabled else 'OFF'} (applies on next CONNECT)",
+            2500,
+        )
 
     def on_autoscroll_changed(self) -> None:
         self._ui_state.autoscroll = self.chk_autoscroll.isChecked()
@@ -1137,6 +1174,7 @@ class MainWindow(QMainWindow):
         connected = self._listener is not None
 
         if connected:
+            self.chk_timestamp.setEnabled(False)
             self.btn_connect.setText("CONNECTED")
             self.btn_connect.setStyleSheet("QToolButton { background-color: #2ecc71; font-weight: bold; }")
             self.statusBar().showMessage(
@@ -1146,6 +1184,7 @@ class MainWindow(QMainWindow):
                 + (f" — {self._live_status_snippet()}" if getattr(self, "_live_log_path", None) else "")
             )
         else:
+            self.chk_timestamp.setEnabled(True)
             self.btn_connect.setText("CONNECT")
             self.btn_connect.setStyleSheet("QToolButton { background-color: #b0b0b0; font-weight: bold; }")
             self.statusBar().showMessage(
@@ -1163,6 +1202,27 @@ class MainWindow(QMainWindow):
         if n < 1024 * 1024 * 1024:
             return f"{n/(1024.0*1024.0):.1f} MB"
         return f"{n/(1024.0*1024.0*1024.0):.2f} GB"
+
+    @staticmethod
+    def _format_timestamp_prefix(dt: datetime) -> str:
+        # Format: yyyymmdd-hh:mm:ss.mmm
+        return dt.strftime("%Y%m%d-%H:%M:%S.") + f"{dt.microsecond//1000:03d}"
+
+    def _append_log_line(self, line: str, *, write_live: bool = False) -> None:
+        out_line = line
+        if self._ui_state.timestamp_enabled:
+            out_line = f"{self._format_timestamp_prefix(datetime.now())} {line}"
+
+        self.log.appendPlainText(out_line)
+
+        if write_live and getattr(self, "_live_log_handle", None) is not None:
+            try:
+                self._write_live_log_line(out_line)
+            except Exception:
+                pass
+
+        if self._ui_state.autoscroll:
+            self.log.verticalScrollBar().setValue(self.log.verticalScrollBar().maximum())
 
     def _live_status_snippet(self) -> str:
         if getattr(self, "_live_log_path", None) is None:

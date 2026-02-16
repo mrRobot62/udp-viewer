@@ -1,0 +1,4 @@
+Fixes Step 7 compile error: MainWindow methods were accidentally moved outside the class.
+Restores _on_line_received/_on_listener_status/_on_listener_error/_on_rx_stats/_flush_log_queue as proper MainWindow methods.
+Timestamp prefix remains applied in _on_line_received and is persisted via live log append.
+Replace: src/udp_log_viewer/main.py
