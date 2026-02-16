@@ -4,48 +4,30 @@ import re
 from dataclasses import dataclass
 from typing import List, Optional, Pattern, Union
 
-from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor, QSyntaxHighlighter, QTextCharFormat
-
 
 PatternOrStr = Union[Pattern[str], str]
 
 
-def _parse_tokens(text: str) -> List[str]:
-    return [t.strip() for t in text.split(";") if t.strip()]
-
-
-def _compile_tokens(tokens: List[str], mode: str) -> List[PatternOrStr]:
-    if not tokens:
-        return []
+def _compile(pattern_text: str, mode: str) -> Optional[PatternOrStr]:
+    pattern_text = (pattern_text or "").strip()
+    if not pattern_text:
+        return None
 
     if mode == "Regex":
-        out: List[PatternOrStr] = []
-        for t in tokens:
-            try:
-                out.append(re.compile(t))
-            except re.error:
-                # invalid regex token -> ignore token (rule may become ineffective)
-                pass
-        return out
+        try:
+            return re.compile(pattern_text)
+        except re.error:
+            return None
 
     # Substring mode
-    return tokens
+    return pattern_text
 
 
-def _rule_matches(line: str, compiled: List[PatternOrStr]) -> bool:
-    # AND logic
-    if not compiled:
-        return False
-
-    for p in compiled:
-        if isinstance(p, str):
-            if p not in line:
-                return False
-        else:
-            if not p.search(line):
-                return False
-    return True
+def _matches(line: str, compiled: PatternOrStr) -> bool:
+    if isinstance(compiled, str):
+        return compiled in line
+    return compiled.search(line) is not None
 
 
 def _color_from_name(name: str) -> Optional[QColor]:
@@ -53,7 +35,6 @@ def _color_from_name(name: str) -> Optional[QColor]:
     if name in ("", "none"):
         return None
 
-    # Minimal palette
     mapping = {
         "red": QColor("#e74c3c"),
         "green": QColor("#2ecc71"),
@@ -67,19 +48,33 @@ def _color_from_name(name: str) -> Optional[QColor]:
 
 @dataclass(frozen=True)
 class HighlightRule:
-    pattern_text: str         # user text, may contain ';'
-    mode: str                 # "Substring" | "Regex"
-    color_name: str           # "Red" | ...
-    compiled: List[PatternOrStr]
+    """
+    Single-pattern rule (no AND/semicolon logic).
+    """
+    pattern_text: str
+    mode: str               # "Substring" | "Regex"
+    color_name: str         # "Red" | ...
+    compiled: PatternOrStr
 
     @staticmethod
-    def create(pattern_text: str, mode: str, color_name: str) -> "HighlightRule":
-        tokens = _parse_tokens(pattern_text)
-        compiled = _compile_tokens(tokens, mode)
-        return HighlightRule(pattern_text=pattern_text, mode=mode, color_name=color_name, compiled=compiled)
+    def create(pattern_text: str, mode: str, color_name: str) -> Optional["HighlightRule"]:
+        mode = (mode or "Substring").strip()
+        if mode not in ("Substring", "Regex"):
+            mode = "Substring"
+
+        compiled = _compile(pattern_text, mode)
+        if compiled is None:
+            return None
+
+        return HighlightRule(
+            pattern_text=pattern_text.strip(),
+            mode=mode,
+            color_name=(color_name or "None").strip(),
+            compiled=compiled,
+        )
 
     def matches(self, line: str) -> bool:
-        return _rule_matches(line, self.compiled)
+        return _matches(line, self.compiled)
 
     def color(self) -> Optional[QColor]:
         return _color_from_name(self.color_name)
@@ -89,9 +84,9 @@ class LogHighlighter(QSyntaxHighlighter):
     """
     Minimal highlighter for QPlainTextEdit (QTextDocument).
 
-    - Iterates all rules
+    - Iterates rules in order
     - First match wins
-    - Applies a foreground color (minimal, readable)
+    - Applies foreground color only (minimal design)
     """
 
     def __init__(self, parent_document) -> None:

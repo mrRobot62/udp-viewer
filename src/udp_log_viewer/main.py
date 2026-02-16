@@ -4,7 +4,7 @@ import json
 import sys
 from collections import deque
 from dataclasses import dataclass
-from typing import Deque, List, Optional
+from typing import Deque, List, Optional, Tuple
 
 from PyQt5.QtCore import Qt, QSettings, QTimer
 from PyQt5.QtGui import QFont, QIntValidator
@@ -27,6 +27,9 @@ from PyQt5.QtWidgets import (
     QCheckBox,
     QSizePolicy,
     QFrame,
+    QDialog,
+    QDialogButtonBox,
+    QSpinBox,
 )
 
 from .udp_listener import UdpListenerThread
@@ -35,7 +38,9 @@ from .highlighter import HighlightRule, LogHighlighter
 
 APP_ORG = "LocalTools"
 APP_NAME = "UdpLogViewer"
-APP_VERSION = "0.3-step4"
+APP_VERSION = "0.5-step4.4-optionB1-chips"
+
+HIGHLIGHT_SLOTS = 5
 
 
 @dataclass
@@ -49,9 +54,67 @@ class UiState:
     exclude_text: str = ""
     exclude_mode: str = "Substring"
 
-    hl_text: str = ""
-    hl_mode: str = "Substring"
-    hl_color: str = "None"
+
+@dataclass
+class HighlightSlot:
+    pattern: str = ""
+    mode: str = "Substring"     # "Substring" | "Regex"
+    color: str = "None"         # "None" | "Red" | ...
+
+
+class HighlightEditDialog(QDialog):
+    def __init__(self, parent: QWidget, slot_index: int, slot: HighlightSlot, suggested_index: int) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Edit Highlight Rule")
+        self.setModal(True)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(10)
+
+        grid = QGridLayout()
+        grid.setHorizontalSpacing(10)
+        grid.setVerticalSpacing(8)
+
+        grid.addWidget(QLabel("Slot:"), 0, 0)
+        self.sb_slot = QSpinBox()
+        self.sb_slot.setRange(1, HIGHLIGHT_SLOTS)
+        self.sb_slot.setValue((slot_index + 1) if slot_index >= 0 else (suggested_index + 1))
+        grid.addWidget(self.sb_slot, 0, 1)
+
+        grid.addWidget(QLabel("Pattern:"), 1, 0)
+        self.ed_pattern = QLineEdit()
+        self.ed_pattern.setText(slot.pattern)
+        self.ed_pattern.setPlaceholderText('e.g. "[OVEN/INFO] [T11]" or "ERROR"')
+        grid.addWidget(self.ed_pattern, 1, 1)
+
+        grid.addWidget(QLabel("Mode:"), 2, 0)
+        self.cb_mode = QComboBox()
+        self.cb_mode.addItems(["Substring", "Regex"])
+        self.cb_mode.setCurrentText(slot.mode or "Substring")
+        grid.addWidget(self.cb_mode, 2, 1)
+
+        grid.addWidget(QLabel("Color:"), 3, 0)
+        self.cb_color = QComboBox()
+        self.cb_color.addItems(["None", "Red", "Green", "Blue", "Orange", "Purple", "Gray"])
+        self.cb_color.setCurrentText(slot.color or "None")
+        grid.addWidget(self.cb_color, 3, 1)
+
+        layout.addLayout(grid)
+
+        btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, parent=self)
+        btns.accepted.connect(self.accept)
+        btns.rejected.connect(self.reject)
+        layout.addWidget(btns)
+
+    def result_data(self) -> Tuple[int, HighlightSlot]:
+        idx = int(self.sb_slot.value()) - 1
+        slot = HighlightSlot(
+            pattern=self.ed_pattern.text().strip(),
+            mode=self.cb_mode.currentText().strip() or "Substring",
+            color=self.cb_color.currentText().strip() or "None",
+        )
+        return idx, slot
 
 
 class MainWindow(QMainWindow):
@@ -73,11 +136,12 @@ class MainWindow(QMainWindow):
         self._flush_timer.timeout.connect(self._flush_log_queue)
         self._flush_timer.start()
 
-        # Filter state (Step 3)
+        # Filter
         self._include_patterns = []
         self._exclude_patterns = []
 
-        # Highlight rules (Step 4)
+        # Highlighting (B1: fixed 5 slots, chips show active)
+        self._hl_slots: List[HighlightSlot] = [HighlightSlot() for _ in range(HIGHLIGHT_SLOTS)]
         self._hl_rules: List[HighlightRule] = []
 
         self.setWindowTitle(f"UDP Log Viewer — {APP_VERSION}")
@@ -88,17 +152,16 @@ class MainWindow(QMainWindow):
 
         self._load_settings()
         self._apply_state_to_widgets()
-
-        # Compile filter patterns after widgets loaded
         self._rebuild_filter_patterns()
 
-        # Load highlight rules + apply
-        self._load_highlight_rules()
+        self._load_highlight_slots()
+        self._rebuild_highlight_rules()
         self._apply_highlighter()
+        self._refresh_highlight_chips()
 
         self._update_connection_ui()
 
-    # ---------------- UI construction ----------------
+    # ---------------- UI ----------------
 
     def _build_actions(self) -> None:
         file_menu = self.menuBar().addMenu("File")
@@ -221,45 +284,31 @@ class MainWindow(QMainWindow):
 
         root_layout.addWidget(filter_frame)
 
-        # --- Highlight panel ---
+        # --- Highlight row (Option B1: chips + add) ---
         hl_frame = QFrame()
         hl_frame.setFrameShape(QFrame.StyledPanel)
 
-        hl_layout = QGridLayout(hl_frame)
-        hl_layout.setContentsMargins(10, 10, 10, 10)
-        hl_layout.setHorizontalSpacing(10)
-        hl_layout.setVerticalSpacing(6)
+        hl_row = QHBoxLayout(hl_frame)
+        hl_row.setContentsMargins(10, 10, 10, 10)
+        hl_row.setSpacing(8)
 
-        lbl_hl = QLabel("Highlight:")
-        self.ed_hl = QLineEdit()
-        self.ed_hl.setPlaceholderText('e.g. "received;0x0000" (semicolon = AND)')
-        self.ed_hl.textChanged.connect(self.on_highlight_ui_changed)
+        hl_row.addWidget(QLabel("Highlight:"))
 
-        self.cb_hl_mode = QComboBox()
-        self.cb_hl_mode.addItems(["Substring", "Regex"])
-        self.cb_hl_mode.currentTextChanged.connect(self.on_highlight_ui_changed)
+        self.btn_hl_add = QToolButton()
+        self.btn_hl_add.setText("+")
+        self.btn_hl_add.setToolTip("Add highlight rule (max 5 slots)")
+        self.btn_hl_add.clicked.connect(self.on_hl_add_clicked)
+        hl_row.addWidget(self.btn_hl_add)
 
-        self.cb_hl_color = QComboBox()
-        self.cb_hl_color.addItems(["None", "Red", "Green", "Blue", "Orange", "Purple", "Gray"])
-        self.cb_hl_color.currentTextChanged.connect(self.on_highlight_ui_changed)
-
-        self.btn_hl_set = QPushButton("SET")
-        self.btn_hl_set.clicked.connect(self.on_highlight_set_clicked)
-
-        self.btn_hl_unset = QPushButton("UNSET")
-        self.btn_hl_unset.clicked.connect(self.on_highlight_unset_clicked)
+        self._chips_container = QWidget()
+        self._chips_layout = QHBoxLayout(self._chips_container)
+        self._chips_layout.setContentsMargins(0, 0, 0, 0)
+        self._chips_layout.setSpacing(6)
+        hl_row.addWidget(self._chips_container, 1)
 
         self.btn_hl_reset = QPushButton("RESET")
-        self.btn_hl_reset.clicked.connect(self.on_highlight_reset_clicked)
-
-        hl_layout.addWidget(lbl_hl, 0, 0)
-        hl_layout.addWidget(self.ed_hl, 0, 1)
-        hl_layout.addWidget(self.cb_hl_mode, 0, 2)
-        hl_layout.addWidget(self.cb_hl_color, 0, 3)
-        hl_layout.addWidget(self.btn_hl_set, 0, 4)
-        hl_layout.addWidget(self.btn_hl_unset, 0, 5)
-        hl_layout.addWidget(self.btn_hl_reset, 0, 6)
-        hl_layout.setColumnStretch(1, 1)
+        self.btn_hl_reset.clicked.connect(self.on_hl_reset_clicked)
+        hl_row.addWidget(self.btn_hl_reset)
 
         root_layout.addWidget(hl_frame)
 
@@ -273,15 +322,14 @@ class MainWindow(QMainWindow):
         mono.setPointSize(11)
         self.log.setFont(mono)
 
-        # Highlighter attached to QTextDocument
         self._highlighter = LogHighlighter(self.log.document())
 
         root_layout.addWidget(self.log, 1)
 
         self.statusBar().showMessage("Ready")
-        self.log.appendPlainText("[MAIN/INFO] Step 4 ready. Highlight rules via SET/UNSET/RESET.")
+        self.log.appendPlainText("[MAIN/INFO] Step 4.4 (Option B1 chips) ready.")
 
-    # ---------------- Settings persistence ----------------
+    # ---------------- Settings ----------------
 
     def _load_settings(self) -> None:
         s = self._settings
@@ -294,10 +342,6 @@ class MainWindow(QMainWindow):
         self._ui_state.exclude_text = s.value("filter/exclude_text", "", type=str)
         self._ui_state.exclude_mode = s.value("filter/exclude_mode", "Substring", type=str)
 
-        self._ui_state.hl_text = s.value("hl/text", "", type=str)
-        self._ui_state.hl_mode = s.value("hl/mode", "Substring", type=str)
-        self._ui_state.hl_color = s.value("hl/color", "None", type=str)
-
     def _save_settings(self) -> None:
         s = self._settings
         s.setValue("net/bind_ip", self._ui_state.bind_ip)
@@ -309,11 +353,7 @@ class MainWindow(QMainWindow):
         s.setValue("filter/exclude_text", self._ui_state.exclude_text)
         s.setValue("filter/exclude_mode", self._ui_state.exclude_mode)
 
-        s.setValue("hl/text", self._ui_state.hl_text)
-        s.setValue("hl/mode", self._ui_state.hl_mode)
-        s.setValue("hl/color", self._ui_state.hl_color)
-
-        self._save_highlight_rules()
+        self._save_highlight_slots()
 
     def _apply_state_to_widgets(self) -> None:
         self.ed_bind_ip.setText(self._ui_state.bind_ip)
@@ -325,11 +365,7 @@ class MainWindow(QMainWindow):
         self.ed_exclude.setText(self._ui_state.exclude_text)
         self.cb_exclude_mode.setCurrentText(self._ui_state.exclude_mode)
 
-        self.ed_hl.setText(self._ui_state.hl_text)
-        self.cb_hl_mode.setCurrentText(self._ui_state.hl_mode)
-        self.cb_hl_color.setCurrentText(self._ui_state.hl_color)
-
-    # ---------------- Filter (Step 3) ----------------
+    # ---------------- Filter ----------------
 
     def _rebuild_filter_patterns(self) -> None:
         self._include_patterns = compile_patterns(self._ui_state.include_text, self._ui_state.include_mode)
@@ -342,104 +378,173 @@ class MainWindow(QMainWindow):
         self._ui_state.exclude_mode = self.cb_exclude_mode.currentText()
         self._rebuild_filter_patterns()
 
-    # ---------------- Highlight (Step 4) ----------------
+    # ---------------- Highlight (B1 chips) ----------------
+
+    def _active_slot_indices(self) -> List[int]:
+        out = []
+        for i, s in enumerate(self._hl_slots):
+            if s.pattern.strip() and s.color.strip().lower() != "none":
+                out.append(i)
+        return out
+
+    def _find_first_free_slot(self) -> Optional[int]:
+        for i, s in enumerate(self._hl_slots):
+            if not s.pattern.strip() and s.color.strip().lower() == "none":
+                return i
+        return None
+
+    def _chip_style(self) -> str:
+        return (
+            "QToolButton {"
+            "  border: 1px solid #c9c9c9;"
+            "  border-radius: 10px;"
+            "  padding: 4px 10px;"
+            "  background: #f5f5f5;"
+            "}"
+            "QToolButton:hover { background: #eeeeee; }"
+        )
+
+    def _refresh_highlight_chips(self) -> None:
+        while self._chips_layout.count():
+            item = self._chips_layout.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                w.setParent(None)
+                w.deleteLater()
+
+        active = self._active_slot_indices()
+        if not active:
+            lbl = QLabel("no rules")
+            lbl.setStyleSheet("color: #777777;")
+            self._chips_layout.addWidget(lbl)
+            self._chips_layout.addStretch(1)
+            return
+
+        for idx in active:
+            slot = self._hl_slots[idx]
+            txt = f"{slot.pattern} ({slot.color})"
+            btn = QToolButton()
+            btn.setText(txt)
+            btn.setStyleSheet(self._chip_style())
+            btn.setToolTip(f"Slot {idx+1} — click to edit; right-click to remove")
+            btn.clicked.connect(lambda _checked=False, i=idx: self.on_hl_edit_clicked(i))
+            btn.setContextMenuPolicy(Qt.CustomContextMenu)
+            btn.customContextMenuRequested.connect(lambda _pt, i=idx: self.on_hl_remove_clicked(i))
+            self._chips_layout.addWidget(btn)
+
+        self._chips_layout.addStretch(1)
+
+    def _slots_to_rules(self) -> List[HighlightRule]:
+        rules: List[HighlightRule] = []
+        for slot in self._hl_slots:
+            if not slot.pattern.strip():
+                continue
+            if slot.color.strip().lower() == "none":
+                continue
+            r = HighlightRule.create(slot.pattern, slot.mode, slot.color)
+            if r is not None:
+                rules.append(r)
+        return rules
+
+    def _rebuild_highlight_rules(self) -> None:
+        self._hl_rules = self._slots_to_rules()
 
     def _apply_highlighter(self) -> None:
         self._highlighter.set_rules(self._hl_rules)
-        self.statusBar().showMessage(f"Highlight rules: {len(self._hl_rules)}", 2500)
+        self.statusBar().showMessage(f"Highlight rules active: {len(self._hl_rules)}", 2000)
 
-    def _load_highlight_rules(self) -> None:
-        raw = self._settings.value("hl/rules_json", "", type=str)
-        if not raw:
-            self._hl_rules = []
+    def _load_highlight_slots(self) -> None:
+        s = self._settings
+        raw_slots = s.value("hl/slots_json", "", type=str)
+        if not raw_slots:
+            raw_old = s.value("hl/rules_json", "", type=str)
+            if raw_old:
+                try:
+                    items = json.loads(raw_old)
+                    if isinstance(items, list) and items:
+                        it0 = items[0] if isinstance(items[0], dict) else None
+                        if it0:
+                            self._hl_slots[0] = HighlightSlot(
+                                pattern=str(it0.get("pattern", "")).strip(),
+                                mode=str(it0.get("mode", "Substring")).strip() or "Substring",
+                                color=str(it0.get("color", "None")).strip() or "None",
+                            )
+                except Exception:
+                    pass
             return
+
         try:
-            items = json.loads(raw)
-            rules: List[HighlightRule] = []
-            if isinstance(items, list):
-                for it in items:
-                    if not isinstance(it, dict):
-                        continue
-                    pat = str(it.get("pattern", "")).strip()
-                    mode = str(it.get("mode", "Substring")).strip()
-                    col = str(it.get("color", "None")).strip()
-                    if not pat:
-                        continue
-                    if mode not in ("Substring", "Regex"):
-                        mode = "Substring"
-                    rules.append(HighlightRule.create(pat, mode, col))
-            self._hl_rules = rules
+            items = json.loads(raw_slots)
+            if not isinstance(items, list):
+                return
+            for i in range(HIGHLIGHT_SLOTS):
+                if i >= len(items) or not isinstance(items[i], dict):
+                    continue
+                self._hl_slots[i] = HighlightSlot(
+                    pattern=str(items[i].get("pattern", "")).strip(),
+                    mode=str(items[i].get("mode", "Substring")).strip() or "Substring",
+                    color=str(items[i].get("color", "None")).strip() or "None",
+                )
         except Exception:
-            self._hl_rules = []
+            pass
 
-    def _save_highlight_rules(self) -> None:
-        items = []
-        for r in self._hl_rules:
-            items.append({"pattern": r.pattern_text, "mode": r.mode, "color": r.color_name})
-        self._settings.setValue("hl/rules_json", json.dumps(items))
+    def _save_highlight_slots(self) -> None:
+        items = [{"pattern": s.pattern, "mode": s.mode, "color": s.color} for s in self._hl_slots]
+        self._settings.setValue("hl/slots_json", json.dumps(items))
 
-    def on_highlight_ui_changed(self) -> None:
-        self._ui_state.hl_text = self.ed_hl.text()
-        self._ui_state.hl_mode = self.cb_hl_mode.currentText()
-        self._ui_state.hl_color = self.cb_hl_color.currentText()
-
-    def on_highlight_set_clicked(self) -> None:
-        pat = self.ed_hl.text().strip()
-        mode = self.cb_hl_mode.currentText().strip()
-        col = self.cb_hl_color.currentText().strip()
-
-        if not pat:
-            self.statusBar().showMessage("Highlight: pattern is empty", 3000)
+    def on_hl_add_clicked(self) -> None:
+        free = self._find_first_free_slot()
+        if free is None:
+            QMessageBox.information(self, "Highlight", "All 5 highlight slots are used.\nEdit an existing chip or RESET.")
             return
-        if col.lower() == "none":
-            self.statusBar().showMessage("Highlight: color is None (choose a color)", 3000)
+
+        dlg = HighlightEditDialog(self, slot_index=-1, slot=HighlightSlot(), suggested_index=free)
+        if dlg.exec_() != QDialog.Accepted:
             return
-        if mode not in ("Substring", "Regex"):
-            mode = "Substring"
 
-        # Upsert: same (pattern_text + mode) -> update color
-        updated = False
-        new_rules: List[HighlightRule] = []
-        for r in self._hl_rules:
-            if r.pattern_text == pat and r.mode == mode:
-                new_rules.append(HighlightRule.create(pat, mode, col))
-                updated = True
-            else:
-                new_rules.append(r)
-        if not updated:
-            new_rules.append(HighlightRule.create(pat, mode, col))
-
-        self._hl_rules = new_rules
+        idx, slot = dlg.result_data()
+        self._hl_slots[idx] = slot
+        self._save_highlight_slots()
+        self._rebuild_highlight_rules()
         self._apply_highlighter()
-        self.log.appendPlainText(f"[UI/INFO] Highlight SET: mode={mode} color={col} pattern='{pat}'")
+        self._refresh_highlight_chips()
 
-        if self._ui_state.autoscroll:
-            self.log.verticalScrollBar().setValue(self.log.verticalScrollBar().maximum())
-
-    def on_highlight_unset_clicked(self) -> None:
-        pat = self.ed_hl.text().strip()
-        mode = self.cb_hl_mode.currentText().strip()
-        if not pat:
-            self.statusBar().showMessage("Highlight: pattern is empty", 3000)
+    def on_hl_edit_clicked(self, idx: int) -> None:
+        if not (0 <= idx < HIGHLIGHT_SLOTS):
             return
-        if mode not in ("Substring", "Regex"):
-            mode = "Substring"
+        dlg = HighlightEditDialog(self, slot_index=idx, slot=self._hl_slots[idx], suggested_index=idx)
+        if dlg.exec_() != QDialog.Accepted:
+            return
 
-        before = len(self._hl_rules)
-        self._hl_rules = [r for r in self._hl_rules if not (r.pattern_text == pat and r.mode == mode)]
-        after = len(self._hl_rules)
+        new_idx, slot = dlg.result_data()
+        if new_idx == idx:
+            self._hl_slots[idx] = slot
+        else:
+            self._hl_slots[new_idx] = slot
+            self._hl_slots[idx] = HighlightSlot()
 
+        self._save_highlight_slots()
+        self._rebuild_highlight_rules()
         self._apply_highlighter()
-        self.log.appendPlainText(f"[UI/INFO] Highlight UNSET: removed={before - after} pattern='{pat}' (mode={mode})")
+        self._refresh_highlight_chips()
 
-        if self._ui_state.autoscroll:
-            self.log.verticalScrollBar().setValue(self.log.verticalScrollBar().maximum())
-
-    def on_highlight_reset_clicked(self) -> None:
-        self._hl_rules = []
+    def on_hl_remove_clicked(self, idx: int) -> None:
+        if not (0 <= idx < HIGHLIGHT_SLOTS):
+            return
+        self._hl_slots[idx] = HighlightSlot()
+        self._save_highlight_slots()
+        self._rebuild_highlight_rules()
         self._apply_highlighter()
-        self.log.appendPlainText("[UI/INFO] Highlight RESET: cleared all rules")
+        self._refresh_highlight_chips()
 
+    def on_hl_reset_clicked(self) -> None:
+        self._hl_slots = [HighlightSlot() for _ in range(HIGHLIGHT_SLOTS)]
+        self._save_highlight_slots()
+        self._rebuild_highlight_rules()
+        self._apply_highlighter()
+        self._refresh_highlight_chips()
+
+        self.log.appendPlainText("[UI/INFO] Highlight RESET: cleared all slots")
         if self._ui_state.autoscroll:
             self.log.verticalScrollBar().setValue(self.log.verticalScrollBar().maximum())
 
@@ -493,12 +598,10 @@ class MainWindow(QMainWindow):
             pass
 
     def _on_line_received(self, line: str) -> None:
-        # Apply filter before queueing
         if not match_include(line, self._include_patterns):
             return
         if match_exclude(line, self._exclude_patterns):
             return
-
         self._queue.append(line)
 
     def _on_listener_status(self, msg: str) -> None:
@@ -521,14 +624,11 @@ class MainWindow(QMainWindow):
     def _flush_log_queue(self) -> None:
         if not self._queue:
             return
-
         batch = drain_queue(self._queue, max_items=300)
         if not batch:
             return
-
         for line in batch:
             self.log.appendPlainText(line)
-
         if self._ui_state.autoscroll:
             self.log.verticalScrollBar().setValue(self.log.verticalScrollBar().maximum())
 
@@ -607,7 +707,9 @@ class MainWindow(QMainWindow):
         else:
             self.btn_connect.setText("CONNECT")
             self.btn_connect.setStyleSheet("QToolButton { background-color: #b0b0b0; font-weight: bold; }")
-            self.statusBar().showMessage(f"Listener: OFF — {self._ui_state.bind_ip}:{self._ui_state.port} — HL={len(self._hl_rules)}")
+            self.statusBar().showMessage(
+                f"Listener: OFF — {self._ui_state.bind_ip}:{self._ui_state.port} — HL={len(self._hl_rules)}"
+            )
 
     # ---------------- Qt overrides ----------------
 
