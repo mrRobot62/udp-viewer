@@ -4,6 +4,7 @@ import datetime as _dt
 import json
 import os
 import sys
+import random
 from datetime import datetime
 from collections import deque
 from dataclasses import dataclass
@@ -38,11 +39,11 @@ from PyQt5.QtWidgets import (
 
 from .highlighter import HighlightRule, LogHighlighter
 from .udp_listener import UdpListenerThread
-from .udp_log_utils import compile_patterns, drain_queue
+from .udp_log_utils import drain_queue, compile_patterns, match_include, match_exclude
 
 APP_ORG = "LocalTools"
 APP_NAME = "UdpLogViewer"
-APP_VERSION = "0.12-step7.1-timestamp-ui-status"
+APP_VERSION = "0.13-step8.1-simulation"
 
 SLOT_COUNT = 5
 
@@ -153,6 +154,18 @@ class MainWindow(QMainWindow):
         self._flush_timer.setInterval(50)
         self._flush_timer.timeout.connect(self._flush_log_queue)
         self._flush_timer.start()
+
+        # Simulation (Tools -> Simulate Traffic)
+        self._sim_enabled = False
+        self._sim_timer = QTimer(self)
+        self._sim_timer.setInterval(120)  # ms
+        self._sim_timer.timeout.connect(self._on_sim_tick)
+        self._sim_seq = 0
+        self._sim_ntc = 22.0
+        self._sim_core = 23.0
+        self._sim_tgt = 40.0
+        self._sim_heater = 0
+        self._sim_mask = 0x0000
 
         # Replay (inject without UDP)
         self._replay_timer = QTimer(self)
@@ -291,6 +304,15 @@ class MainWindow(QMainWindow):
         file_menu.addAction(self.act_save)
         file_menu.addSeparator()
         file_menu.addAction(self.act_quit)
+
+        tools_menu = self.menuBar().addMenu("Tools")
+
+        self.act_simulate = QAction("Simulate Traffic", self)
+        self.act_simulate.setCheckable(True)
+        self.act_simulate.setToolTip("Generate sample log lines locally (for filter/highlight testing)")
+        self.act_simulate.toggled.connect(self.on_simulate_toggled)
+
+        tools_menu.addAction(self.act_simulate)
 
     def _chip_style(self, color: str) -> str:
         bg = "#f5f5f5"
@@ -936,6 +958,89 @@ class MainWindow(QMainWindow):
         self._replay_active = False
         self.statusBar().showMessage("Replay stopped", 1500)
 
+    # ---------------- Simulation (Tools menu) ----------------
+
+    def on_simulate_toggled(self, checked: bool) -> None:
+        # Simulation uses the same processing path as UDP lines (filters/highlights/livefile/timestamp).
+        if checked:
+            if self._listener is None:
+                # only meaningful while connected (per-connection live logfile semantics)
+                self.act_simulate.blockSignals(True)
+                self.act_simulate.setChecked(False)
+                self.act_simulate.blockSignals(False)
+                self.statusBar().showMessage("Simulation requires CONNECTED (start listener first).", 2500)
+                return
+            self._start_simulation()
+        else:
+            self._stop_simulation()
+
+    def _start_simulation(self) -> None:
+        if self._sim_timer.isActive():
+            return
+        self._sim_enabled = True
+        self._sim_seq = 0
+        self._sim_ntc = 22.0
+        self._sim_core = 23.0
+        self._sim_tgt = 40.0
+        self._sim_heater = 0
+        self._sim_mask = 0x0000
+        self._sim_timer.start()
+        self.statusBar().showMessage("Simulation: ON (default profile)", 2500)
+
+    def _stop_simulation(self) -> None:
+        self._sim_enabled = False
+        if self._sim_timer.isActive():
+            self._sim_timer.stop()
+        self.statusBar().showMessage("Simulation: OFF", 1500)
+
+    def _on_sim_tick(self) -> None:
+        if not self._sim_enabled or self._listener is None:
+            return
+        line = self._sim_next_line()
+        # Feed the same pipeline as real UDP input.
+        self._on_line_received(line)
+
+    def _sim_next_line(self) -> str:
+        # Lightweight stream of realistic lines for filter/exclude/highlight testing.
+        self._sim_seq += 1
+        if self._sim_seq % 13 == 0:
+            self._sim_heater = 1 - self._sim_heater
+        if self._sim_heater:
+            self._sim_ntc += 0.15 + random.random() * 0.05
+            self._sim_core += 0.05 + random.random() * 0.03
+        else:
+            self._sim_ntc -= 0.03 + random.random() * 0.02
+            self._sim_core -= 0.01 + random.random() * 0.01
+        self._sim_ntc = max(18.0, min(80.0, self._sim_ntc))
+        self._sim_core = max(18.0, min(70.0, self._sim_core))
+        if self._sim_seq % 40 == 0:
+            self._sim_mask ^= 0x0010
+        if self._sim_seq % 97 == 0:
+            self._sim_mask ^= 0x0040
+        r = random.random()
+        if r < 0.45:
+            adc0 = int(self._sim_ntc * 10)
+            return f"[HOST/INFO] STATUS received, mask=0x{self._sim_mask:04x} (    0x{self._sim_mask:04x}), adc=[{adc0},0,0,0] tempRaw={adc0}"
+        if r < 0.70:
+            heater_intent = 1 if self._sim_heater and self._sim_core < (self._sim_tgt - 0.3) else 0
+            heat_rem = 800 if self._sim_heater else 0
+            rest_rem = 0 if self._sim_heater else 1200
+            lo = self._sim_tgt - 3.0
+            hi = self._sim_tgt + 3.0
+            return (
+                f"[OVEN/INFO] [T11] mode=0 door=0 lock=0 "
+                f"ntc={self._sim_ntc:0.2f} core={self._sim_core:0.2f} ui={self._sim_core:0.2f} ctrl={self._sim_core:0.2f} "
+                f"tgt={self._sim_tgt:0.2f} lo={lo:0.2f} hi={hi:0.2f} "
+                f"heaterIntent={heater_intent} heatRemMs={heat_rem} restRemMs={rest_rem}"
+            )
+        if r < 0.80:
+            return f"[HEATER/INFO] {'ON' if self._sim_heater else 'OFF'} pwm=4000Hz duty=50%"
+        if r < 0.90:
+            return "[UI/DEBUG] screen_main tick"
+        if r < 0.97:
+            return "[HOST/DEBUG] RX burst: 128 bytes"
+        return "[HOST/ERROR] UART timeout while polling STATUS"
+
     # ---------------- Log limits ----------------
 
     def _enforce_log_limit(self) -> None:
@@ -1015,11 +1120,53 @@ class MainWindow(QMainWindow):
 
         self._close_live_log()
 
+
     def _on_line_received(self, line: str) -> None:
-        if not match_include(line, self._include_patterns):
+        # Filters/Exclude may be implemented in different variants (legacy text fields vs. slot/chip UI).
+        # Use a defensive lookup so simulation and UDP share the same stable entry point.
+        include_patterns = getattr(self, "_include_patterns", None)
+        if include_patterns is None:
+            include_patterns = getattr(self, "_include_slot_patterns", None)
+        if include_patterns is None:
+            include_patterns = getattr(self, "_filter_slot_patterns", None)
+        if include_patterns is None:
+            include_patterns = []
+
+        exclude_patterns = getattr(self, "_exclude_patterns", None)
+        if exclude_patterns is None:
+            exclude_patterns = getattr(self, "_exclude_slot_patterns", None)
+        if exclude_patterns is None:
+            exclude_patterns = []
+
+        def _flatten_patterns(items):
+            flat = []
+            if items is None:
+                return flat
+            for it in items:
+                if isinstance(it, (list, tuple)):
+                    flat.extend(it)
+                else:
+                    flat.append(it)
+            return flat
+
+        include_patterns = _flatten_patterns(include_patterns)
+        exclude_patterns = _flatten_patterns(exclude_patterns)
+
+        if not match_include(line, include_patterns):
             return
-        if match_exclude(line, self._exclude_patterns):
+        if match_exclude(line, exclude_patterns):
             return
+
+        out_line = line
+        if self._ui_state.timestamp_enabled:
+            out_line = f"{self._format_timestamp_prefix(datetime.now())} {line}"
+
+        self._queue.append(out_line)
+        try:
+            self._write_live_log_line(out_line)
+        except Exception:
+            pass
+
 
         out_line = line
         if self._ui_state.timestamp_enabled:
@@ -1152,6 +1299,12 @@ class MainWindow(QMainWindow):
                 self.log.appendPlainText(f"[UI/INFO] Live logfile: {self._live_log_path}")
         else:
             self._stop_listener()
+            # stop simulation when disconnecting
+            try:
+                if hasattr(self, "act_simulate") and self.act_simulate.isChecked():
+                    self.act_simulate.setChecked(False)
+            except Exception:
+                pass
             self._append_log_line("[UI/INFO] Listener stopped", write_live=True)
 
         self._update_connection_ui()
@@ -1239,6 +1392,10 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event) -> None:
         try:
             self.on_stop_replay_clicked()
+        except Exception:
+            pass
+        try:
+            self._stop_simulation()
         except Exception:
             pass
         try:
