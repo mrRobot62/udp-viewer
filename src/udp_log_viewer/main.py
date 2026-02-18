@@ -6,6 +6,7 @@ import os
 import random
 import shutil
 import sys
+import socket
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime
@@ -42,7 +43,6 @@ from .highlighter import HighlightRule, LogHighlighter
 from .udp_listener import UdpListenerThread
 from .udp_log_utils import compile_patterns, drain_queue
 from .app_paths import AppPathsConfig, load_or_create_config
-
 
 APP_ORG = "LocalTools"
 APP_NAME = "UdpLogViewer"
@@ -199,7 +199,10 @@ class MainWindow(QMainWindow):
         self._live_log_path: Optional[Path] = None
         self._live_log_handle = None  # type: ignore[assignment]
 
-        self.setWindowTitle(f"UDP Log Viewer — {APP_VERSION}")
+        # Local (host) IP address shown in window title
+        self._local_ip: str = self._detect_local_ipv4()
+
+        self._refresh_window_title()
         self.resize(1100, 760)
 
         self._build_actions()
@@ -227,6 +230,38 @@ class MainWindow(QMainWindow):
     @staticmethod
     def _now_stamp() -> str:
         return _dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    @staticmethod
+    def _detect_local_ipv4() -> str:
+        """Best-effort local IPv4 (non-loopback). Returns '' if unknown."""
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            try:
+                s.connect(('8.8.8.8', 80))
+                ip = s.getsockname()[0]
+            finally:
+                s.close()
+            if ip and not ip.startswith('127.'):
+                return ip
+        except Exception:
+            pass
+
+        try:
+            host = socket.gethostname()
+            _name, _aliases, addrs = socket.gethostbyname_ex(host)
+            for ip in addrs:
+                if ip and not ip.startswith('127.'):
+                    return ip
+        except Exception:
+            pass
+
+        return ''
+
+    def _refresh_window_title(self) -> None:
+        title = f"UDP Log Viewer — {APP_VERSION}"
+        if getattr(self, '_local_ip', ''):
+            title = f"{title} — {self._local_ip}"
+        self.setWindowTitle(title)
 
     def _default_save_name(self) -> str:
         return f"udp_log_{self._now_stamp()}.txt"
@@ -1265,6 +1300,9 @@ class MainWindow(QMainWindow):
         requested = self.btn_connect.isChecked()
 
         if requested:
+            # Refresh local IP (network may have changed since app start).
+            self._local_ip = self._detect_local_ipv4()
+            self._refresh_window_title()
             ok = self._start_listener()
             if not ok:
                 self.btn_connect.setChecked(False)
@@ -1282,6 +1320,9 @@ class MainWindow(QMainWindow):
                 pass
 
             self._stop_listener()
+
+            self._local_ip = self._detect_local_ipv4()
+            self._refresh_window_title()
             self._append_log_line("[UI/INFO] Listener stopped")
 
         self._update_connection_ui()
