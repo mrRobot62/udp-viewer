@@ -12,5 +12,13 @@ dependencies = [
   "PyQt5>=5.15",
 ]
 
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "ruff>=0.6",
+  "mypy>=1.10",
+  "pre-commit>=3.7"
+]
+
 [project.scripts]
 udp-log-viewer = "udp_log_viewer.main:main"
