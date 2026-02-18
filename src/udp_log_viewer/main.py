@@ -3,11 +3,12 @@ from __future__ import annotations
 import datetime as _dt
 import json
 import os
-import sys
 import random
-from datetime import datetime
+import shutil
+import sys
 from collections import deque
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Deque, List, Optional, Tuple
 
@@ -39,11 +40,13 @@ from PyQt5.QtWidgets import (
 
 from .highlighter import HighlightRule, LogHighlighter
 from .udp_listener import UdpListenerThread
-from .udp_log_utils import drain_queue, compile_patterns, match_include, match_exclude
+from .udp_log_utils import compile_patterns, drain_queue
+from .app_paths import AppPathsConfig, load_or_create_config
+
 
 APP_ORG = "LocalTools"
 APP_NAME = "UdpLogViewer"
-APP_VERSION = "0.14-step9.1-pause-savelogic"
+APP_VERSION = "0.14.0"
 
 SLOT_COUNT = 5
 
@@ -72,14 +75,7 @@ class PatternSlot:
 
 
 class PatternEditDialog(QDialog):
-    """
-    Unified editor dialog used for Filter / Exclude / Highlight slots.
-
-    - Slot: 1..5
-    - Pattern: text
-    - Mode: Substring / Regex
-    - Color: None / ... (Filter & Exclude: chip-only; Highlight: chip + log coloring)
-    """
+    """Unified editor dialog used for Filter / Exclude / Highlight slots."""
 
     def __init__(self, parent: QWidget, title: str, slot_index: int, slot: PatternSlot, suggested_index: int) -> None:
         super().__init__(parent)
@@ -143,6 +139,10 @@ class MainWindow(QMainWindow):
         self._settings = QSettings(APP_ORG, APP_NAME)
         self._ui_state = UiState()
 
+        # App paths/config (logs dir etc.)
+        self._paths_cfg: AppPathsConfig = load_or_create_config(APP_ORG, APP_NAME, APP_VERSION)
+
+
         # UDP listener
         self._listener: Optional[UdpListenerThread] = None
         self._rx_packets = 0
@@ -155,11 +155,11 @@ class MainWindow(QMainWindow):
         self._flush_timer.timeout.connect(self._flush_log_queue)
         self._flush_timer.start()
 
-        # UI pause (freeze view while still logging to file)
-        self._ui_paused: bool = False
-        self._pause_buffer: Deque[str] = deque(maxlen=2000)
-        self._pause_dropped: int = 0
-
+        # Pause/Resume UI rendering (connection stays ON; live file keeps growing)
+        self._paused = False
+        self._paused_backlog: Deque[str] = deque()
+        self._resume_drain_active = False
+        self._resume_scroll_to_end = False
 
         # Simulation (Tools -> Simulate Traffic)
         self._sim_enabled = False
@@ -198,7 +198,6 @@ class MainWindow(QMainWindow):
         # Continuous file logging per connection
         self._live_log_path: Optional[Path] = None
         self._live_log_handle = None  # type: ignore[assignment]
-        self._last_session_log_path: Optional[Path] = None
 
         self.setWindowTitle(f"UDP Log Viewer — {APP_VERSION}")
         self.resize(1100, 760)
@@ -232,16 +231,37 @@ class MainWindow(QMainWindow):
     def _default_save_name(self) -> str:
         return f"udp_log_{self._now_stamp()}.txt"
 
-    def _ensure_data_logs_dir(self) -> Path:
-        # relative to current working directory (workspace root when launched from VS Code)
-        p = Path("data") / "logs"
-        p.mkdir(parents=True, exist_ok=True)
-        return p
+    def _ensure_logs_dir(self) -> Optional[Path]:
+        """
+        Ensure the configured logs directory exists.
+
+        Returns the Path if usable, otherwise None (and we keep live logging disabled).
+        """
+        logs_dir = Path(self._paths_cfg.logs_dir).expanduser()
+        try:
+            logs_dir.mkdir(parents=True, exist_ok=True)
+            return logs_dir
+        except Exception as e:
+            try:
+                QMessageBox.critical(
+                    self,
+                    "Log Directory Error",
+                    "Could not create the log directory.\n"                    "Logging to file will be disabled.\n\n"                    f"Details: {e}",
+                )
+            except Exception:
+                pass
+            try:
+                self.log.appendPlainText(f"[UI/ERROR] Could not create log directory: {e}")
+            except Exception:
+                pass
+            return None
 
     def _open_new_live_log(self) -> None:
         self._close_live_log()
 
-        logs_dir = self._ensure_data_logs_dir()
+        logs_dir = self._ensure_logs_dir()
+        if logs_dir is None:
+            return
         name = f"udp_live_{self._now_stamp()}.txt"
         path = logs_dir / name
 
@@ -251,13 +271,11 @@ class MainWindow(QMainWindow):
             self._live_log_path = path
             f.write(f"# UDP Log Viewer live session — {self._now_stamp()}\n")
             f.flush()
-            self.statusBar().showMessage(f"Live log: {path}", 3000)
+            self.statusBar().showMessage(f"Live log: {path.name}", 3000)
         except Exception as e:
             self._live_log_handle = None
             self._live_log_path = None
-            self.log.appendPlainText(f"[UI/ERROR] Could not create live logfile: {e}")
-            if self._ui_state.autoscroll:
-                self.log.verticalScrollBar().setValue(self.log.verticalScrollBar().maximum())
+            self._append_log_line(f"[UI/ERROR] Could not create live logfile: {e}")
 
     def _close_live_log(self) -> None:
         try:
@@ -269,7 +287,6 @@ class MainWindow(QMainWindow):
                 self._live_log_handle.close()
         except Exception:
             pass
-        self._last_session_log_path = self._live_log_path
         self._live_log_handle = None
         self._live_log_path = None
 
@@ -279,8 +296,13 @@ class MainWindow(QMainWindow):
         try:
             self._live_log_handle.write(line + "\n")
         except Exception as e:
-            self.log.appendPlainText(f"[UI/ERROR] Live logfile write failed: {e}")
+            self._append_log_line(f"[UI/ERROR] Live logfile write failed: {e}")
             self._close_live_log()
+
+    @staticmethod
+    def _format_timestamp_prefix(dt: datetime) -> str:
+        # Format: yyyymmdd-hh:mm:ss.mmm
+        return dt.strftime("%Y%m%d-%H:%M:%S.") + f"{dt.microsecond//1000:03d}"
 
     # ---------------- UI ----------------
 
@@ -319,7 +341,6 @@ class MainWindow(QMainWindow):
         self.act_simulate.setCheckable(True)
         self.act_simulate.setToolTip("Generate sample log lines locally (for filter/highlight testing)")
         self.act_simulate.toggled.connect(self.on_simulate_toggled)
-
         tools_menu.addAction(self.act_simulate)
 
     def _chip_style(self, color: str) -> str:
@@ -346,6 +367,12 @@ class MainWindow(QMainWindow):
             "}"
             "QToolButton:hover { background: #eeeeee; }"
         )
+
+    def _pause_style(self, paused: bool) -> str:
+        # PAUSE = orange, RESUME = green (easy to invert if you prefer)
+        if paused:
+            return "QToolButton { background-color: #2ecc71; font-weight: bold; }"  # RESUME
+        return "QToolButton { background-color: #f39c12; font-weight: bold; }"      # PAUSE
 
     def _build_ui(self) -> None:
         root = QWidget(self)
@@ -375,13 +402,12 @@ class MainWindow(QMainWindow):
 
         self.btn_pause = QToolButton()
         self.btn_pause.setText("PAUSE")
-        self.btn_pause.setCheckable(True)
-        self.btn_pause.setEnabled(False)
-        self.btn_pause.clicked.connect(self.on_pause_toggled)
+        self.btn_pause.setToolTip("Pause UI rendering (live file still records).")
+        self.btn_pause.clicked.connect(self.on_pause_clicked)
 
         self.chk_autoscroll = QCheckBox("Auto-Scroll")
         self.chk_autoscroll.stateChanged.connect(self.on_autoscroll_changed)
-        
+
         self.chk_timestamp = QCheckBox("Timestamp")
         self.chk_timestamp.stateChanged.connect(self.on_timestamp_changed)
 
@@ -523,7 +549,7 @@ class MainWindow(QMainWindow):
         root_layout.addWidget(self.log, 1)
 
         self.statusBar().showMessage("Ready")
-        self.log.appendPlainText("[MAIN/INFO] Step 6.0 ready (Replay + per-connection live file).")
+        self.log.appendPlainText("[MAIN/INFO] Step 9 ready (Pause/Resume UI rendering).")
 
     # ---------------- Settings ----------------
 
@@ -600,11 +626,6 @@ class MainWindow(QMainWindow):
 
     def _load_filter_slots(self) -> None:
         slots = self._load_slot_list("filter/slots_json")
-        if all(not s.pattern.strip() for s in slots):
-            legacy = self._settings.value("filter/include_text", "", type=str)
-            legacy_mode = self._settings.value("filter/include_mode", "Substring", type=str) or "Substring"
-            if legacy.strip():
-                slots[0] = PatternSlot(pattern=legacy.strip(), mode=legacy_mode, color="None")
         self._filter_slots = slots
 
     def _save_filter_slots(self) -> None:
@@ -612,11 +633,6 @@ class MainWindow(QMainWindow):
 
     def _load_exclude_slots(self) -> None:
         slots = self._load_slot_list("exclude/slots_json")
-        if all(not s.pattern.strip() for s in slots):
-            legacy = self._settings.value("filter/exclude_text", "", type=str)
-            legacy_mode = self._settings.value("filter/exclude_mode", "Substring", type=str) or "Substring"
-            if legacy.strip():
-                slots[0] = PatternSlot(pattern=legacy.strip(), mode=legacy_mode, color="None")
         self._exclude_slots = slots
 
     def _save_exclude_slots(self) -> None:
@@ -624,20 +640,6 @@ class MainWindow(QMainWindow):
 
     def _load_highlight_slots(self) -> None:
         slots = self._load_slot_list("hl/slots_json")
-        if all(not s.pattern.strip() for s in slots):
-            raw_old = self._settings.value("hl/rules_json", "", type=str)
-            if raw_old:
-                try:
-                    items = json.loads(raw_old)
-                    if isinstance(items, list) and items and isinstance(items[0], dict):
-                        it0 = items[0]
-                        slots[0] = PatternSlot(
-                            pattern=str(it0.get("pattern", "")).strip(),
-                            mode=str(it0.get("mode", "Substring")).strip() or "Substring",
-                            color=str(it0.get("color", "None")).strip() or "None",
-                        )
-                except Exception:
-                    pass
         self._hl_slots = slots
 
     def _save_highlight_slots(self) -> None:
@@ -655,20 +657,6 @@ class MainWindow(QMainWindow):
                 compiled.append(pats)
         return compiled
 
-    def _match_include_slots(self, line: str) -> bool:
-        if not self._filter_slot_patterns:
-            return True
-        for pats in self._filter_slot_patterns:
-            if not self._match_all(line, pats):
-                return False
-        return True
-
-    def _match_exclude_slots(self, line: str) -> bool:
-        for pats in self._exclude_slot_patterns:
-            if self._match_all(line, pats):
-                return True
-        return False
-
     @staticmethod
     def _match_all(line: str, patterns: List[object]) -> bool:
         for p in patterns:
@@ -685,6 +673,20 @@ class MainWindow(QMainWindow):
             except Exception:
                 return False
         return True
+
+    def _match_include_slots(self, line: str) -> bool:
+        if not self._filter_slot_patterns:
+            return True
+        for pats in self._filter_slot_patterns:
+            if not self._match_all(line, pats):
+                return False
+        return True
+
+    def _match_exclude_slots(self, line: str) -> bool:
+        for pats in self._exclude_slot_patterns:
+            if self._match_all(line, pats):
+                return True
+        return False
 
     def _rebuild_filter_patterns(self) -> None:
         self._filter_slot_patterns = self._compile_slot_patterns(self._filter_slots)
@@ -706,7 +708,6 @@ class MainWindow(QMainWindow):
 
     def _apply_highlighter(self) -> None:
         self._highlighter.set_rules(self._hl_rules)
-        self.statusBar().showMessage(f"Highlight rules active: {len(self._hl_rules)}", 2000)
 
     # ---------------- Chip UI helpers ----------------
 
@@ -814,7 +815,7 @@ class MainWindow(QMainWindow):
         self._rebuild_filter_patterns()
         self._save_filter_slots()
         self._refresh_filter_chips()
-        self.log.appendPlainText("[UI/INFO] Filter RESET")
+        self._append_log_line("[UI/INFO] Filter RESET")
 
     # Exclude
 
@@ -855,7 +856,7 @@ class MainWindow(QMainWindow):
         self._rebuild_filter_patterns()
         self._save_exclude_slots()
         self._refresh_exclude_chips()
-        self.log.appendPlainText("[UI/INFO] Exclude RESET")
+        self._append_log_line("[UI/INFO] Exclude RESET")
 
     # Highlight
 
@@ -900,16 +901,30 @@ class MainWindow(QMainWindow):
         self._apply_highlighter()
         self._save_highlight_slots()
         self._refresh_highlight_chips()
-        self.log.appendPlainText("[UI/INFO] Highlight RESET")
+        self._append_log_line("[UI/INFO] Highlight RESET")
 
     # ---------------- Replay / Inject ----------------
 
     def _ingest_line(self, line: str) -> None:
+        # filter/exclude
         if not self._match_include_slots(line):
             return
         if self._match_exclude_slots(line):
             return
-        self._queue.append(line)
+
+        # timestamp
+        out_line = line
+        if self._ui_state.timestamp_enabled:
+            out_line = f"{self._format_timestamp_prefix(datetime.now())} {line}"
+
+        # live file keeps running (even if UI paused)
+        self._append_to_live_log(out_line)
+
+        # UI buffering
+        if self._paused:
+            self._paused_backlog.append(out_line)
+        else:
+            self._queue.append(out_line)
 
     def _replay_tick(self) -> None:
         if not self._replay_lines:
@@ -976,10 +991,8 @@ class MainWindow(QMainWindow):
     # ---------------- Simulation (Tools menu) ----------------
 
     def on_simulate_toggled(self, checked: bool) -> None:
-        # Simulation uses the same processing path as UDP lines (filters/highlights/livefile/timestamp).
         if checked:
             if self._listener is None:
-                # only meaningful while connected (per-connection live logfile semantics)
                 self.act_simulate.blockSignals(True)
                 self.act_simulate.setChecked(False)
                 self.act_simulate.blockSignals(False)
@@ -1011,12 +1024,9 @@ class MainWindow(QMainWindow):
     def _on_sim_tick(self) -> None:
         if not self._sim_enabled or self._listener is None:
             return
-        line = self._sim_next_line()
-        # Feed the same pipeline as real UDP input.
-        self._on_line_received(line)
+        self._on_line_received(self._sim_next_line())
 
     def _sim_next_line(self) -> str:
-        # Lightweight stream of realistic lines for filter/exclude/highlight testing.
         self._sim_seq += 1
         if self._sim_seq % 13 == 0:
             self._sim_heater = 1 - self._sim_heater
@@ -1032,6 +1042,7 @@ class MainWindow(QMainWindow):
             self._sim_mask ^= 0x0010
         if self._sim_seq % 97 == 0:
             self._sim_mask ^= 0x0040
+
         r = random.random()
         if r < 0.45:
             adc0 = int(self._sim_ntc * 10)
@@ -1119,6 +1130,13 @@ class MainWindow(QMainWindow):
 
         # Per connection: create a fresh live log file (NEW)
         self._open_new_live_log()
+
+        # reset pause state per connection
+        self._paused = False
+        self._paused_backlog.clear()
+        self._resume_drain_active = False
+        self._resume_scroll_to_end = False
+
         return True
 
     def _stop_listener(self) -> None:
@@ -1135,79 +1153,56 @@ class MainWindow(QMainWindow):
 
         self._close_live_log()
 
+        # reset pause state
+        self._paused = False
+        self._paused_backlog.clear()
+        self._resume_drain_active = False
+        self._resume_scroll_to_end = False
 
-    
     def _on_line_received(self, line: str) -> None:
-            # Common ingress for UDP + Simulation. Always persist to live file while connected.
-            if not self._match_include_slots(line):
-                return
-            if self._match_exclude_slots(line):
-                return
-    
-            out_line = line
-            if self._ui_state.timestamp_enabled:
-                out_line = f"{self._format_timestamp_prefix(datetime.now())} {line}"
-    
-            # Always write to the per-connection live file (even if UI is paused).
-            if self._listener is not None:
-                self._append_to_live_log(out_line)
-    
-            if self._ui_paused:
-                # Keep only a tail buffer so Resume shows the newest context without unbounded memory growth.
-                if len(self._pause_buffer) >= self._pause_buffer.maxlen:
-                    self._pause_dropped += 1
-                self._pause_buffer.append(out_line)
-                return
-    
-            self._queue.append(out_line)
+        # Single stable pipeline for UDP + simulation
+        self._ingest_line(line)
 
     def _on_listener_status(self, msg: str) -> None:
-        # The listener may emit transient status messages. Show briefly, then restore our rich status line.
-        self.statusBar().showMessage(msg, 1500)
+        # Listener emits transient status; show briefly then restore rich status line.
+        self.statusBar().showMessage(msg, 1200)
         if self._listener is not None:
-            QTimer.singleShot(1600, self._update_connection_ui)
-
+            QTimer.singleShot(1300, self._update_connection_ui)
 
     def _on_listener_error(self, msg: str) -> None:
-        self._append_log_line(f"[UI/ERROR] {msg}", write_live=True)
-        if self._ui_state.autoscroll:
-            self.log.verticalScrollBar().setValue(self.log.verticalScrollBar().maximum())
+        self._append_log_line(f"[UI/ERROR] {msg}")
         self.statusBar().showMessage(msg, 5000)
 
-    
     def _on_rx_stats(self, packets: int, lines: int) -> None:
-            self._rx_packets = packets
-            self._rx_lines = lines
-            if self._listener is None:
-                return
-    
-            paused_txt = ""
-            if self._ui_paused:
-                paused_txt = f" — PAUSED (tail={len(self._pause_buffer)} drop={self._pause_dropped})"
-    
-            self.statusBar().showMessage(
-                f"Listener: ON — {self._ui_state.bind_ip}:{self._ui_state.port} — "
-                f"pkts={packets} lines={lines} — shown={self.log.document().blockCount()} "
-                f"dropped={self._trimmed_lines_total} — HL={len(self._hl_rules)}"
-                + (f" — {self._live_status_snippet()}" if getattr(self, "_live_log_path", None) else "")
-                + paused_txt
-            )
+        self._rx_packets = packets
+        self._rx_lines = lines
+        if self._listener is not None:
+            self._update_connection_ui()
+
+    # ---------------- UI flush ----------------
 
     def _flush_log_queue(self) -> None:
+        # If we're resuming, progressively drain the backlog into the visible queue.
+        if (not self._paused) and self._resume_drain_active and self._paused_backlog:
+            move_n = min(1200, len(self._paused_backlog))
+            for _ in range(move_n):
+                self._queue.append(self._paused_backlog.popleft())
+            if not self._paused_backlog:
+                self._resume_drain_active = False
+                self._resume_scroll_to_end = True
+
         if not self._queue:
+            if self._resume_scroll_to_end and self._ui_state.autoscroll:
+                self._resume_scroll_to_end = False
+                self.log.verticalScrollBar().setValue(self.log.verticalScrollBar().maximum())
             return
+
         batch = drain_queue(self._queue, max_items=300)
         if not batch:
             return
 
         for line in batch:
             self.log.appendPlainText(line)
-
-        try:
-            if self._live_log_handle is not None:
-                self._live_log_handle.flush()
-        except Exception:
-            self._close_live_log()
 
         self._enforce_log_limit()
 
@@ -1216,53 +1211,40 @@ class MainWindow(QMainWindow):
 
     # ---------------- UI actions ----------------
 
-    
     def on_save_clicked(self) -> None:
-            path, _ = QFileDialog.getSaveFileName(
-                self,
-                "Save Log",
-                self._default_save_name(),
-                "Text Files (*.txt);;All Files (*)",
-            )
-            if not path:
-                return
-    
-            # Prefer copying the per-connection live logfile (even if already disconnected).
-            src: Optional[Path] = None
-            if self._live_log_path is not None:
-                src = self._live_log_path
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save Log",
+            self._default_save_name(),
+            "Text Files (*.txt);;All Files (*)",
+        )
+        if not path:
+            return
+
+        if self._live_log_path is not None and self._live_log_handle is not None:
+            try:
                 try:
-                    if self._live_log_handle is not None:
-                        try:
-                            self._live_log_handle.flush()
-                            os.fsync(self._live_log_handle.fileno())
-                        except Exception:
-                            pass
+                    self._live_log_handle.flush()
+                    os.fsync(self._live_log_handle.fileno())
                 except Exception:
                     pass
-            elif self._last_session_log_path is not None and self._last_session_log_path.exists():
-                src = self._last_session_log_path
-    
-            if src is not None and src.exists():
-                try:
-                    import shutil
-                    shutil.copy2(str(src), path)
-                    self.statusBar().showMessage(f"Saved (copied): {path}", 4000)
-                    return
-                except Exception as e:
-                    QMessageBox.critical(self, "Save Failed", f"Could not copy logfile:\n{e}")
-                    return
-    
-            # Fallback: save current UI content (e.g., when no session file exists).
-            try:
-                content = self.log.toPlainText()
-                with open(path, "w", encoding="utf-8", newline="\n") as f:
-                    f.write(content)
-                    if not content.endswith("\n"):
-                        f.write("\n")
-                self.statusBar().showMessage(f"Saved: {path}", 4000)
+
+                shutil.copy2(str(self._live_log_path), path)
+                self.statusBar().showMessage(f"Saved (from live file): {path}", 4000)
+                return
             except Exception as e:
-                QMessageBox.critical(self, "Save Failed", f"Could not save file:\n{e}")
+                QMessageBox.critical(self, "Save Failed", f"Could not save live logfile:\n{e}")
+                return
+
+        try:
+            content = self.log.toPlainText()
+            with open(path, "w", encoding="utf-8", newline="\n") as f:
+                f.write(content)
+                if not content.endswith("\n"):
+                    f.write("\n")
+            self.statusBar().showMessage(f"Saved: {path}", 4000)
+        except Exception as e:
+            QMessageBox.critical(self, "Save Failed", f"Could not save file:\n{e}")
 
     def on_clear_clicked(self) -> None:
         self.log.clear()
@@ -1279,109 +1261,50 @@ class MainWindow(QMainWindow):
             QApplication.clipboard().setText(self.log.toPlainText())
             self.statusBar().showMessage("Copied all", 2000)
 
-    
     def on_connect_toggled(self) -> None:
-            requested = self.btn_connect.isChecked()
-    
-            if requested:
-                ok = self._start_listener()
-                if not ok:
-                    self.btn_connect.setChecked(False)
-                    self._update_connection_ui()
-                    return
-    
-                self._ui_paused = False
-                self.btn_pause.blockSignals(True)
-                self.btn_pause.setChecked(False)
-                self.btn_pause.blockSignals(False)
-    
-                self._append_log_line(
-                    f"[UI/INFO] Listening on {self._ui_state.bind_ip}:{self._ui_state.port}",
-                    write_live=False,
-                )
-                if self._live_log_path is not None:
-                    self.log.appendPlainText(f"[UI/INFO] Live logfile: {self._live_log_path}")
-            else:
-                # Disconnect requested
-                if self._listener is not None:
-                    # Offer to save/copy the session logfile so nothing gets lost.
-                    mb = QMessageBox(self)
-                    mb.setWindowTitle("Disconnect")
-                    mb.setIcon(QMessageBox.Question)
-                    mb.setText("Disconnect now?")
-                    mb.setInformativeText("Do you want to save/copy the current session log before disconnecting?")
-                    yes = mb.addButton("Save…", QMessageBox.YesRole)
-                    no = mb.addButton("No", QMessageBox.NoRole)
-                    cancel = mb.addButton("Cancel", QMessageBox.RejectRole)
-                    mb.setDefaultButton(yes)
-                    mb.exec_()
-    
-                    clicked = mb.clickedButton()
-                    if clicked == cancel:
-                        # Abort disconnect
-                        self.btn_connect.blockSignals(True)
-                        self.btn_connect.setChecked(True)
-                        self.btn_connect.blockSignals(False)
-                        self._update_connection_ui()
-                        return
-                    if clicked == yes:
-                        self.on_save_clicked()
-    
-                self._stop_listener()
-    
-                # stop simulation when disconnecting
-                try:
-                    if hasattr(self, "act_simulate") and self.act_simulate.isChecked():
-                        self.act_simulate.setChecked(False)
-                except Exception:
-                    pass
-    
-                # reset pause state
-                self._ui_paused = False
-                self._pause_buffer.clear()
-                self._pause_dropped = 0
-                self.btn_pause.blockSignals(True)
-                self.btn_pause.setChecked(False)
-                self.btn_pause.blockSignals(False)
-    
-                self._append_log_line("[UI/INFO] Listener stopped", write_live=False)
-    
-            self._update_connection_ui()
+        requested = self.btn_connect.isChecked()
 
-    def on_pause_toggled(self) -> None:
+        if requested:
+            ok = self._start_listener()
+            if not ok:
+                self.btn_connect.setChecked(False)
+                self._update_connection_ui()
+                return
+            self._append_log_line(f"[UI/INFO] Listening on {self._ui_state.bind_ip}:{self._ui_state.port}")
+            if self._live_log_path is not None:
+                self._append_log_line(f"[UI/INFO] Live logfile: {self._live_log_path}")
+        else:
+            # stop simulation when disconnecting
+            try:
+                if hasattr(self, "act_simulate") and self.act_simulate.isChecked():
+                    self.act_simulate.setChecked(False)
+            except Exception:
+                pass
+
+            self._stop_listener()
+            self._append_log_line("[UI/INFO] Listener stopped")
+
+        self._update_connection_ui()
+
+    def on_pause_clicked(self) -> None:
         if self._listener is None:
-            # Should not happen, keep it safe.
-            self.btn_pause.setChecked(False)
-            self._ui_paused = False
-            self._pause_buffer.clear()
-            self._pause_dropped = 0
-            self._update_connection_ui()
             return
 
-        self._ui_paused = bool(self.btn_pause.isChecked())
-
-        if self._ui_paused:
-            self.statusBar().showMessage("UI paused (logging continues)", 2000)
+        if not self._paused:
+            # Pause
+            self._paused = True
+            self._resume_drain_active = False
+            self._resume_scroll_to_end = False
+            self.statusBar().showMessage(f"PAUSED — buffering new lines ({len(self._paused_backlog)} buffered)", 2000)
         else:
-            # Resume: flush buffered tail into the UI queue and jump to newest lines.
-            dropped = self._pause_dropped
-            buffered = list(self._pause_buffer)
-            self._pause_buffer.clear()
-            self._pause_dropped = 0
-
-            if dropped > 0:
-                self._queue.append(f"[UI/INFO] Resume: {dropped} lines skipped while paused (showing latest tail).")
-            for ln in buffered:
-                self._queue.append(ln)
-
-            # trigger immediate UI update
-            self._flush_log_queue()
-            self.statusBar().showMessage("UI resumed", 1500)
+            # Resume
+            self._paused = False
+            self._resume_drain_active = True
+            self.statusBar().showMessage("RESUME — updating UI…", 1500)
 
         self._update_connection_ui()
 
     def on_timestamp_changed(self) -> None:
-        # Must be toggled before CONNECT (UI disables it while connected).
         self._ui_state.timestamp_enabled = self.chk_timestamp.isChecked()
         self._save_settings()
         self.statusBar().showMessage(
@@ -1394,51 +1317,53 @@ class MainWindow(QMainWindow):
         self._save_settings()
         self.statusBar().showMessage(f"Auto-Scroll: {'ON' if self._ui_state.autoscroll else 'OFF'}", 2000)
 
-    
-    def _update_connection_ui(self) -> None:
-            connected = self._listener is not None
-    
-            if connected:
-                self.chk_timestamp.setEnabled(False)
-    
-                self.btn_connect.setText("CONNECTED")
-                self.btn_connect.setStyleSheet("QToolButton { background-color: #2ecc71; font-weight: bold; }")
-    
-                self.btn_pause.setEnabled(True)
-                if self._ui_paused:
-                    self.btn_pause.setText("RESUME")
-                    self.btn_pause.setStyleSheet("QToolButton { background-color: #e74c3c; font-weight: bold; }")
-                else:
-                    self.btn_pause.setText("PAUSE")
-                    self.btn_pause.setStyleSheet("QToolButton { background-color: #2ecc71; font-weight: bold; }")
-    
-                paused_txt = ""
-                if self._ui_paused:
-                    paused_txt = f" — PAUSED (tail={len(self._pause_buffer)} drop={self._pause_dropped})"
-    
-                self.statusBar().showMessage(
-                    f"Listener: ON — {self._ui_state.bind_ip}:{self._ui_state.port} — "
-                    f"pkts={self._rx_packets} lines={self._rx_lines} — shown={self.log.document().blockCount()} "
-                    f"dropped={self._trimmed_lines_total} — HL={len(self._hl_rules)}"
-                    + (f" — {self._live_status_snippet()}" if getattr(self, "_live_log_path", None) else "")
-                    + paused_txt
-                )
-            else:
-                self.chk_timestamp.setEnabled(True)
-    
-                self.btn_connect.setText("CONNECT")
-                self.btn_connect.setStyleSheet("QToolButton { background-color: #b0b0b0; font-weight: bold; }")
-    
-                self.btn_pause.setEnabled(False)
-                self.btn_pause.setText("PAUSE")
-                self.btn_pause.setStyleSheet("QToolButton { background-color: #b0b0b0; font-weight: bold; }")
-    
-                self.statusBar().showMessage(
-                    f"Listener: OFF — {self._ui_state.bind_ip}:{self._ui_state.port} — "
-                    f"shown={self.log.document().blockCount()} dropped={self._trimmed_lines_total} — HL={len(self._hl_rules)}"
-                )
+    def _status_suffix(self) -> str:
+        parts: List[str] = []
+        if self._live_log_path is not None:
+            parts.append(self._live_status_snippet())
+        if self._paused:
+            parts.append(f"PAUSED buf={len(self._paused_backlog)}")
+        elif self._resume_drain_active:
+            parts.append(f"RESUMING buf={len(self._paused_backlog)}")
+        return " — ".join([p for p in parts if p])
 
-    # --- Step 6.3 live logfile status ---
+    def _update_connection_ui(self) -> None:
+        connected = self._listener is not None
+
+        if connected:
+            self.chk_timestamp.setEnabled(False)
+            self.btn_connect.setText("CONNECTED")
+            self.btn_connect.setStyleSheet("QToolButton { background-color: #2ecc71; font-weight: bold; }")
+
+            self.btn_pause.setEnabled(True)
+            self.btn_pause.setText("RESUME" if self._paused else "PAUSE")
+            self.btn_pause.setStyleSheet(self._pause_style(self._paused))
+
+            suffix = self._status_suffix()
+            suffix = (" — " + suffix) if suffix else ""
+
+            self.statusBar().showMessage(
+                f"Listener: ON — {self._ui_state.bind_ip}:{self._ui_state.port} — "
+                f"pkts={self._rx_packets} lines={self._rx_lines} — shown={self.log.document().blockCount()} "
+                f"dropped={self._trimmed_lines_total} — HL={len(self._hl_rules)}"
+                + suffix
+            )
+        else:
+            self.chk_timestamp.setEnabled(True)
+
+            self.btn_connect.setText("CONNECT")
+            self.btn_connect.setStyleSheet("QToolButton { background-color: #b0b0b0; font-weight: bold; }")
+
+            self.btn_pause.setEnabled(False)
+            self.btn_pause.setText("PAUSE")
+            self.btn_pause.setStyleSheet("")
+
+            self.statusBar().showMessage(
+                f"Listener: OFF — {self._ui_state.bind_ip}:{self._ui_state.port} — "
+                f"shown={self.log.document().blockCount()} dropped={self._trimmed_lines_total} — HL={len(self._hl_rules)}"
+            )
+
+    # --- live logfile status ---
     @staticmethod
     def _format_bytes(n: int) -> str:
         if n < 1024:
@@ -1449,29 +1374,8 @@ class MainWindow(QMainWindow):
             return f"{n/(1024.0*1024.0):.1f} MB"
         return f"{n/(1024.0*1024.0*1024.0):.2f} GB"
 
-    @staticmethod
-    def _format_timestamp_prefix(dt: datetime) -> str:
-        # Format: yyyymmdd-hh:mm:ss.mmm
-        return dt.strftime("%Y%m%d-%H:%M:%S.") + f"{dt.microsecond//1000:03d}"
-
-    def _append_log_line(self, line: str, *, write_live: bool = False) -> None:
-        out_line = line
-        if self._ui_state.timestamp_enabled:
-            out_line = f"{self._format_timestamp_prefix(datetime.now())} {line}"
-
-        self.log.appendPlainText(out_line)
-
-        if write_live and getattr(self, "_live_log_handle", None) is not None:
-            try:
-                self._append_to_live_log(out_line)
-            except Exception:
-                pass
-
-        if self._ui_state.autoscroll:
-            self.log.verticalScrollBar().setValue(self.log.verticalScrollBar().maximum())
-
     def _live_status_snippet(self) -> str:
-        if getattr(self, "_live_log_path", None) is None:
+        if self._live_log_path is None:
             return ""
         try:
             size = self._live_log_path.stat().st_size
@@ -1479,6 +1383,16 @@ class MainWindow(QMainWindow):
             size = 0
         return f"LIVE: {self._live_log_path.name} ({self._format_bytes(size)})"
 
+    def _append_log_line(self, line: str) -> None:
+        out_line = line
+        if self._ui_state.timestamp_enabled:
+            out_line = f"{self._format_timestamp_prefix(datetime.now())} {line}"
+
+        self.log.appendPlainText(out_line)
+        self._append_to_live_log(out_line)
+
+        if self._ui_state.autoscroll:
+            self.log.verticalScrollBar().setValue(self.log.verticalScrollBar().maximum())
 
     # ---------------- Qt overrides ----------------
 
