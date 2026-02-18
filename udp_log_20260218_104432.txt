@@ -1,0 +1,82 @@
+# UDP Log Viewer live session — 20260218_104421
+20260218-10:44:21.195 [UI/INFO] Listening on 0.0.0.0:10514
+20260218-10:44:21.196 [UI/INFO] Live logfile: /Users/bernhardklein/Library/Application Support/LocalTools/UdpLogViewer/logs/udp_live_20260218_104421.txt
+20260218-10:44:24.163 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=21.96 core=22.99 ui=22.99 ctrl=22.99 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=0 heatRemMs=0 restRemMs=1200
+20260218-10:44:24.288 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[219,0,0,0] tempRaw=219
+20260218-10:44:24.414 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[218,0,0,0] tempRaw=218
+20260218-10:44:24.538 [UI/DEBUG] screen_main tick
+20260218-10:44:24.663 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=21.78 core=22.92 ui=22.92 ctrl=22.92 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=0 heatRemMs=0 restRemMs=1200
+20260218-10:44:24.788 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[217,0,0,0] tempRaw=217
+20260218-10:44:24.912 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=21.69 core=22.89 ui=22.89 ctrl=22.89 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=0 heatRemMs=0 restRemMs=1200
+20260218-10:44:25.038 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[216,0,0,0] tempRaw=216
+20260218-10:44:25.164 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[216,0,0,0] tempRaw=216
+20260218-10:44:25.289 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[215,0,0,0] tempRaw=215
+20260218-10:44:25.412 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[215,0,0,0] tempRaw=215
+20260218-10:44:25.538 [HOST/DEBUG] RX burst: 128 bytes
+20260218-10:44:25.663 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=21.64 core=22.90 ui=22.90 ctrl=22.90 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=1 heatRemMs=800 restRemMs=0
+20260218-10:44:25.789 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=21.82 core=22.98 ui=22.98 ctrl=22.98 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=1 heatRemMs=800 restRemMs=0
+20260218-10:44:25.912 [HEATER/INFO] ON pwm=4000Hz duty=50%
+20260218-10:44:26.038 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[221,0,0,0] tempRaw=221
+20260218-10:44:26.163 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=22.31 core=23.17 ui=23.17 ctrl=23.17 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=1 heatRemMs=800 restRemMs=0
+20260218-10:44:26.288 [UI/DEBUG] screen_main tick
+20260218-10:44:26.412 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=22.69 core=23.33 ui=23.33 ctrl=23.33 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=1 heatRemMs=800 restRemMs=0
+20260218-10:44:26.538 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=22.86 core=23.38 ui=23.38 ctrl=23.38 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=1 heatRemMs=800 restRemMs=0
+20260218-10:44:26.664 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=23.05 core=23.46 ui=23.46 ctrl=23.46 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=1 heatRemMs=800 restRemMs=0
+20260218-10:44:26.789 [HEATER/INFO] ON pwm=4000Hz duty=50%
+20260218-10:44:26.912 [HEATER/INFO] ON pwm=4000Hz duty=50%
+20260218-10:44:27.039 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[235,0,0,0] tempRaw=235
+20260218-10:44:27.163 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[237,0,0,0] tempRaw=237
+20260218-10:44:27.289 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[237,0,0,0] tempRaw=237
+20260218-10:44:27.413 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=23.67 core=23.70 ui=23.70 ctrl=23.70 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=0 heatRemMs=0 restRemMs=1200
+20260218-10:44:27.538 [HOST/ERROR] UART timeout while polling STATUS
+20260218-10:44:27.664 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=23.58 core=23.67 ui=23.67 ctrl=23.67 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=0 heatRemMs=0 restRemMs=1200
+20260218-10:44:27.789 [UI/DEBUG] screen_main tick
+20260218-10:44:27.913 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=23.50 core=23.64 ui=23.64 ctrl=23.64 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=0 heatRemMs=0 restRemMs=1200
+20260218-10:44:28.038 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[234,0,0,0] tempRaw=234
+20260218-10:44:28.163 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[234,0,0,0] tempRaw=234
+20260218-10:44:28.289 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=23.39 core=23.58 ui=23.58 ctrl=23.58 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=0 heatRemMs=0 restRemMs=1200
+20260218-10:44:28.412 [HOST/DEBUG] RX burst: 128 bytes
+20260218-10:44:28.538 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[233,0,0,0] tempRaw=233
+20260218-10:44:28.664 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[232,0,0,0] tempRaw=232
+20260218-10:44:28.788 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[232,0,0,0] tempRaw=232
+20260218-10:44:28.913 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=23.39 core=23.58 ui=23.58 ctrl=23.58 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=1 heatRemMs=800 restRemMs=0
+20260218-10:44:29.038 [HOST/INFO] STATUS received, mask=0x0010 (    0x0010), adc=[235,0,0,0] tempRaw=235
+20260218-10:44:29.164 [HOST/INFO] STATUS received, mask=0x0010 (    0x0010), adc=[237,0,0,0] tempRaw=237
+20260218-10:44:29.289 [HOST/INFO] STATUS received, mask=0x0010 (    0x0010), adc=[239,0,0,0] tempRaw=239
+20260218-10:44:29.412 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=24.11 core=23.83 ui=23.83 ctrl=23.83 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=1 heatRemMs=800 restRemMs=0
+20260218-10:44:29.539 [HOST/INFO] STATUS received, mask=0x0010 (    0x0010), adc=[242,0,0,0] tempRaw=242
+20260218-10:44:29.663 [HOST/INFO] STATUS received, mask=0x0010 (    0x0010), adc=[244,0,0,0] tempRaw=244
+20260218-10:44:29.788 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=24.65 core=24.00 ui=24.00 ctrl=24.00 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=1 heatRemMs=800 restRemMs=0
+20260218-10:44:29.913 [HOST/INFO] STATUS received, mask=0x0010 (    0x0010), adc=[248,0,0,0] tempRaw=248
+20260218-10:44:30.038 [HOST/INFO] STATUS received, mask=0x0010 (    0x0010), adc=[250,0,0,0] tempRaw=250
+20260218-10:44:30.163 [HEATER/INFO] ON pwm=4000Hz duty=50%
+20260218-10:44:30.288 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=25.43 core=24.25 ui=24.25 ctrl=24.25 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=1 heatRemMs=800 restRemMs=0
+20260218-10:44:30.413 [HOST/INFO] STATUS received, mask=0x0010 (    0x0010), adc=[256,0,0,0] tempRaw=256
+20260218-10:44:30.539 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=25.59 core=24.28 ui=24.28 ctrl=24.28 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=0 heatRemMs=0 restRemMs=1200
+20260218-10:44:30.663 [HEATER/INFO] OFF pwm=4000Hz duty=50%
+20260218-10:44:30.799 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=25.50 core=24.25 ui=24.25 ctrl=24.25 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=0 heatRemMs=0 restRemMs=1200
+20260218-10:44:30.913 [HOST/INFO] STATUS received, mask=0x0010 (    0x0010), adc=[254,0,0,0] tempRaw=254
+20260218-10:44:31.037 [HOST/INFO] STATUS received, mask=0x0010 (    0x0010), adc=[254,0,0,0] tempRaw=254
+20260218-10:44:31.163 [HOST/DEBUG] RX burst: 128 bytes
+20260218-10:44:31.288 [UI/DEBUG] screen_main tick
+20260218-10:44:31.412 [HOST/INFO] STATUS received, mask=0x0010 (    0x0010), adc=[252,0,0,0] tempRaw=252
+20260218-10:44:31.539 [HOST/INFO] STATUS received, mask=0x0010 (    0x0010), adc=[252,0,0,0] tempRaw=252
+20260218-10:44:31.664 [HOST/INFO] STATUS received, mask=0x0010 (    0x0010), adc=[252,0,0,0] tempRaw=252
+20260218-10:44:31.788 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=25.19 core=24.12 ui=24.12 ctrl=24.12 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=0 heatRemMs=0 restRemMs=1200
+20260218-10:44:31.913 [HOST/INFO] STATUS received, mask=0x0010 (    0x0010), adc=[251,0,0,0] tempRaw=251
+20260218-10:44:32.038 [HOST/DEBUG] RX burst: 128 bytes
+20260218-10:44:32.163 [UI/DEBUG] screen_main tick
+20260218-10:44:32.289 [HOST/INFO] STATUS received, mask=0x0010 (    0x0010), adc=[254,0,0,0] tempRaw=254
+20260218-10:44:32.782 [HOST/INFO] STATUS received, mask=0x0010 (    0x0010), adc=[256,0,0,0] tempRaw=256
+20260218-10:44:32.909 [HOST/INFO] STATUS received, mask=0x0010 (    0x0010), adc=[258,0,0,0] tempRaw=258
+20260218-10:44:33.035 [HOST/INFO] STATUS received, mask=0x0010 (    0x0010), adc=[260,0,0,0] tempRaw=260
+20260218-10:44:33.162 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=26.17 core=24.51 ui=24.51 ctrl=24.51 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=1 heatRemMs=800 restRemMs=0
+20260218-10:44:33.288 [UI/DEBUG] screen_main tick
+20260218-10:44:33.412 [HOST/INFO] STATUS received, mask=0x0010 (    0x0010), adc=[265,0,0,0] tempRaw=265
+20260218-10:44:33.539 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=26.66 core=24.71 ui=24.71 ctrl=24.71 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=1 heatRemMs=800 restRemMs=0
+20260218-10:44:33.664 [HOST/INFO] STATUS received, mask=0x0010 (    0x0010), adc=[268,0,0,0] tempRaw=268
+20260218-10:44:33.789 [HOST/DEBUG] RX burst: 128 bytes
+20260218-10:44:33.912 [HOST/DEBUG] RX burst: 128 bytes
+20260218-10:44:34.038 [HOST/INFO] STATUS received, mask=0x0010 (    0x0010), adc=[273,0,0,0] tempRaw=273
+20260218-10:44:34.164 [UI/DEBUG] screen_main tick
+20260218-10:44:34.289 [HOST/INFO] STATUS received, mask=0x0010 (    0x0010), adc=[272,0,0,0] tempRaw=272
