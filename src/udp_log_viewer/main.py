@@ -1232,6 +1232,24 @@ class MainWindow(QMainWindow):
             self.log.verticalScrollBar().setValue(self.log.verticalScrollBar().maximum())
         self.statusBar().showMessage(msg, 5000)
 
+    # def _on_rx_stats(self, packets: int, lines: int) -> None:
+    #     self._rx_packets = packets
+    #     self._rx_lines = lines
+    #     if self._listener is None:
+    #         return
+
+    #     paused_txt = ""
+    #     if self._ui_paused:
+    #         paused_txt = f" — PAUSED (tail={len(self._pause_buffer)} drop={self._pause_dropped})"
+
+    #     self.statusBar().showMessage(
+    #         f"Listener: ON — {self._ui_state.bind_ip}:{self._ui_state.port} — "
+    #         f"pkts={packets} lines={lines} — shown={self.log.document().blockCount()} "
+    #         f"dropped={self._trimmed_lines_total} — HL={len(self._hl_rules)}"
+    #         + (f" — {self._live_status_snippet()}" if getattr(self, "_live_log_path", None) else "")
+    #         + paused_txt
+    #     )
+
     def _on_rx_stats(self, packets: int, lines: int) -> None:
         self._rx_packets = packets
         self._rx_lines = lines
@@ -1239,14 +1257,18 @@ class MainWindow(QMainWindow):
             return
 
         paused_txt = ""
-        if self._ui_paused:
+        if getattr(self, "_ui_paused", False):
             paused_txt = f" — PAUSED (tail={len(self._pause_buffer)} drop={self._pause_dropped})"
+
+        live_txt = ""
+        if getattr(self, "_live_log_path", None):
+            live_txt = f" — {self._live_status_snippet()}"
 
         self.statusBar().showMessage(
             f"Listener: ON — {self._ui_state.bind_ip}:{self._ui_state.port} — "
             f"pkts={packets} lines={lines} — shown={self.log.document().blockCount()} "
             f"dropped={self._trimmed_lines_total} — HL={len(self._hl_rules)}"
-            + (f" — {self._live_status_snippet()}" if getattr(self, "_live_log_path", None) else "")
+            + live_txt
             + paused_txt
         )
 
@@ -1458,15 +1480,61 @@ class MainWindow(QMainWindow):
             else:
                 self.btn_pause.setText("PAUSE")
                 self.btn_pause.setStyleSheet("QToolButton { background-color: #2ecc71; font-weight: bold; }")
+
+            paused_txt = ""
+            if self._ui_paused:
+                paused_txt = f" — PAUSED (tail={len(self._pause_buffer)} drop={self._pause_dropped})"
+
+            live_txt = ""
+            if getattr(self, "_live_log_path", None):
+                live_txt = f" — {self._live_status_snippet()}"
+
+            self.statusBar().showMessage(
+                f"Listener: ON — {self._ui_state.bind_ip}:{self._ui_state.port} — "
+                f"pkts={self._rx_packets} lines={self._rx_lines} — shown={self.log.document().blockCount()} "
+                f"dropped={self._trimmed_lines_total} — HL={len(self._hl_rules)}"
+                + live_txt
+                + paused_txt
+            )
         else:
             self.chk_timestamp.setEnabled(True)
-
             self.btn_connect.setText("CONNECT")
             self.btn_connect.setStyleSheet("QToolButton { background-color: #b0b0b0; font-weight: bold; }")
 
             self.btn_pause.setEnabled(False)
             self.btn_pause.setText("PAUSE")
             self.btn_pause.setStyleSheet("QToolButton { background-color: #b0b0b0; font-weight: bold; }")
+
+            self.statusBar().showMessage(
+                f"Listener: OFF — {self._ui_state.bind_ip}:{self._ui_state.port} — "
+                f"shown={self.log.document().blockCount()} dropped={self._trimmed_lines_total} — HL={len(self._hl_rules)}"
+            )
+
+    # def _update_connection_ui(self) -> None:
+    #     connected = self._listener is not None
+
+    #     if connected:
+    #         self.chk_timestamp.setEnabled(False)
+
+    #         self.btn_connect.setText("CONNECTED")
+    #         self.btn_connect.setStyleSheet("QToolButton { background-color: #2ecc71; font-weight: bold; }")
+
+    #         self.btn_pause.setEnabled(True)
+    #         if self._ui_paused:
+    #             self.btn_pause.setText("RESUME")
+    #             self.btn_pause.setStyleSheet("QToolButton { background-color: #e74c3c; font-weight: bold; }")
+    #         else:
+    #             self.btn_pause.setText("PAUSE")
+    #             self.btn_pause.setStyleSheet("QToolButton { background-color: #2ecc71; font-weight: bold; }")
+    #     else:
+    #         self.chk_timestamp.setEnabled(True)
+
+    #         self.btn_connect.setText("CONNECT")
+    #         self.btn_connect.setStyleSheet("QToolButton { background-color: #b0b0b0; font-weight: bold; }")
+
+    #         self.btn_pause.setEnabled(False)
+    #         self.btn_pause.setText("PAUSE")
+    #         self.btn_pause.setStyleSheet("QToolButton { background-color: #b0b0b0; font-weight: bold; }")
 
     # --- Live logfile status ---
     @staticmethod
