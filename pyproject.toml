@@ -7,7 +7,7 @@ name = "udp-log-viewer"
 version = "0.1.0"
 description = "Lightweight UDP log viewer (PyQt5) for ESP32 text logs."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 dependencies = [
   "PyQt5>=5.15",
 ]

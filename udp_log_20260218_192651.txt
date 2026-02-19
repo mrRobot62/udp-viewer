@@ -1,0 +1,698 @@
+# UDP Log Viewer live session — 20260218_192223
+20260218-19:22:23.446 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:23.949 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:23.967 [UI/DEBUG] [LVGL TOUCH] read_cb called, count=500
+20260218-19:22:24.453 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:24.958 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:25.462 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:25.961 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:26.474 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:26.955 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=20.60 core=22.73 ui=22.73 ctrl=22.73 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:22:26.979 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:27.552 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:27.982 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:28.483 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:28.985 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:29.499 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:30.010 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:30.522 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:31.035 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:31.547 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:32.054 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=20.60 core=22.50 ui=22.50 ctrl=22.50 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:22:32.054 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:32.581 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:33.014 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:33.697 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:34.207 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:34.521 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:35.233 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:35.528 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:36.031 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:36.537 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:37.075 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=20.60 core=22.29 ui=22.29 ctrl=22.29 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:22:37.076 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:37.547 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:38.050 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:38.573 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:39.125 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:39.578 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:40.070 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:40.660 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:41.067 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:41.581 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:42.071 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=20.60 core=22.10 ui=22.10 ctrl=22.10 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:22:42.078 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:42.583 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:43.100 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:43.600 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:44.117 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:44.658 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:45.166 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:45.697 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:46.112 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:46.741 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:47.111 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=20.60 core=21.92 ui=21.92 ctrl=21.92 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:22:47.120 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:47.622 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:48.130 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:48.646 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:49.143 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:49.679 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:50.156 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:50.661 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:50.743 [UI/INFO] [ScreenManager] SWIPE LEFT
+20260218-19:22:50.745 [UI/INFO] [ScreenManager] show(1) cur=0 ptr=0x3fca18fc
+20260218-19:22:50.757 [UI/INFO] [ScreenManager] screens: main=0x3fc9f47c cfg=0x3fca18fc dbg_hw=0x3fca465c log=0x3fca72f8 current:0xff000000
+20260218-19:22:51.171 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:51.670 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:52.234 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=20.60 core=21.76 ui=21.76 ctrl=21.76 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:22:52.238 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[207,0,0,0] tempRaw=207
+20260218-19:22:52.704 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[207,0,0,0] tempRaw=207
+20260218-19:22:53.056 [UI/INFO] [screen_config] preset selected index=4
+20260218-19:22:53.056 [OVEN/INFO] [oven_select_preset] Preset selected: PETG
+20260218-19:22:53.060 [UI/INFO] Loaded preset 'PETG' 06:00 with  62°C to widgets
+20260218-19:22:53.074 [OVEN/INFO] [oven_select_preset] Preset selected: PETG
+20260218-19:22:53.074 [OVEN/INFO] [oven_set_runtime_duration_minutes] Runtime duration set to 360 minutes
+20260218-19:22:53.084 [OVEN/INFO] [oven_set_runtime_temp_target] Runtime target temperature set to 62 °C
+20260218-19:22:53.087 [UI/INFO] [screen_config] runtime updated: temp=62C duration=360min
+20260218-19:22:53.191 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[207,0,0,0] tempRaw=207
+20260218-19:22:53.554 [UI/DEBUG] [LVGL TOUCH] read_cb called, count=1000
+20260218-19:22:53.699 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[207,0,0,0] tempRaw=207
+20260218-19:22:54.202 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[207,0,0,0] tempRaw=207
+20260218-19:22:54.247 [UI/INFO] [screen_config] preset selected index=4
+20260218-19:22:54.247 [OVEN/INFO] [oven_select_preset] Preset selected: PETG
+20260218-19:22:54.250 [UI/INFO] Loaded preset 'PETG' 06:00 with  62°C to widgets
+20260218-19:22:54.268 [OVEN/INFO] [oven_select_preset] Preset selected: PETG
+20260218-19:22:54.268 [OVEN/INFO] [oven_set_runtime_duration_minutes] Runtime duration set to 360 minutes
+20260218-19:22:54.274 [OVEN/INFO] [oven_set_runtime_temp_target] Runtime target temperature set to 62 °C
+20260218-19:22:54.275 [UI/INFO] [screen_config] runtime updated: temp=62C duration=360min
+20260218-19:22:54.500 [UI/INFO] [screen_config] preset selected index=9
+20260218-19:22:54.501 [OVEN/INFO] [oven_select_preset] Preset selected: Spec-HIPS
+20260218-19:22:54.505 [UI/INFO] Loaded preset 'Spec-HIPS' 05:00 with  65°C to widgets
+20260218-19:22:54.610 [OVEN/INFO] [oven_select_preset] Preset selected: Spec-HIPS
+20260218-19:22:54.611 [OVEN/INFO] [oven_set_runtime_duration_minutes] Runtime duration set to 300 minutes
+20260218-19:22:54.611 [OVEN/INFO] [oven_set_runtime_temp_target] Runtime target temperature set to 65 °C
+20260218-19:22:54.611 [UI/INFO] [screen_config] runtime updated: temp=65C duration=300min
+20260218-19:22:54.729 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:55.212 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:55.728 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:56.224 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:56.738 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:57.224 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=20.60 core=21.61 ui=21.61 ctrl=21.61 tgt=65.00 lo=62.00 hi=68.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:22:57.230 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:57.749 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:58.273 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:58.658 [UI/INFO] [screen_config] preset selected index=4
+20260218-19:22:58.659 [OVEN/INFO] [oven_select_preset] Preset selected: PETG
+20260218-19:22:58.663 [UI/INFO] Loaded preset 'PETG' 06:00 with  62°C to widgets
+20260218-19:22:58.682 [OVEN/INFO] [oven_select_preset] Preset selected: PETG
+20260218-19:22:58.682 [OVEN/INFO] [oven_set_runtime_duration_minutes] Runtime duration set to 360 minutes
+20260218-19:22:58.687 [OVEN/INFO] [oven_set_runtime_temp_target] Runtime target temperature set to 62 °C
+20260218-19:22:58.690 [UI/INFO] [screen_config] runtime updated: temp=62C duration=360min
+20260218-19:22:58.796 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:59.483 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:22:59.846 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:23:00.371 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:23:00.898 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:23:00.898 [UI/INFO] [screen_config] preset selected index=5
+20260218-19:23:00.898 [OVEN/INFO] [oven_select_preset] Preset selected: PLA
+20260218-19:23:00.898 [UI/INFO] Loaded preset 'PLA' 05:00 with  47°C to widgets
+20260218-19:23:00.898 [OVEN/INFO] [oven_select_preset] Preset selected: PLA
+20260218-19:23:00.898 [OVEN/INFO] [oven_set_runtime_duration_minutes] Runtime duration set to 300 minutes
+20260218-19:23:00.898 [OVEN/INFO] [oven_set_runtime_temp_target] Runtime target temperature set to 47 °C
+20260218-19:23:00.898 [UI/INFO] [screen_config] runtime updated: temp=47C duration=300min
+20260218-19:23:01.422 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:23:01.766 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:02.199 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=20.70 core=21.47 ui=21.47 ctrl=21.47 tgt=47.00 lo=44.00 hi=50.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:23:02.275 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:23:02.780 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:23:03.285 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:23:03.788 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:23:04.314 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:04.820 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:05.292 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:05.801 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:06.297 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:06.802 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:23:07.223 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=20.60 core=21.34 ui=21.34 ctrl=21.34 tgt=47.00 lo=44.00 hi=50.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:23:07.302 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:07.813 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:08.317 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:08.812 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:09.315 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:09.818 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:10.332 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:10.868 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:11.211 [UI/DEBUG] [LVGL TOUCH] read_cb called, count=1500
+20260218-19:23:11.381 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:11.996 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:12.302 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=20.70 core=21.23 ui=21.23 ctrl=21.23 tgt=47.00 lo=44.00 hi=50.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:23:12.429 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:12.845 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:13.285 [OVEN/INFO] [oven_select_preset] Preset selected: PLA
+20260218-19:23:13.285 [OVEN/INFO] [oven_set_runtime_duration_minutes] Runtime duration set to 60 minutes
+20260218-19:23:13.285 [OVEN/INFO] [oven_set_runtime_temp_target] Runtime target temperature set to 45 °C
+20260218-19:23:13.288 [UI/INFO] [screen_config] runtime updated: temp=45C duration=60min
+20260218-19:23:13.288 [UI/INFO] [screen_config] SAVE -> go home
+20260218-19:23:13.288 [UI/INFO] [ScreenManager] show(0) cur=1 ptr=0x3fc9f47c
+20260218-19:23:13.303 [UI/INFO] [ScreenManager] screens: main=0x3fc9f47c cfg=0x3fca18fc dbg_hw=0x3fca465c log=0x3fca72f8 current:0x3fcebc10
+20260218-19:23:13.596 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:23:14.106 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:23:14.527 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:23:15.066 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:23:15.469 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:23:15.973 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[206,0,0,0] tempRaw=206
+20260218-19:23:16.471 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:16.972 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:17.421 [OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=20.70 core=21.13 ui=21.13 ctrl=21.13 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:23:17.478 [HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:17.693 [UI/INFO] start_button_event_cb(): code=10
+20260218-19:23:17.693 [OVEN/INFO] [oven_start()]
+20260218-19:23:17.696 [UI/INFO] OVEN_STARTED
+20260218-19:23:17.698 [UI/INFO] [COUNTDOWN] started: 3600 seconds
+20260218-19:23:17.844 [UI/INFO] [UI] POST visuals: mode=RUNNING preset_bg=0x00a000 arc=0xffbf00
+20260218-19:23:18.011 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:18.510 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:19.059 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:19.572 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:19.840 [OVEN/INFO] [HEATER] OFF (core=21.21 tgt=45.00 tol=3.00 lock=0)
+20260218-19:23:20.015 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:20.522 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:21.025 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:21.339 [OVEN/INFO] [HEATER] ON  (core=21.19 tgt=45.00 tol=3.00 win=2000 rest=1500)
+20260218-19:23:21.530 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:22.034 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:22.534 [OVEN/INFO] [T11] mode=1 door=0 lock=0 ntc=20.70 core=21.27 ui=21.27 ctrl=21.27 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=1 heatRemMs=812 restRemMs=2312
+20260218-19:23:22.554 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:23.048 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:23.339 [OVEN/INFO] [HEATER] OFF (core=21.27 tgt=45.00 tol=3.00 lock=0)
+20260218-19:23:23.549 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:24.050 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:24.555 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:24.838 [OVEN/INFO] [HEATER] ON  (core=21.23 tgt=45.00 tol=3.00 win=2000 rest=1500)
+20260218-19:23:25.057 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:25.567 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:26.065 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:26.585 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:26.837 [OVEN/INFO] [HEATER] OFF (core=21.31 tgt=45.00 tol=3.00 lock=0)
+20260218-19:23:27.108 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:27.634 [OVEN/INFO] [T11] mode=1 door=0 lock=0 ntc=20.70 core=21.29 ui=21.29 ctrl=21.29 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=780
+20260218-19:23:27.634 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:28.157 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:28.337 [OVEN/INFO] [HEATER] ON  (core=21.29 tgt=45.00 tol=3.00 win=2000 rest=1500)
+20260218-19:23:28.581 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[207,0,0,0] tempRaw=207
+20260218-19:23:29.084 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[208,0,0,0] tempRaw=208
+20260218-19:23:29.585 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[208,0,0,0] tempRaw=208
+20260218-19:23:30.092 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[208,0,0,0] tempRaw=208
+20260218-19:23:30.430 [OVEN/INFO] [HEATER] OFF (core=21.37 tgt=45.00 tol=3.00 lock=0)
+20260218-19:23:30.618 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[208,0,0,0] tempRaw=208
+20260218-19:23:31.112 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[208,0,0,0] tempRaw=208
+20260218-19:23:31.611 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[209,0,0,0] tempRaw=209
+20260218-19:23:31.842 [OVEN/INFO] [HEATER] ON  (core=21.32 tgt=45.00 tol=3.00 win=2000 rest=1500)
+20260218-19:23:32.112 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[209,0,0,0] tempRaw=209
+20260218-19:23:32.602 [OVEN/INFO] [T11] mode=1 door=0 lock=0 ntc=20.90 core=21.37 ui=21.37 ctrl=21.37 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=1 heatRemMs=1249 restRemMs=2749
+20260218-19:23:32.637 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[209,0,0,0] tempRaw=209
+20260218-19:23:33.134 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[210,0,0,0] tempRaw=210
+20260218-19:23:33.642 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[210,0,0,0] tempRaw=210
+20260218-19:23:33.925 [OVEN/INFO] [HEATER] OFF (core=21.41 tgt=45.00 tol=3.00 lock=0)
+20260218-19:23:34.144 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[211,0,0,0] tempRaw=211
+20260218-19:23:34.646 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[212,0,0,0] tempRaw=212
+20260218-19:23:35.146 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[213,0,0,0] tempRaw=213
+20260218-19:23:35.378 [OVEN/INFO] [HEATER] ON  (core=21.39 tgt=45.00 tol=3.00 win=2000 rest=1500)
+20260218-19:23:35.651 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[213,0,0,0] tempRaw=213
+20260218-19:23:36.154 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[214,0,0,0] tempRaw=214
+20260218-19:23:36.656 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[215,0,0,0] tempRaw=215
+20260218-19:23:37.157 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[217,0,0,0] tempRaw=217
+20260218-19:23:37.398 [OVEN/INFO] [HEATER] OFF (core=21.49 tgt=45.00 tol=3.00 lock=0)
+20260218-19:23:37.659 [OVEN/INFO] [T11] mode=1 door=0 lock=0 ntc=21.70 core=21.48 ui=21.48 ctrl=21.48 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=1229
+20260218-19:23:37.668 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[218,0,0,0] tempRaw=218
+20260218-19:23:38.208 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[219,0,0,0] tempRaw=219
+20260218-19:23:38.722 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[220,0,0,0] tempRaw=220
+20260218-19:23:38.901 [OVEN/INFO] [HEATER] ON  (core=21.47 tgt=45.00 tol=3.00 win=2000 rest=1500)
+20260218-19:23:39.172 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[221,0,0,0] tempRaw=221
+20260218-19:23:39.692 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[222,0,0,0] tempRaw=222
+20260218-19:23:40.211 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[224,0,0,0] tempRaw=224
+20260218-19:23:40.741 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[225,0,0,0] tempRaw=225
+20260218-19:23:40.919 [OVEN/INFO] [HEATER] OFF (core=21.60 tgt=45.00 tol=3.00 lock=0)
+20260218-19:23:41.281 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[226,0,0,0] tempRaw=226
+20260218-19:23:41.792 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[228,0,0,0] tempRaw=228
+20260218-19:23:42.199 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[229,0,0,0] tempRaw=229
+20260218-19:23:42.419 [OVEN/INFO] [HEATER] ON  (core=21.60 tgt=45.00 tol=3.00 win=2000 rest=1500)
+20260218-19:23:42.687 [OVEN/INFO] [T11] mode=1 door=0 lock=0 ntc=22.90 core=21.67 ui=21.67 ctrl=21.67 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=1 heatRemMs=1742 restRemMs=3242
+20260218-19:23:42.721 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[230,0,0,0] tempRaw=230
+20260218-19:23:42.999 [UI/DEBUG] [LVGL TOUCH] read_cb called, count=2000
+20260218-19:23:43.212 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[232,0,0,0] tempRaw=232
+20260218-19:23:43.739 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[233,0,0,0] tempRaw=233
+20260218-19:23:44.220 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[235,0,0,0] tempRaw=235
+20260218-19:23:44.442 [OVEN/INFO] [HEATER] OFF (core=21.75 tgt=45.00 tol=3.00 lock=0)
+20260218-19:23:44.763 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[236,0,0,0] tempRaw=236
+20260218-19:23:45.226 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[238,0,0,0] tempRaw=238
+20260218-19:23:45.735 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[240,0,0,0] tempRaw=240
+20260218-19:23:45.984 [OVEN/INFO] [HEATER] ON  (core=21.78 tgt=45.00 tol=3.00 win=2000 rest=1500)
+20260218-19:23:46.304 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[241,0,0,0] tempRaw=241
+20260218-19:23:46.729 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[243,0,0,0] tempRaw=243
+20260218-19:23:47.230 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[245,0,0,0] tempRaw=245
+20260218-19:23:47.722 [OVEN/INFO] [T11] mode=1 door=0 lock=0 ntc=24.50 core=21.96 ui=21.96 ctrl=21.96 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=1 heatRemMs=232 restRemMs=1732
+20260218-19:23:47.755 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[246,0,0,0] tempRaw=246
+20260218-19:23:47.959 [OVEN/INFO] [HEATER] OFF (core=21.96 tgt=45.00 tol=3.00 lock=0)
+20260218-19:23:48.346 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[248,0,0,0] tempRaw=248
+20260218-19:23:48.757 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[250,0,0,0] tempRaw=250
+20260218-19:23:49.268 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[252,0,0,0] tempRaw=252
+20260218-19:23:49.468 [OVEN/INFO] [HEATER] ON  (core=22.00 tgt=45.00 tol=3.00 win=2000 rest=1500)
+20260218-19:23:49.765 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[253,0,0,0] tempRaw=253
+20260218-19:23:50.296 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[255,0,0,0] tempRaw=255
+20260218-19:23:50.766 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[257,0,0,0] tempRaw=257
+20260218-19:23:51.315 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[259,0,0,0] tempRaw=259
+20260218-19:23:51.505 [OVEN/INFO] [HEATER] OFF (core=22.20 tgt=45.00 tol=3.00 lock=0)
+20260218-19:23:51.778 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[261,0,0,0] tempRaw=261
+20260218-19:23:52.340 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[263,0,0,0] tempRaw=263
+20260218-19:23:52.852 [OVEN/INFO] [T11] mode=1 door=0 lock=0 ntc=26.30 core=22.31 ui=22.31 ctrl=22.31 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=217
+20260218-19:23:52.852 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[265,0,0,0] tempRaw=265
+20260218-19:23:53.002 [OVEN/INFO] [HEATER] ON  (core=22.31 tgt=45.00 tol=3.00 win=2000 rest=1500)
+20260218-19:23:53.364 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[267,0,0,0] tempRaw=267
+20260218-19:23:53.876 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[269,0,0,0] tempRaw=269
+20260218-19:23:54.373 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[271,0,0,0] tempRaw=271
+20260218-19:23:54.795 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[273,0,0,0] tempRaw=273
+20260218-19:23:55.023 [OVEN/INFO] [HEATER] OFF (core=22.55 tgt=45.00 tol=3.00 lock=0)
+20260218-19:23:55.296 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[276,0,0,0] tempRaw=276
+20260218-19:23:55.795 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[278,0,0,0] tempRaw=278
+20260218-19:23:56.334 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[280,0,0,0] tempRaw=280
+20260218-19:23:56.528 [OVEN/INFO] [HEATER] ON  (core=22.62 tgt=45.00 tol=3.00 win=2000 rest=1500)
+20260218-19:23:56.799 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[282,0,0,0] tempRaw=282
+20260218-19:23:57.301 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[284,0,0,0] tempRaw=284
+20260218-19:23:57.802 [OVEN/INFO] [T11] mode=1 door=0 lock=0 ntc=28.40 core=22.90 ui=22.90 ctrl=22.90 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=1 heatRemMs=736 restRemMs=2236
+20260218-19:23:57.821 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[287,0,0,0] tempRaw=287
+20260218-19:23:58.312 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[289,0,0,0] tempRaw=289
+20260218-19:23:58.566 [OVEN/INFO] [HEATER] OFF (core=22.90 tgt=45.00 tol=3.00 lock=0)
+20260218-19:23:58.815 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[291,0,0,0] tempRaw=291
+20260218-19:23:59.342 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[294,0,0,0] tempRaw=294
+20260218-19:23:59.917 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[296,0,0,0] tempRaw=296
+20260218-19:24:00.140 [OVEN/INFO] [HEATER] ON  (core=23.08 tgt=45.00 tol=3.00 win=2000 rest=1500)
+20260218-19:24:00.323 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[298,0,0,0] tempRaw=298
+20260218-19:24:00.823 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[302,0,0,0] tempRaw=302
+20260218-19:24:01.353 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[306,0,0,0] tempRaw=306
+20260218-19:24:01.829 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[311,0,0,0] tempRaw=311
+20260218-19:24:02.065 [OVEN/INFO] [HEATER] OFF (core=23.41 tgt=45.00 tol=3.00 lock=0)
+20260218-19:24:02.334 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[317,0,0,0] tempRaw=317
+20260218-19:24:02.829 [OVEN/INFO] [T11] mode=1 door=0 lock=0 ntc=31.70 core=23.53 ui=23.53 ctrl=23.53 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=734
+20260218-19:24:02.838 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[324,0,0,0] tempRaw=324
+20260218-19:24:03.400 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[332,0,0,0] tempRaw=332
+20260218-19:24:03.572 [OVEN/INFO] [HEATER] ON  (core=23.53 tgt=45.00 tol=3.00 win=2000 rest=1500)
+20260218-19:24:03.844 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[341,0,0,0] tempRaw=341
+20260218-19:24:04.423 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[351,0,0,0] tempRaw=351
+20260218-19:24:04.858 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[363,0,0,0] tempRaw=363
+20260218-19:24:05.387 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[375,0,0,0] tempRaw=375
+20260218-19:24:05.586 [OVEN/INFO] [HEATER] OFF (core=23.98 tgt=45.00 tol=3.00 lock=0)
+20260218-19:24:05.907 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[387,0,0,0] tempRaw=387
+20260218-19:24:06.438 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[400,0,0,0] tempRaw=400
+20260218-19:24:06.955 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[412,0,0,0] tempRaw=412
+20260218-19:24:07.092 [OVEN/INFO] [HEATER] ON  (core=24.43 tgt=45.00 tol=3.00 win=2000 rest=1500)
+20260218-19:24:07.475 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[425,0,0,0] tempRaw=425
+20260218-19:24:07.856 [OVEN/INFO] [T11] mode=1 door=0 lock=0 ntc=42.50 core=24.78 ui=24.78 ctrl=24.78 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=1 heatRemMs=1246 restRemMs=2746
+20260218-19:24:07.891 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[438,0,0,0] tempRaw=438
+20260218-19:24:08.418 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[451,0,0,0] tempRaw=451
+20260218-19:24:08.898 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[463,0,0,0] tempRaw=463
+20260218-19:24:09.114 [OVEN/INFO] [HEATER] OFF (core=25.16 tgt=45.00 tol=3.00 lock=0)
+20260218-19:24:09.390 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[476,0,0,0] tempRaw=476
+20260218-19:24:09.955 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[488,0,0,0] tempRaw=488
+20260218-19:24:10.464 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[501,0,0,0] tempRaw=501
+20260218-19:24:10.624 [OVEN/INFO] [HEATER] ON  (core=25.52 tgt=45.00 tol=3.00 win=2000 rest=1500)
+20260218-19:24:11.150 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[514,0,0,0] tempRaw=514
+20260218-19:24:11.400 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[526,0,0,0] tempRaw=526
+20260218-19:24:11.913 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[539,0,0,0] tempRaw=539
+20260218-19:24:12.425 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[553,0,0,0] tempRaw=553
+20260218-19:24:12.724 [OVEN/INFO] [HEATER] OFF (core=26.45 tgt=45.00 tol=3.00 lock=0)
+20260218-19:24:12.899 [OVEN/INFO] [T11] mode=1 door=0 lock=0 ntc=55.30 core=26.92 ui=26.92 ctrl=26.92 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=1235
+20260218-19:24:12.908 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[566,0,0,0] tempRaw=566
+20260218-19:24:13.408 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[579,0,0,0] tempRaw=579
+20260218-19:24:13.909 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[592,0,0,0] tempRaw=592
+20260218-19:24:14.154 [OVEN/INFO] [HEATER] ON  (core=27.41 tgt=45.00 tol=3.00 win=2000 rest=1500)
+20260218-19:24:14.412 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[606,0,0,0] tempRaw=606
+20260218-19:24:14.913 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[619,0,0,0] tempRaw=619
+20260218-19:24:15.417 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[633,0,0,0] tempRaw=633
+20260218-19:24:15.921 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[646,0,0,0] tempRaw=646
+20260218-19:24:16.162 [OVEN/INFO] [HEATER] OFF (core=28.63 tgt=45.00 tol=3.00 lock=0)
+20260218-19:24:16.423 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[660,0,0,0] tempRaw=660
+20260218-19:24:16.477 [UI/DEBUG] [LVGL TOUCH] read_cb called, count=2500
+20260218-19:24:16.946 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[673,0,0,0] tempRaw=673
+20260218-19:24:17.441 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[686,0,0,0] tempRaw=686
+20260218-19:24:17.665 [OVEN/INFO] [HEATER] ON  (core=29.23 tgt=45.00 tol=3.00 win=2000 rest=1500)
+20260218-19:24:17.965 [OVEN/INFO] [T11] mode=1 door=0 lock=0 ntc=68.60 core=29.93 ui=29.93 ctrl=29.93 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=1 heatRemMs=1747 restRemMs=3247
+20260218-19:24:17.965 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[700,0,0,0] tempRaw=700
+20260218-19:24:18.489 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[713,0,0,0] tempRaw=713
+20260218-19:24:19.068 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[726,0,0,0] tempRaw=726
+20260218-19:24:19.540 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[740,0,0,0] tempRaw=740
+20260218-19:24:19.681 [OVEN/INFO] [HEATER] OFF (core=30.65 tgt=45.00 tol=3.00 lock=0)
+20260218-19:24:19.956 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[753,0,0,0] tempRaw=753
+20260218-19:24:20.455 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[765,0,0,0] tempRaw=765
+20260218-19:24:20.959 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[777,0,0,0] tempRaw=777
+20260218-19:24:21.188 [OVEN/INFO] [HEATER] ON  (core=32.08 tgt=45.00 tol=3.00 win=2000 rest=1500)
+20260218-19:24:21.464 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[788,0,0,0] tempRaw=788
+20260218-19:24:21.981 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[799,0,0,0] tempRaw=799
+20260218-19:24:22.480 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[809,0,0,0] tempRaw=809
+20260218-19:24:23.059 [OVEN/INFO] [T11] mode=1 door=0 lock=0 ntc=80.90 core=33.73 ui=33.73 ctrl=33.73 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=1 heatRemMs=232 restRemMs=1732
+20260218-19:24:23.059 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[818,0,0,0] tempRaw=818
+20260218-19:24:23.207 [OVEN/INFO] [HEATER] OFF (core=33.73 tgt=45.00 tol=3.00 lock=0)
+20260218-19:24:23.572 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[827,0,0,0] tempRaw=827
+20260218-19:24:24.083 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[835,0,0,0] tempRaw=835
+20260218-19:24:24.497 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[843,0,0,0] tempRaw=843
+20260218-19:24:24.781 [OVEN/INFO] [HEATER] ON  (core=34.52 tgt=45.00 tol=3.00 win=2000 rest=1500)
+20260218-19:24:25.000 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[851,0,0,0] tempRaw=851
+20260218-19:24:25.508 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[859,0,0,0] tempRaw=859
+20260218-19:24:26.010 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[867,0,0,0] tempRaw=867
+20260218-19:24:26.511 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[875,0,0,0] tempRaw=875
+20260218-19:24:26.745 [OVEN/INFO] [HEATER] OFF (core=36.26 tgt=45.00 tol=3.00 lock=0)
+20260218-19:24:27.014 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[883,0,0,0] tempRaw=883
+20260218-19:24:27.517 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[891,0,0,0] tempRaw=891
+20260218-19:24:28.007 [OVEN/INFO] [T11] mode=1 door=0 lock=0 ntc=89.10 core=37.93 ui=37.93 ctrl=37.93 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=217
+20260218-19:24:28.036 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[899,0,0,0] tempRaw=899
+20260218-19:24:28.254 [OVEN/INFO] [HEATER] ON  (core=37.93 tgt=45.00 tol=3.00 win=2000 rest=1500)
+20260218-19:24:28.536 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[907,0,0,0] tempRaw=907
+20260218-19:24:29.045 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[915,0,0,0] tempRaw=915
+20260218-19:24:29.582 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[924,0,0,0] tempRaw=924
+20260218-19:24:30.126 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[932,0,0,0] tempRaw=932
+20260218-19:24:30.279 [OVEN/INFO] [HEATER] OFF (core=39.77 tgt=45.00 tol=3.00 lock=0)
+20260218-19:24:30.553 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[940,0,0,0] tempRaw=940
+20260218-19:24:31.150 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[948,0,0,0] tempRaw=948
+20260218-19:24:31.663 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[957,0,0,0] tempRaw=957
+20260218-19:24:31.785 [OVEN/INFO] [HEATER] ON  (core=40.65 tgt=45.00 tol=3.00 win=2000 rest=1500)
+20260218-19:24:32.121 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[965,0,0,0] tempRaw=965
+20260218-19:24:32.641 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[973,0,0,0] tempRaw=973
+20260218-19:24:33.060 [OVEN/INFO] [T11] mode=1 door=0 lock=0 ntc=97.30 core=42.56 ui=42.56 ctrl=42.56 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=1 heatRemMs=735 restRemMs=2235
+20260218-19:24:33.073 [HOST/INFO] STATUS received, mask=0x0051 (0x0051 FAN12V FAN230_SLOW HEATER), adc=[981,0,0,0] tempRaw=981
+20260218-19:24:33.169 [OVEN/INFO] [HEATER] OFF (core=42.56 tgt=45.00 tol=3.00 lock=0)
+20260218-19:24:33.568 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[989,0,0,0] tempRaw=989
+20260218-19:24:34.069 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[997,0,0,0] tempRaw=997
+20260218-19:24:34.574 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1005,0,0,0] tempRaw=1005
+20260218-19:24:35.078 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1013,0,0,0] tempRaw=1013
+20260218-19:24:35.584 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1021,0,0,0] tempRaw=1021
+20260218-19:24:36.087 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1029,0,0,0] tempRaw=1029
+20260218-19:24:36.595 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1037,0,0,0] tempRaw=1037
+20260218-19:24:37.098 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1045,0,0,0] tempRaw=1045
+20260218-19:24:37.599 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1052,0,0,0] tempRaw=1052
+20260218-19:24:38.097 [OVEN/INFO] [T11] mode=1 door=0 lock=0 ntc=105.20 core=47.23 ui=47.23 ctrl=47.23 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:24:38.106 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1060,0,0,0] tempRaw=1060
+20260218-19:24:38.627 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1068,0,0,0] tempRaw=1068
+20260218-19:24:39.137 [OVEN/WARN] [SAFETY] OVER-TEMP -> lock active (core=48.19 >= hi=48.00)
+20260218-19:24:39.137 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1075,0,0,0] tempRaw=1075
+20260218-19:24:39.612 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1083,0,0,0] tempRaw=1083
+20260218-19:24:40.115 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1090,0,0,0] tempRaw=1090
+20260218-19:24:40.625 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1097,0,0,0] tempRaw=1097
+20260218-19:24:41.127 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1105,0,0,0] tempRaw=1105
+20260218-19:24:41.629 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1112,0,0,0] tempRaw=1112
+20260218-19:24:42.208 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1119,0,0,0] tempRaw=1119
+20260218-19:24:42.636 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1126,0,0,0] tempRaw=1126
+20260218-19:24:43.130 [OVEN/INFO] [T11] mode=1 door=0 lock=1 ntc=112.60 core=52.13 ui=52.13 ctrl=52.13 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:24:43.139 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1133,0,0,0] tempRaw=1133
+20260218-19:24:43.670 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1139,0,0,0] tempRaw=1139
+20260218-19:24:44.175 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1146,0,0,0] tempRaw=1146
+20260218-19:24:44.703 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1152,0,0,0] tempRaw=1152
+20260218-19:24:45.282 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1159,0,0,0] tempRaw=1159
+20260218-19:24:45.753 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1165,0,0,0] tempRaw=1165
+20260218-19:24:46.174 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1171,0,0,0] tempRaw=1171
+20260218-19:24:46.681 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1176,0,0,0] tempRaw=1176
+20260218-19:24:47.182 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1181,0,0,0] tempRaw=1181
+20260218-19:24:47.684 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1183,0,0,0] tempRaw=1183
+20260218-19:24:48.253 [OVEN/INFO] [T11] mode=1 door=0 lock=1 ntc=118.30 core=57.16 ui=57.16 ctrl=57.16 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:24:48.254 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1185,0,0,0] tempRaw=1185
+20260218-19:24:48.698 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1186,0,0,0] tempRaw=1186
+20260218-19:24:49.274 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1185,0,0,0] tempRaw=1185
+20260218-19:24:49.786 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1183,0,0,0] tempRaw=1183
+20260218-19:24:50.297 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1181,0,0,0] tempRaw=1181
+20260218-19:24:50.706 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1177,0,0,0] tempRaw=1177
+20260218-19:24:51.221 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1172,0,0,0] tempRaw=1172
+20260218-19:24:51.710 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1167,0,0,0] tempRaw=1167
+20260218-19:24:52.210 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1162,0,0,0] tempRaw=1162
+20260218-19:24:52.756 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1156,0,0,0] tempRaw=1156
+20260218-19:24:52.979 [UI/DEBUG] [LVGL TOUCH] read_cb called, count=3000
+20260218-19:24:53.201 [OVEN/INFO] [T11] mode=1 door=0 lock=1 ntc=115.60 core=61.88 ui=61.88 ctrl=61.88 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:24:53.230 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1151,0,0,0] tempRaw=1151
+20260218-19:24:53.729 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1147,0,0,0] tempRaw=1147
+20260218-19:24:54.231 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1142,0,0,0] tempRaw=1142
+20260218-19:24:54.738 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1137,0,0,0] tempRaw=1137
+20260218-19:24:55.237 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1132,0,0,0] tempRaw=1132
+20260218-19:24:55.739 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1127,0,0,0] tempRaw=1127
+20260218-19:24:56.242 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1123,0,0,0] tempRaw=1123
+20260218-19:24:56.775 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1118,0,0,0] tempRaw=1118
+20260218-19:24:57.364 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1114,0,0,0] tempRaw=1114
+20260218-19:24:57.812 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1110,0,0,0] tempRaw=1110
+20260218-19:24:58.338 [OVEN/INFO] [T11] mode=1 door=0 lock=1 ntc=111.00 core=65.86 ui=65.86 ctrl=65.86 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:24:58.338 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1106,0,0,0] tempRaw=1106
+20260218-19:24:58.860 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1101,0,0,0] tempRaw=1101
+20260218-19:24:59.413 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1097,0,0,0] tempRaw=1097
+20260218-19:24:59.908 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1093,0,0,0] tempRaw=1093
+20260218-19:25:00.273 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1090,0,0,0] tempRaw=1090
+20260218-19:25:00.773 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1086,0,0,0] tempRaw=1086
+20260218-19:25:01.277 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1082,0,0,0] tempRaw=1082
+20260218-19:25:01.777 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1078,0,0,0] tempRaw=1078
+20260218-19:25:02.281 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1075,0,0,0] tempRaw=1075
+20260218-19:25:02.785 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1071,0,0,0] tempRaw=1071
+20260218-19:25:03.275 [OVEN/INFO] [T11] mode=1 door=0 lock=1 ntc=107.10 core=69.18 ui=69.18 ctrl=69.18 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:25:03.302 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1068,0,0,0] tempRaw=1068
+20260218-19:25:03.798 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1064,0,0,0] tempRaw=1064
+20260218-19:25:04.331 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1060,0,0,0] tempRaw=1060
+20260218-19:25:04.839 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1057,0,0,0] tempRaw=1057
+20260218-19:25:05.303 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1054,0,0,0] tempRaw=1054
+20260218-19:25:05.807 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1050,0,0,0] tempRaw=1050
+20260218-19:25:06.310 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1047,0,0,0] tempRaw=1047
+20260218-19:25:06.889 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1044,0,0,0] tempRaw=1044
+20260218-19:25:07.313 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1041,0,0,0] tempRaw=1041
+20260218-19:25:07.816 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1037,0,0,0] tempRaw=1037
+20260218-19:25:08.321 [OVEN/INFO] [T11] mode=1 door=0 lock=1 ntc=103.70 core=71.97 ui=71.97 ctrl=71.97 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:25:08.321 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1034,0,0,0] tempRaw=1034
+20260218-19:25:08.833 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1031,0,0,0] tempRaw=1031
+20260218-19:25:09.350 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1028,0,0,0] tempRaw=1028
+20260218-19:25:09.870 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1025,0,0,0] tempRaw=1025
+20260218-19:25:10.394 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1022,0,0,0] tempRaw=1022
+20260218-19:25:10.919 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1019,0,0,0] tempRaw=1019
+20260218-19:25:11.335 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1016,0,0,0] tempRaw=1016
+20260218-19:25:11.835 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1014,0,0,0] tempRaw=1014
+20260218-19:25:12.519 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1011,0,0,0] tempRaw=1011
+20260218-19:25:12.839 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1008,0,0,0] tempRaw=1008
+20260218-19:25:13.333 [OVEN/INFO] [T11] mode=1 door=0 lock=1 ntc=100.80 core=74.28 ui=74.28 ctrl=74.28 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:25:13.343 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1005,0,0,0] tempRaw=1005
+20260218-19:25:13.845 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1003,0,0,0] tempRaw=1003
+20260218-19:25:14.363 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[1000,0,0,0] tempRaw=1000
+20260218-19:25:14.855 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[997,0,0,0] tempRaw=997
+20260218-19:25:15.359 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[995,0,0,0] tempRaw=995
+20260218-19:25:15.866 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[993,0,0,0] tempRaw=993
+20260218-19:25:16.368 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[991,0,0,0] tempRaw=991
+20260218-19:25:16.870 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[988,0,0,0] tempRaw=988
+20260218-19:25:17.372 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[986,0,0,0] tempRaw=986
+20260218-19:25:17.875 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[984,0,0,0] tempRaw=984
+20260218-19:25:18.374 [OVEN/INFO] [T11] mode=1 door=0 lock=1 ntc=98.40 core=76.21 ui=76.21 ctrl=76.21 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:25:18.384 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[982,0,0,0] tempRaw=982
+20260218-19:25:18.884 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[980,0,0,0] tempRaw=980
+20260218-19:25:19.393 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[978,0,0,0] tempRaw=978
+20260218-19:25:19.996 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[976,0,0,0] tempRaw=976
+20260218-19:25:20.393 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[974,0,0,0] tempRaw=974
+20260218-19:25:20.895 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[972,0,0,0] tempRaw=972
+20260218-19:25:21.404 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[970,0,0,0] tempRaw=970
+20260218-19:25:21.923 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[968,0,0,0] tempRaw=968
+20260218-19:25:22.452 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[967,0,0,0] tempRaw=967
+20260218-19:25:23.068 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[965,0,0,0] tempRaw=965
+20260218-19:25:23.407 [OVEN/INFO] [T11] mode=1 door=0 lock=1 ntc=96.50 core=77.81 ui=77.81 ctrl=77.81 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:25:23.503 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[963,0,0,0] tempRaw=963
+20260218-19:25:24.091 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[962,0,0,0] tempRaw=962
+20260218-19:25:24.423 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[960,0,0,0] tempRaw=960
+20260218-19:25:24.930 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[958,0,0,0] tempRaw=958
+20260218-19:25:25.432 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[957,0,0,0] tempRaw=957
+20260218-19:25:25.936 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[955,0,0,0] tempRaw=955
+20260218-19:25:26.650 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[954,0,0,0] tempRaw=954
+20260218-19:25:26.949 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[952,0,0,0] tempRaw=952
+20260218-19:25:27.449 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[951,0,0,0] tempRaw=951
+20260218-19:25:28.048 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[949,0,0,0] tempRaw=949
+20260218-19:25:28.445 [OVEN/INFO] [T11] mode=1 door=0 lock=1 ntc=94.90 core=79.16 ui=79.16 ctrl=79.16 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:25:28.475 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[948,0,0,0] tempRaw=948
+20260218-19:25:29.096 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[947,0,0,0] tempRaw=947
+20260218-19:25:29.470 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[945,0,0,0] tempRaw=945
+20260218-19:25:29.972 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[944,0,0,0] tempRaw=944
+20260218-19:25:30.493 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[943,0,0,0] tempRaw=943
+20260218-19:25:31.018 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[942,0,0,0] tempRaw=942
+20260218-19:25:31.484 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[941,0,0,0] tempRaw=941
+20260218-19:25:31.979 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[940,0,0,0] tempRaw=940
+20260218-19:25:32.501 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[938,0,0,0] tempRaw=938
+20260218-19:25:32.988 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[937,0,0,0] tempRaw=937
+20260218-19:25:33.253 [UI/DEBUG] [LVGL TOUCH] read_cb called, count=3500
+20260218-19:25:33.485 [OVEN/INFO] [T11] mode=1 door=0 lock=1 ntc=93.70 core=80.29 ui=80.29 ctrl=80.29 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:25:33.525 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[936,0,0,0] tempRaw=936
+20260218-19:25:33.994 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[935,0,0,0] tempRaw=935
+20260218-19:25:34.512 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[934,0,0,0] tempRaw=934
+20260218-19:25:35.036 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[933,0,0,0] tempRaw=933
+20260218-19:25:35.560 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[932,0,0,0] tempRaw=932
+20260218-19:25:36.083 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[932,0,0,0] tempRaw=932
+20260218-19:25:36.514 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[931,0,0,0] tempRaw=931
+20260218-19:25:37.198 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[930,0,0,0] tempRaw=930
+20260218-19:25:37.712 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[929,0,0,0] tempRaw=929
+20260218-19:25:38.223 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[929,0,0,0] tempRaw=929
+20260218-19:25:38.518 [OVEN/INFO] [T11] mode=1 door=0 lock=1 ntc=92.90 core=81.25 ui=81.25 ctrl=81.25 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:25:38.526 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[928,0,0,0] tempRaw=928
+20260218-19:25:39.041 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[928,0,0,0] tempRaw=928
+20260218-19:25:39.548 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[927,0,0,0] tempRaw=927
+20260218-19:25:40.048 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[926,0,0,0] tempRaw=926
+20260218-19:25:40.547 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[926,0,0,0] tempRaw=926
+20260218-19:25:41.089 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[925,0,0,0] tempRaw=925
+20260218-19:25:41.559 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[925,0,0,0] tempRaw=925
+20260218-19:25:42.113 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[924,0,0,0] tempRaw=924
+20260218-19:25:42.625 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[923,0,0,0] tempRaw=923
+20260218-19:25:43.069 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[923,0,0,0] tempRaw=923
+20260218-19:25:43.574 [OVEN/INFO] [T11] mode=1 door=0 lock=1 ntc=92.30 core=82.09 ui=82.09 ctrl=82.09 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:25:43.627 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[922,0,0,0] tempRaw=922
+20260218-19:25:44.078 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[922,0,0,0] tempRaw=922
+20260218-19:25:44.673 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[921,0,0,0] tempRaw=921
+20260218-19:25:45.091 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[921,0,0,0] tempRaw=921
+20260218-19:25:45.698 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[921,0,0,0] tempRaw=921
+20260218-19:25:46.094 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[920,0,0,0] tempRaw=920
+20260218-19:25:46.621 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[920,0,0,0] tempRaw=920
+20260218-19:25:47.104 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[919,0,0,0] tempRaw=919
+20260218-19:25:47.621 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[919,0,0,0] tempRaw=919
+20260218-19:25:48.138 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[919,0,0,0] tempRaw=919
+20260218-19:25:48.743 [OVEN/INFO] [T11] mode=1 door=0 lock=1 ntc=91.90 core=82.81 ui=82.81 ctrl=82.81 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:25:48.744 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[919,0,0,0] tempRaw=919
+20260218-19:25:49.185 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[919,0,0,0] tempRaw=919
+20260218-19:25:49.798 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[918,0,0,0] tempRaw=918
+20260218-19:25:50.138 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[918,0,0,0] tempRaw=918
+20260218-19:25:50.626 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[918,0,0,0] tempRaw=918
+20260218-19:25:51.285 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[918,0,0,0] tempRaw=918
+20260218-19:25:51.841 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[918,0,0,0] tempRaw=918
+20260218-19:25:52.149 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[917,0,0,0] tempRaw=917
+20260218-19:25:52.661 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[917,0,0,0] tempRaw=917
+20260218-19:25:53.174 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[917,0,0,0] tempRaw=917
+20260218-19:25:53.691 [OVEN/INFO] [T11] mode=1 door=0 lock=1 ntc=91.70 core=83.47 ui=83.47 ctrl=83.47 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:25:53.692 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[917,0,0,0] tempRaw=917
+20260218-19:25:54.185 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[917,0,0,0] tempRaw=917
+20260218-19:25:54.656 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[917,0,0,0] tempRaw=917
+20260218-19:25:55.160 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[917,0,0,0] tempRaw=917
+20260218-19:25:55.662 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[917,0,0,0] tempRaw=917
+20260218-19:25:56.245 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[917,0,0,0] tempRaw=917
+20260218-19:25:56.670 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[917,0,0,0] tempRaw=917
+20260218-19:25:57.269 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[917,0,0,0] tempRaw=917
+20260218-19:25:57.682 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[917,0,0,0] tempRaw=917
+20260218-19:25:58.184 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[917,0,0,0] tempRaw=917
+20260218-19:25:58.684 [OVEN/INFO] [T11] mode=1 door=0 lock=1 ntc=91.70 core=84.06 ui=84.06 ctrl=84.06 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:25:58.693 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[917,0,0,0] tempRaw=917
+20260218-19:25:59.198 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[917,0,0,0] tempRaw=917
+20260218-19:25:59.719 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[918,0,0,0] tempRaw=918
+20260218-19:26:00.238 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[918,0,0,0] tempRaw=918
+20260218-19:26:00.736 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[918,0,0,0] tempRaw=918
+20260218-19:26:01.364 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[918,0,0,0] tempRaw=918
+20260218-19:26:01.769 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[919,0,0,0] tempRaw=919
+20260218-19:26:02.300 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[919,0,0,0] tempRaw=919
+20260218-19:26:02.726 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[919,0,0,0] tempRaw=919
+20260218-19:26:03.515 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[919,0,0,0] tempRaw=919
+20260218-19:26:03.872 [OVEN/INFO] [T11] mode=1 door=0 lock=1 ntc=91.90 core=84.62 ui=84.62 ctrl=84.62 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:26:03.872 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[919,0,0,0] tempRaw=919
+20260218-19:26:04.239 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[920,0,0,0] tempRaw=920
+20260218-19:26:04.744 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[920,0,0,0] tempRaw=920
+20260218-19:26:05.252 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[920,0,0,0] tempRaw=920
+20260218-19:26:05.758 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[921,0,0,0] tempRaw=921
+20260218-19:26:06.260 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[921,0,0,0] tempRaw=921
+20260218-19:26:06.792 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[921,0,0,0] tempRaw=921
+20260218-19:26:07.279 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[922,0,0,0] tempRaw=922
+20260218-19:26:07.815 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[922,0,0,0] tempRaw=922
+20260218-19:26:08.283 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[922,0,0,0] tempRaw=922
+20260218-19:26:08.840 [OVEN/INFO] [T11] mode=1 door=0 lock=1 ntc=92.20 core=85.15 ui=85.15 ctrl=85.15 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:26:08.840 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[923,0,0,0] tempRaw=923
+20260218-19:26:09.286 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[923,0,0,0] tempRaw=923
+20260218-19:26:09.788 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[924,0,0,0] tempRaw=924
+20260218-19:26:10.292 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[924,0,0,0] tempRaw=924
+20260218-19:26:10.796 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[924,0,0,0] tempRaw=924
+20260218-19:26:11.401 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[925,0,0,0] tempRaw=925
+20260218-19:26:11.809 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[925,0,0,0] tempRaw=925
+20260218-19:26:12.309 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[926,0,0,0] tempRaw=926
+20260218-19:26:12.819 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[926,0,0,0] tempRaw=926
+20260218-19:26:13.325 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[927,0,0,0] tempRaw=927
+20260218-19:26:13.832 [OVEN/INFO] [T11] mode=1 door=0 lock=1 ntc=92.70 core=85.67 ui=85.67 ctrl=85.67 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:26:13.833 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[927,0,0,0] tempRaw=927
+20260218-19:26:14.357 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[928,0,0,0] tempRaw=928
+20260218-19:26:14.882 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[928,0,0,0] tempRaw=928
+20260218-19:26:15.407 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[929,0,0,0] tempRaw=929
+20260218-19:26:15.841 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[930,0,0,0] tempRaw=930
+20260218-19:26:16.350 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[930,0,0,0] tempRaw=930
+20260218-19:26:16.848 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[931,0,0,0] tempRaw=931
+20260218-19:26:17.348 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[931,0,0,0] tempRaw=931
+20260218-19:26:17.857 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[932,0,0,0] tempRaw=932
+20260218-19:26:18.363 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[933,0,0,0] tempRaw=933
+20260218-19:26:18.859 [OVEN/INFO] [T11] mode=1 door=0 lock=1 ntc=93.30 core=86.20 ui=86.20 ctrl=86.20 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:26:18.868 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[933,0,0,0] tempRaw=933
+20260218-19:26:19.387 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[934,0,0,0] tempRaw=934
+20260218-19:26:19.898 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[934,0,0,0] tempRaw=934
+20260218-19:26:20.411 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[935,0,0,0] tempRaw=935
+20260218-19:26:20.886 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[935,0,0,0] tempRaw=935
+20260218-19:26:21.391 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[936,0,0,0] tempRaw=936
+20260218-19:26:21.947 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[936,0,0,0] tempRaw=936
+20260218-19:26:22.459 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[937,0,0,0] tempRaw=937
+20260218-19:26:22.898 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[937,0,0,0] tempRaw=937
+20260218-19:26:23.404 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[938,0,0,0] tempRaw=938
+20260218-19:26:23.902 [OVEN/INFO] [T11] mode=1 door=0 lock=1 ntc=93.80 core=86.73 ui=86.73 ctrl=86.73 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:26:23.909 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[939,0,0,0] tempRaw=939
+20260218-19:26:24.407 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[939,0,0,0] tempRaw=939
+20260218-19:26:24.915 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[940,0,0,0] tempRaw=940
+20260218-19:26:25.423 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[941,0,0,0] tempRaw=941
+20260218-19:26:25.923 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[941,0,0,0] tempRaw=941
+20260218-19:26:26.453 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[942,0,0,0] tempRaw=942
+20260218-19:26:26.967 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[943,0,0,0] tempRaw=943
+20260218-19:26:27.464 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[944,0,0,0] tempRaw=944
+20260218-19:26:27.992 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[944,0,0,0] tempRaw=944
+20260218-19:26:28.512 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[945,0,0,0] tempRaw=945
+20260218-19:26:28.943 [OVEN/INFO] [T11] mode=1 door=0 lock=1 ntc=94.50 core=87.26 ui=87.26 ctrl=87.26 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:26:29.032 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[946,0,0,0] tempRaw=946
+20260218-19:26:29.194 [UI/INFO] [ScreenManager] SWIPE LEFT
+20260218-19:26:29.196 [UI/INFO] [ScreenManager] show(3) cur=0 ptr=0x3fca72f8
+20260218-19:26:29.207 [UI/INFO] [ScreenManager] screens: main=0x3fc9f47c cfg=0x3fca18fc dbg_hw=0x3fca465c log=0x3fca72f8 current:0xff000000
+20260218-19:26:29.453 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[947,0,0,0] tempRaw=947
+20260218-19:26:30.142 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[947,0,0,0] tempRaw=947
+20260218-19:26:30.500 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[948,0,0,0] tempRaw=948
+20260218-19:26:30.953 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[949,0,0,0] tempRaw=949
+20260218-19:26:31.659 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[950,0,0,0] tempRaw=950
+20260218-19:26:31.957 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[950,0,0,0] tempRaw=950
+20260218-19:26:32.459 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[951,0,0,0] tempRaw=951
+20260218-19:26:32.961 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[952,0,0,0] tempRaw=952
+20260218-19:26:33.519 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[953,0,0,0] tempRaw=953
+20260218-19:26:33.959 [OVEN/INFO] [T11] mode=1 door=0 lock=1 ntc=95.30 core=87.81 ui=87.81 ctrl=87.81 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:26:33.966 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[954,0,0,0] tempRaw=954
+20260218-19:26:34.148 [UI/INFO] [ScreenManager] SWIPE RIGHT
+20260218-19:26:34.151 [UI/INFO] [ScreenManager] show(0) cur=3 ptr=0x3fc9f47c
+20260218-19:26:34.173 [UI/INFO] [ScreenManager] screens: main=0x3fc9f47c cfg=0x3fca18fc dbg_hw=0x3fca465c log=0x3fca72f8 current:0xff000000
+20260218-19:26:34.542 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[954,0,0,0] tempRaw=954
+20260218-19:26:35.044 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[955,0,0,0] tempRaw=955
+20260218-19:26:35.524 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[956,0,0,0] tempRaw=956
+20260218-19:26:36.024 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[957,0,0,0] tempRaw=957
+20260218-19:26:36.533 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[958,0,0,0] tempRaw=958
+20260218-19:26:37.050 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[958,0,0,0] tempRaw=958
+20260218-19:26:37.615 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[959,0,0,0] tempRaw=959
+20260218-19:26:38.038 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[960,0,0,0] tempRaw=960
+20260218-19:26:38.544 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[961,0,0,0] tempRaw=961
+20260218-19:26:39.036 [OVEN/INFO] [T11] mode=1 door=0 lock=1 ntc=96.10 core=88.39 ui=88.39 ctrl=88.39 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:26:39.051 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[962,0,0,0] tempRaw=962
+20260218-19:26:39.548 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[963,0,0,0] tempRaw=963
+20260218-19:26:40.053 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[964,0,0,0] tempRaw=964
+20260218-19:26:40.584 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[965,0,0,0] tempRaw=965
+20260218-19:26:41.198 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[965,0,0,0] tempRaw=965
+20260218-19:26:41.620 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[966,0,0,0] tempRaw=966
+20260218-19:26:42.146 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[967,0,0,0] tempRaw=967
+20260218-19:26:42.569 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[968,0,0,0] tempRaw=968
+20260218-19:26:43.076 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[969,0,0,0] tempRaw=969
+20260218-19:26:43.578 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[970,0,0,0] tempRaw=970
+20260218-19:26:44.475 [OVEN/INFO] [T11] mode=1 door=0 lock=1 ntc=97.00 core=88.98 ui=88.98 ctrl=88.98 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:26:44.476 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[971,0,0,0] tempRaw=971
+20260218-19:26:44.643 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[972,0,0,0] tempRaw=972
+20260218-19:26:45.193 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[973,0,0,0] tempRaw=973
+20260218-19:26:45.603 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[974,0,0,0] tempRaw=974
+20260218-19:26:46.114 [UI/DEBUG] [LVGL TOUCH] read_cb called, count=4500
+20260218-19:26:46.116 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[975,0,0,0] tempRaw=975
+20260218-19:26:46.663 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[976,0,0,0] tempRaw=976
+20260218-19:26:47.099 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[977,0,0,0] tempRaw=977
+20260218-19:26:47.601 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[978,0,0,0] tempRaw=978
+20260218-19:26:48.162 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[978,0,0,0] tempRaw=978
+20260218-19:26:48.675 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[979,0,0,0] tempRaw=979
+20260218-19:26:49.186 [OVEN/INFO] [T11] mode=1 door=0 lock=1 ntc=97.90 core=89.60 ui=89.60 ctrl=89.60 tgt=45.00 lo=42.00 hi=48.00 heaterIntent=0 heatRemMs=0 restRemMs=0
+20260218-19:26:49.186 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[980,0,0,0] tempRaw=980
+20260218-19:26:49.698 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[981,0,0,0] tempRaw=981
+20260218-19:26:50.118 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[982,0,0,0] tempRaw=982
+20260218-19:26:50.620 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[983,0,0,0] tempRaw=983
+20260218-19:26:51.126 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[984,0,0,0] tempRaw=984
+20260218-19:26:51.639 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[985,0,0,0] tempRaw=985
+20260218-19:26:52.141 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[986,0,0,0] tempRaw=986
+20260218-19:26:52.644 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[987,0,0,0] tempRaw=987
+20260218-19:26:53.149 [HOST/INFO] STATUS received, mask=0x0011 (0x0011 FAN12V FAN230_SLOW), adc=[988,0,0,0] tempRaw=988
