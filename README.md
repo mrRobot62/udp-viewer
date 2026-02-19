@@ -166,4 +166,4 @@ License to be defined.
 
 ## Author
 
-Bernhard Klein
+Bernd Klein (aka LunaX)
