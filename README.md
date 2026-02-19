@@ -26,13 +26,17 @@ Typical use cases:
 ------------------------------------------------------------------------
 
 ## Screenshot
+### Main screen (no highlighting)
+<img width="1100" height="785" alt="image" src="https://github.com/user-attachments/assets/1d86de14-ef78-48fb-9b06-0868c29e1b72" />
 
-```{=html}
-<!-- Replace with actual screenshots -->
-```
-![Main Window](docs/screenshots/main_window.png)
+### Highlighting
+<img width="1100" height="785" alt="image" src="https://github.com/user-attachments/assets/6423b809-f52e-462a-8957-b17a9840f6af" />
 
-![Filter and Highlight](docs/screenshots/filter_highlight.png)
+### Filter ajustment
+<img width="232" height="387" alt="image" src="https://github.com/user-attachments/assets/56fb3ab1-fdb6-46e6-98d6-4c1e933cd127" />
+
+### Saving/Loading logfiles
+<img width="963" height="213" alt="image" src="https://github.com/user-attachments/assets/1dd140b2-8a6a-467e-9dd3-c9728ab3d86c" />
 
 ------------------------------------------------------------------------
 
