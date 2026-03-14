@@ -19,7 +19,7 @@ transmitted over WiFi.
 Typical use cases:
 
 -   Monitoring ESP32 firmware logs over UDP
--   Debugging embedded systems without USB connection
+-   Debugging embedded systems without USB connection (important if your are working **in 230V environments!**)
 -   Real-time log analysis during hardware testing
 -   Field diagnostics and remote troubleshooting
 
