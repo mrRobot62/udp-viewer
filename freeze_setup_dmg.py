@@ -64,7 +64,7 @@ bdist_mac_options = {
         ("CFBundleDisplayName", APP_NAME),
     ],
     # optional (later): icon
-    # "iconfile": "packaging/macos/app.icns",
+    "iconfile": "packaging/macos/app.icns",
 }
 
 bdist_dmg_options = {

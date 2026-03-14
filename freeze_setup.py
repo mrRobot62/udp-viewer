@@ -81,6 +81,8 @@ bdist_mac_options = {
         ("CFBundleDisplayName", APP_NAME),
         ("CFBundleShortVersionString", APP_VERSION),
     ],
+    "iconfile": "packaging/macos/app.icns",
+
 }
 
 # --- DMG options (cx_Freeze bdist_dmg) ---
