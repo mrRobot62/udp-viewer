@@ -1,5 +1,7 @@
 # UDP Log Viewer
 
+Python UDP Log Viewer – real-time UDP log monitor for ESP32 and embedded devices (PyQt5, cross-platform).
+
 Lightweight, real-time UDP log viewer designed for embedded systems such
 as ESP32 devices.
 
