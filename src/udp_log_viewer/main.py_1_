@@ -42,7 +42,6 @@ from .app_paths import AppPathsConfig, load_or_create_config
 from .highlighter import HighlightRule, LogHighlighter
 from .udp_listener import UdpListenerThread
 from .udp_log_utils import drain_queue, compile_patterns
-from .data_visualizer.visualizer_manager import VisualizerManager
 
 APP_ORG = "LocalTools"
 APP_NAME = "UdpLogViewer"
@@ -253,10 +252,6 @@ class MainWindow(QMainWindow):
         self._refresh_highlight_chips()
 
         self._update_connection_ui()
-
-        # Data Visualizer (T3.1.1 groundwork)
-        self._visualizer_manager = VisualizerManager()
-        self._visualizer_manager.load_configs()
 
     # ---------------- Helpers ----------------
 
@@ -979,37 +974,12 @@ class MainWindow(QMainWindow):
 
     # ---------------- Replay / Inject ----------------
 
-    def _dispatch_log_line(self, line: str, *, is_live_source: bool) -> None:
-        raw_line = line
-
-        try:
-            self._visualizer_manager.process_log_line(raw_line)
-        except Exception:
-            # T3.1.1: keep visualizer integration non-blocking for the main viewer path.
-            pass
-
-        if not self._match_include_slots(raw_line):
-            return
-        if self._match_exclude_slots(raw_line):
-            return
-
-        out_line = raw_line
-        if self._ui_state.timestamp_enabled:
-            out_line = f"{self._format_timestamp_prefix(datetime.now())} {raw_line}"
-
-        if is_live_source:
-            self._append_to_live_log(out_line)
-
-        if self._ui_paused:
-            if len(self._pause_buffer) >= self._pause_buffer.maxlen:
-                self._pause_dropped += 1
-            self._pause_buffer.append(out_line)
-            return
-
-        self._queue.append(out_line)
-
     def _ingest_line(self, line: str) -> None:
-        self._dispatch_log_line(line, is_live_source=False)
+        if not self._match_include_slots(line):
+            return
+        if self._match_exclude_slots(line):
+            return
+        self._queue.append(line)
 
     def _replay_tick(self) -> None:
         if not self._replay_lines:
@@ -1231,7 +1201,25 @@ class MainWindow(QMainWindow):
         self._close_live_log()
 
     def _on_line_received(self, line: str) -> None:
-        self._dispatch_log_line(line, is_live_source=True)
+        if not self._match_include_slots(line):
+            return
+        if self._match_exclude_slots(line):
+            return
+
+        out_line = line
+        if self._ui_state.timestamp_enabled:
+            out_line = f"{self._format_timestamp_prefix(datetime.now())} {line}"
+
+        if self._listener is not None:
+            self._append_to_live_log(out_line)
+
+        if self._ui_paused:
+            if len(self._pause_buffer) >= self._pause_buffer.maxlen:
+                self._pause_dropped += 1
+            self._pause_buffer.append(out_line)
+            return
+
+        self._queue.append(out_line)
 
     def _on_listener_status(self, msg: str) -> None:
         self.statusBar().showMessage(msg, 1500)
