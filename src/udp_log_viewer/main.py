@@ -45,7 +45,7 @@ from .udp_log_utils import drain_queue, compile_patterns
 
 APP_ORG = "LocalTools"
 APP_NAME = "UdpLogViewer"
-APP_VERSION = "0.14.0"
+APP_VERSION = "0.15.0"
 
 SLOT_COUNT = 5
 

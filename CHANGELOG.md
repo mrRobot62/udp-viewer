@@ -7,18 +7,28 @@ The format is based on Keep a Changelog and follows semantic versioning
 principles where applicable.
 
 ------------------------------------------------------------------------
-
-## \[T2\] -- 2026-02-18
+## 0.15.0 -- 2026-03-16
+### Improved
 
 ### Added
 
--   Cross-platform developer bootstrap scripts:
+### Technical
 
+---
+## 0.14.0 -- 2026-02-18
+### Improved
+
+-   Simplified developer onboarding process
+-   Reproducible virtual environment setup
+-   Unified development workflow across macOS, Linux, and Windows
+-   Reduced setup friction for new contributors and fresh environments
+
+### Added
+-   Cross-platform developer bootstrap scripts:
     -   scripts/bootstrap_macos_linux.sh
     -   scripts/bootstrap_windows.ps1
 
 -   Developer convenience scripts:
-
     -   scripts/dev_run.sh / dev_run.ps1
     -   scripts/dev_test.sh / dev_test.ps1
 
@@ -33,12 +43,6 @@ principles where applicable.
 
         udp-log-viewer
 
-### Improved
-
--   Simplified developer onboarding process
--   Reproducible virtual environment setup
--   Unified development workflow across macOS, Linux, and Windows
--   Reduced setup friction for new contributors and fresh environments
 
 ### Technical
 
