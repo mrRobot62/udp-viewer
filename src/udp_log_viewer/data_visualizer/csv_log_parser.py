@@ -1,44 +1,58 @@
-from .visualizer_sample import VisualizerSample
 from .visualizer_config import VisualizerConfig
+from .visualizer_sample import VisualizerSample
+
 
 class CsvLogParser:
-    def parse_line(self, line: str, config: VisualizerConfig, sample_index: int) -> VisualizerSample | None:
-        parts = line.strip().split(";")
+    def parse_line(
+        self,
+        line: str,
+        config: VisualizerConfig,
+        sample_index: int,
+    ) -> VisualizerSample | None:
+        parts = [part.strip() for part in line.strip().split(";")]
         if len(parts) < 2:
             return None
 
         timestamp = parts[0]
         filter_value = parts[1]
 
-        if filter_value != config.filter_string:
+        if not timestamp or filter_value != config.filter_string:
             return None
 
         data_fields = parts[2:]
         if len(data_fields) != len(config.fields):
             return None
 
-        values = {}
+        values: dict[str, float | None] = {}
 
-        for i, field_cfg in enumerate(config.fields):
-            raw = data_fields[i].strip()
+        for raw_value, field_cfg in zip(data_fields, config.fields, strict=True):
+            if not field_cfg.field_name:
+                continue
 
-            if raw == "":
+            if raw_value == "":
                 values[field_cfg.field_name] = None
                 continue
 
-            if field_cfg.numeric:
-                try:
-                    val = float(raw)
-                    scale = field_cfg.scale if field_cfg.scale > 0 else 1
-                    values[field_cfg.field_name] = val / scale
-                except ValueError:
-                    values[field_cfg.field_name] = None
-            else:
+            if not field_cfg.numeric:
                 values[field_cfg.field_name] = None
+                continue
+
+            parsed_value = self._parse_numeric_value(raw_value, field_cfg.scale)
+            values[field_cfg.field_name] = parsed_value
 
         return VisualizerSample(
             timestamp_raw=timestamp,
             filter_string=filter_value,
             sample_index=sample_index,
-            values_by_name=values
+            values_by_name=values,
         )
+
+    @staticmethod
+    def _parse_numeric_value(raw_value: str, scale: int) -> float | None:
+        try:
+            numeric_value = float(raw_value)
+        except ValueError:
+            return None
+
+        normalized_scale = scale if scale > 0 else 1
+        return numeric_value / normalized_scale
