@@ -283,9 +283,10 @@ class MainWindow(QMainWindow):
 
         self._update_connection_ui()
 
-        # Data Visualizer (T3.4.0 CSV_TEMP config + persistence)
+        # Data Visualizer (T3.4.3 controls + screenshots)
         self._visualizer_manager = VisualizerManager(
-            config_path=self._paths_cfg.config_path
+            config_path=self._paths_cfg.config_path,
+            screenshot_dir=Path(self._paths_cfg.logs_dir) / "screenshots",
         )
         self._visualizer_manager.load_configs()
 
@@ -1637,6 +1638,7 @@ class MainWindow(QMainWindow):
             self.btn_pause.setChecked(False)
             self.btn_pause.blockSignals(False)
 
+            self._visualizer_manager.clear_all_buffers()
             self._append_log_line("[UI/INFO] Listener stopped", write_live=False)
 
         self._update_connection_ui()

@@ -12,9 +12,14 @@ from .visualizer_window import VisualizerWindow
 
 
 class VisualizerManager:
-    def __init__(self, config_path: str | Path | None = None) -> None:
+    def __init__(
+        self,
+        config_path: str | Path | None = None,
+        screenshot_dir: str | Path | None = None,
+    ) -> None:
         self.parser = CsvLogParser()
         self.config_store = ConfigStore(config_path=config_path)
+        self.screenshot_dir = Path(screenshot_dir) if screenshot_dir is not None else None
         self.visualizers: list[VisualizerConfig] = []
         self.windows_by_index: dict[int, VisualizerWindow] = {}
         self.sample_counters_by_index: dict[int, int] = {}
@@ -63,6 +68,17 @@ class VisualizerManager:
         if window is not None:
             window.close()
 
+    def clear_all_buffers(self) -> None:
+        self.sample_counters_by_index.clear()
+        for window in self.windows_by_index.values():
+            window.clear_samples()
+
+    def clear_window_buffer(self, index: int) -> None:
+        self.sample_counters_by_index[index] = 0
+        window = self.windows_by_index.get(index)
+        if window is not None:
+            window.clear_samples()
+
     def configure_csv_temp(self, parent: QWidget | None = None) -> bool:
         if not self.visualizers:
             self.load_configs()
@@ -81,6 +97,6 @@ class VisualizerManager:
         existing_window = self.windows_by_index.get(index)
         if existing_window is not None:
             return existing_window
-        window = VisualizerWindow(config)
+        window = VisualizerWindow(config=config, screenshot_dir=self.screenshot_dir)
         self.windows_by_index[index] = window
         return window

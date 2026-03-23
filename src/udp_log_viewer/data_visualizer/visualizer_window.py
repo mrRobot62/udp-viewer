@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from datetime import datetime
+from pathlib import Path
 from typing import TYPE_CHECKING
+import re
 
 from .visualizer_config import VisualizerConfig
 from .visualizer_sample import VisualizerSample
@@ -11,6 +14,7 @@ try:
         QCheckBox,
         QHBoxLayout,
         QLabel,
+        QPushButton,
         QSizePolicy,
         QVBoxLayout,
         QWidget,
@@ -35,15 +39,9 @@ if TYPE_CHECKING:
 
 
 class VisualizerWindow:
-    """
-    Controller-style wrapper around an optional PyQt/Matplotlib window.
-
-    - In the real app (QApplication available), a QWidget-based graph window is created.
-    - In tests without QApplication, the object still buffers samples and stays usable.
-    """
-
-    def __init__(self, config: VisualizerConfig) -> None:
+    def __init__(self, config: VisualizerConfig, screenshot_dir: str | Path | None = None) -> None:
         self.config = config
+        self.screenshot_dir = Path(screenshot_dir) if screenshot_dir is not None else None
         self.samples: list[VisualizerSample] = []
         self.auto_refresh_enabled = True
         self.freeze_sample_index: int | None = None
@@ -55,18 +53,20 @@ class VisualizerWindow:
     def append_sample(self, sample: VisualizerSample) -> None:
         self.samples.append(sample)
         self._trim_samples_if_needed()
-
         if self.auto_refresh_enabled:
             self.refresh_plot()
 
+    def clear_samples(self) -> None:
+        self.samples.clear()
+        self.freeze_sample_index = None
+        self.rebuild_plot()
+
     def set_auto_refresh(self, enabled: bool) -> None:
         self.auto_refresh_enabled = enabled
-
         if enabled:
             self.freeze_sample_index = None
             self.rebuild_plot()
             return
-
         self.freeze_sample_index = len(self.samples)
 
     def refresh_plot(self) -> None:
@@ -92,16 +92,20 @@ class VisualizerWindow:
         if self._widget is not None:
             self._widget.close()
 
+    def save_screenshot(self) -> Path | None:
+        widget = self._ensure_widget()
+        if widget is None:
+            return None
+        return widget.save_screenshot()
+
     def is_gui_available(self) -> bool:
         return self._ensure_widget() is not None
 
     def _ensure_widget(self) -> "_VisualizerWindowWidget | None":
         if self._widget is not None:
             return self._widget
-
         if not self._can_create_widget():
             return None
-
         self._widget = _VisualizerWindowWidget(self)
         return self._widget
 
@@ -109,10 +113,8 @@ class VisualizerWindow:
         max_samples = self.config.max_samples
         if len(self.samples) <= max_samples:
             return
-
         overflow = len(self.samples) - max_samples
         del self.samples[:overflow]
-
         if self.freeze_sample_index is not None:
             self.freeze_sample_index = max(0, self.freeze_sample_index - overflow)
 
@@ -120,7 +122,6 @@ class VisualizerWindow:
     def _can_create_widget() -> bool:
         if not (_PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE):
             return False
-
         try:
             from PyQt5.QtWidgets import QApplication
             return QApplication.instance() is not None
@@ -136,7 +137,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._controller = controller
 
             self.setWindowTitle(controller.config.title or "Data Visualizer")
-            self.resize(900, 500)
+            self.resize(980, 560)
 
             self._figure = Figure(figsize=(8, 4))
             self._canvas = FigureCanvas(self._figure)
@@ -147,10 +148,18 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._auto_refresh_checkbox.setChecked(True)
             self._auto_refresh_checkbox.stateChanged.connect(self._on_auto_refresh_changed)
 
-            self._status_label = QLabel("Samples: 0")
+            self._refresh_button = QPushButton("Refresh")
+            self._refresh_button.clicked.connect(self._on_refresh_clicked)
+
+            self._screenshot_button = QPushButton("Screenshot")
+            self._screenshot_button.clicked.connect(self._on_screenshot_clicked)
+
+            self._status_label = QLabel("Samples: 0 visible / 0 total")
 
             top_bar = QHBoxLayout()
             top_bar.addWidget(self._auto_refresh_checkbox)
+            top_bar.addWidget(self._refresh_button)
+            top_bar.addWidget(self._screenshot_button)
             top_bar.addWidget(self._status_label)
             top_bar.addStretch(1)
 
@@ -169,9 +178,29 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
         def rebuild_plot(self) -> None:
             self._render_plot()
 
+        def save_screenshot(self) -> Path | None:
+            target_dir = self._controller.screenshot_dir
+            if target_dir is None:
+                target_dir = Path.cwd() / "screenshots"
+            target_dir.mkdir(parents=True, exist_ok=True)
+
+            safe_title = self._sanitize_filename(self._controller.config.title or "visualizer")
+            filename = f"{safe_title}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+            target_path = target_dir / filename
+
+            self._figure.savefig(target_path, dpi=150, bbox_inches="tight")
+            self._status_label.setText(f"Screenshot saved: {target_path.name}")
+            return target_path
+
         def _on_auto_refresh_changed(self, state: int) -> None:
             enabled = state == Qt.Checked
             self._controller.set_auto_refresh(enabled)
+
+        def _on_refresh_clicked(self) -> None:
+            self._controller.clear_samples()
+
+        def _on_screenshot_clicked(self) -> None:
+            self.save_screenshot()
 
         def _render_plot(self) -> None:
             self.setWindowTitle(self._controller.config.title or "Data Visualizer")
@@ -262,6 +291,10 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
 
             self._axes.grid(True)
 
+        @staticmethod
+        def _sanitize_filename(value: str) -> str:
+            return re.sub(r"[^A-Za-z0-9._-]+", "_", value).strip("_") or "visualizer"
+
 else:
 
     class _VisualizerWindowWidget:  # pragma: no cover - placeholder only
@@ -286,15 +319,16 @@ else:
         def close(self) -> None:
             pass
 
+        def save_screenshot(self) -> Path | None:
+            return None
+
 
 def _to_matplotlib_linestyle(value: str | None) -> str:
     normalized = (value or "solid").strip().lower()
-
     mapping = {
         "solid": "-",
         "dashed": "--",
         "dotted": ":",
         "dashdot": "-.",
     }
-
     return mapping.get(normalized, "-")
