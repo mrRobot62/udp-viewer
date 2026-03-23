@@ -283,8 +283,10 @@ class MainWindow(QMainWindow):
 
         self._update_connection_ui()
 
-        # Data Visualizer (T3.1.1 groundwork)
-        self._visualizer_manager = VisualizerManager()
+        # Data Visualizer (T3.4.0 CSV_TEMP config + persistence)
+        self._visualizer_manager = VisualizerManager(
+            config_path=self._paths_cfg.config_path
+        )
         self._visualizer_manager.load_configs()
 
     # ---------------- Helpers ----------------
@@ -435,6 +437,18 @@ class MainWindow(QMainWindow):
         self.act_simulate_temperature.setToolTip("Generate sample temperature log lines locally (for visual graph testing)")
         self.act_simulate_temperature.toggled.connect(self.on_simulate_toggled_temperature)
         tools_menu.addAction(self.act_simulate_temperature)
+
+        visualize_menu = self.menuBar().addMenu("Visualize")
+
+        self.menu_visualize_temperature = visualize_menu.addMenu("Temperature")
+
+        self.act_visualizer_csv_temp_config = QAction("Config", self)
+        self.act_visualizer_csv_temp_config.triggered.connect(self.on_visualizer_csv_temp_config_clicked)
+        self.menu_visualize_temperature.addAction(self.act_visualizer_csv_temp_config)
+
+        self.act_visualizer_csv_temp_show = QAction("Show", self)
+        self.act_visualizer_csv_temp_show.triggered.connect(self.on_visualizer_csv_temp_show_clicked)
+        self.menu_visualize_temperature.addAction(self.act_visualizer_csv_temp_show)
 
 
     def _chip_style(self, color: str) -> str:
@@ -1147,6 +1161,14 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage("Replay stopped", 1500)
 
     # ---------------- Simulation (Tools menu) ----------------
+
+    def on_visualizer_csv_temp_config_clicked(self) -> None:
+        changed = self._visualizer_manager.configure_csv_temp(parent=self)
+        if changed:
+            self.statusBar().showMessage("CSV_TEMP visualizer config saved", 3000)
+
+    def on_visualizer_csv_temp_show_clicked(self) -> None:
+        self._visualizer_manager.show_window(0)
 
     def on_simulate_toggled(self, checked: bool) -> None:
         if checked:
