@@ -201,12 +201,41 @@ class MainWindow(QMainWindow):
         self._sim_heater = 0
         self._sim_mask = 0x0000
 
+        self._sim_temperature_enabled = False
+        self._sim_temperature_timer = QTimer(self)
+        self._sim_temperature_timer.setInterval(120)  # ms
+        self._sim_temperature_timer.timeout.connect(self._on_sim_temperature_tick)
+        self._sim_temperature_seq = 0
+        self._sim_temperature_running=False
+        # self._sim_temperature_ntc_chamber = 21.9
+        # self._sim_temperature_ntc_hotspot = 21.5
+        # self._sim_temperature_ntc_chamber_tgt = 60.0
+        # self._sim_temperature_heater = 0
+        # self._sim_temperature_max_hotspot = 150.0
+        # self._sim_temperature_min_hotspot_on = 2.0
+        # self._sim_temperature_max_hotspot_on = 5.0
+        # self._sim_temperature_chamber_lower_offset = 5.0    # target = 45, min target = 45-5 = 40
+        # self._sim_temperature_chamber_upper_offset = 5.0    # target = 45, max target = 45+5 = 50
+        # self._sim_temperature_chamber_increase_deg = 0.3
+        # self._sim_temperature_hotspot_increase_deg = 1.0
+        # self._sim_temperature_multiplier_degrees = 10
+        # self._sim_temperaturemask = 0x0000
+        self._sim_temperature_heater = 0
+        # self._sim_temperature_mask = 0x0000
+
         # Replay (inject without UDP)
         self._replay_timer = QTimer(self)
         self._replay_timer.setInterval(REPLAY_TICK_MS)
         self._replay_timer.timeout.connect(self._replay_tick)
         self._replay_lines: Deque[str] = deque()
         self._replay_active = False
+
+        # Replay CSV Temperature lines (inject without UDP)
+        self._replay_timer_temperature = QTimer(self)
+        self._replay_timer_temperature.setInterval(REPLAY_TICK_MS)
+        self._replay_timer_temperature.timeout.connect(self._replay_tick)
+        self._replay_lines_temperature: Deque[str] = deque()
+        self._replay_active_temperature = False
 
         # Slot-based Filter / Exclude / Highlight
         self._filter_slots: List[PatternSlot] = [PatternSlot() for _ in range(SLOT_COUNT)]
@@ -400,6 +429,13 @@ class MainWindow(QMainWindow):
         self.act_simulate.setToolTip("Generate sample log lines locally (for filter/highlight testing)")
         self.act_simulate.toggled.connect(self.on_simulate_toggled)
         tools_menu.addAction(self.act_simulate)
+
+        self.act_simulate_temperature = QAction("Simulate Temperature Traffic", self)
+        self.act_simulate_temperature.setCheckable(True)
+        self.act_simulate_temperature.setToolTip("Generate sample temperature log lines locally (for visual graph testing)")
+        self.act_simulate_temperature.toggled.connect(self.on_simulate_toggled_temperature)
+        tools_menu.addAction(self.act_simulate_temperature)
+
 
     def _chip_style(self, color: str) -> str:
         bg = "#f5f5f5"
@@ -1023,6 +1059,19 @@ class MainWindow(QMainWindow):
                 break
             self._ingest_line(self._replay_lines.popleft())
 
+    def _replay_tick_temperature(self) -> None:
+        if not self._replay_lines_temperature:
+            self._replay_timer_temperature.stop()
+            self._replay_active_temperature = False
+            self.statusBar().showMessage("Replay temperature finished", 2000)
+            return
+
+        for _ in range(REPLAY_LINES_PER_TICK):
+            if not self._replay_lines:
+                break
+            self._ingest_line(self._replay_lines.popleft())
+
+
     def on_open_log_clicked(self) -> None:
         path, _ = QFileDialog.getOpenFileName(self, "Open Log", "", "Text Files (*.txt);;All Files (*)")
         if not path:
@@ -1041,6 +1090,30 @@ class MainWindow(QMainWindow):
         self._replay_timer.start()
         self.statusBar().showMessage(f"Replay: {os.path.basename(path)} ({len(self._replay_lines)} lines)", 3000)
 
+    # -------------------------------------------------------
+    # simulation CSV Temperature lines
+    # -------------------------------------------------------
+    def on_replay_sample_temperature_clicked(self) -> None:
+        sample = [
+            # CSV_TEMP Zimmertemperatur
+            "[CSV_TEMP];14047;2633;228;14220;2666;221;0;0;1",
+        ]
+        self.on_stop_replay__temperature_clicked()
+        self._replay_lines_temperature = deque(sample)
+        self._replay_active_temperature = True
+        self._replay_timer_temperature.start()
+        self.statusBar().showMessage("Replay: temperature sample", 2000)
+
+    def on_stop_replay_temperature_clicked(self) -> None:
+        if self._replay_timer.isActive():
+            self._replay_timer.stop()
+        self._replay_lines.clear()
+        self._replay_active = False
+        self.statusBar().showMessage("Replay stopped", 1500)
+
+    # -------------------------------------------------------
+    # simulation user friendly log entries
+    # -------------------------------------------------------
     def on_replay_sample_clicked(self) -> None:
         sample = [
             "[MAIN/INFO] ======================================================",
@@ -1057,7 +1130,7 @@ class MainWindow(QMainWindow):
             "[UI/ERROR] UDP listener error: [Errno 9] Bad file descriptor",
             "[OVEN/WARN] Door opened — entering WAIT",
             "[OVEN/INFO] [T11] mode=1 door=1 lock=1 ntc=21.00 core=23.25 ui=23.25 ctrl=23.25 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=0 heatRemMs=0 restRemMs=3000",
-            "[MAIN/INFO] Sample done.",
+            "[MAIN/INFO] Sample done.", 
         ]
 
         self.on_stop_replay_clicked()
@@ -1087,6 +1160,18 @@ class MainWindow(QMainWindow):
         else:
             self._stop_simulation()
 
+    def on_simulate_toggled_temperature(self, checked: bool) -> None:
+        if checked:
+            if self._listener is None:
+                self.act_simulate_temperature.blockSignals(True)
+                self.act_simulate_temperature.setChecked(False)
+                self.act_simulate_temperature.blockSignals(False)
+                self.statusBar().showMessage("Simulation requires CONNECTED (start listener first).", 2500)
+                return
+            self._start_simulation_temperature()
+        else:
+            self._stop_simulation_temperature()
+
     def _start_simulation(self) -> None:
         if self._sim_timer.isActive():
             return
@@ -1100,17 +1185,50 @@ class MainWindow(QMainWindow):
         self._sim_timer.start()
         self.statusBar().showMessage("Simulation: ON (default profile)", 2500)
 
+    def _start_simulation_temperature(self) -> None:
+        if self._sim_temperature_timer.isActive():
+            return
+        self._sim_temperature_enabled = True
+        self._sim_temperature_seq = 0
+        self._sim_temperature_ntc_chamber = 21.9
+        self._sim_temperature_ntc_hotspot = 21.5
+        #self._sim_temperature_ntc_chamber_tgt = 60.0
+        self._sim_temperature_ntc_chamber_tgt = 100.0
+        self._sim_temperature_heater = 0
+        self._sim_temperature_max_hotspot = 150.0
+        self._sim_temperature_min_hotspot_on = 2.0
+        self._sim_temperature_max_hotspot_on = 5.0
+        self._sim_temperature_chamber_lower_offset = 3.0    # target = 45, min target = 45-5 = 40
+        self._sim_temperature_chamber_upper_offset = 5.0    # target = 45, max target = 45+5 = 50
+        self._sim_temperature_chamber_increase_deg = 0.3
+        self._sim_temperature_hotspot_increase_deg = 0.9
+        self._sim_temperature_multiplier_degrees = 10
+        self._sim_temperaturemask = 0x0000
+        self._sim_temperature_heater = 0
+        self._sim_temperature_mask = 0x0000
+        self._sim_temperature_timer.start()
+        self.statusBar().showMessage("Simulation (TEMP): ON (default profile)", 2500)
+
+
     def _stop_simulation(self) -> None:
         self._sim_enabled = False
         if self._sim_timer.isActive():
             self._sim_timer.stop()
         self.statusBar().showMessage("Simulation: OFF", 1500)
 
+    def _stop_simulation_temperatue(self) -> None:
+        self._sim_temperature_enabled = False
+        if self._sim_temperature_timer.isActive():
+            self._sim_temperature_timer.stop()
+        self.statusBar().showMessage("Simulation (TEMP): OFF", 1500)
+
+
     def _on_sim_tick(self) -> None:
         if not self._sim_enabled or self._listener is None:
             return
         line = self._sim_next_line()
         self._on_line_received(line)
+
 
     def _sim_next_line(self) -> str:
         self._sim_seq += 1
@@ -1151,6 +1269,70 @@ class MainWindow(QMainWindow):
         if r < 0.97:
             return "[HOST/DEBUG] RX burst: 128 bytes"
         return "[HOST/ERROR] UART timeout while polling STATUS"
+
+
+    def _on_sim_temperature_tick(self) -> None:
+        if not self._sim_temperature_enabled or self._listener is None:
+            return
+        line = self._sim_next_temperature_line()
+        self._on_line_received(line)
+
+    def _sim_next_temperature_line(self) -> str:
+        self._sim_temperature_seq += 1
+        # ------------------------------------------------------------------------------------------------------------------------------------------
+        # This simulation profile creates a situation in which the chamber temperature (Chamber) rises continuously, but the hotspot NTC temperature (Core) rises faster. 
+        # This fact corresponds to reality, as the hotspot NTC is located near the heating coil.
+        # The chamber temperature may exceed the set target value by a maximum of 5 degrees and differ by 5 degrees. Thus, we have a range of 10 degrees.
+        # Since we are working with a slow environment, the heater must be deactivated early to avoid overshooting as much as possible.
+        # The minimum heater-on time must not be less than 2 seconds, as we do not have a PWM-controlled system.
+        # If the target temperature has not been reached and the heater is off, the system waits n seconds (the time constant) until the heater turns on again 
+        # for 2-5 seconds. 
+        # If the chamber temperature reaches the target temperature minus 5 degrees, the heater remains off until this target temperature minus 5 degrees is again exceeded.
+        # ------------------------------------------------------------------------------------------------------------------------------------------
+
+        if self._sim_temperature_seq == 100: # do not start earlier as xxx ticks (100=10 seconds)
+            self._sim_temperature_heater = 1 
+            self._sim_temperature_running = True
+
+        if self._sim_temperature_running == False:
+            # before starting the simulation, keep the temperature stable
+            self._sim_temperature_ntc_chamber = 21.9
+            self._sim_temperature_ntc_hotspot = 21.5
+            self._sim_temperature_heater = False
+            return ""
+
+        if self._sim_temperature_heater:
+            self._sim_temperature_ntc_chamber += self._sim_temperature_chamber_increase_deg * (random.random() * 1.5) # chamber heats up slower than hotspot (slow environment)
+            self._sim_temperature_ntc_hotspot += self._sim_temperature_hotspot_increase_deg * (random.random() * 1.75)
+        else:
+            self._sim_temperature_ntc_chamber -= (0.1 * (random.random() * 1.2)) # chamber cools down slower than hotspot (slow environment)
+            self._sim_temperature_ntc_hotspot -= (0.5 * (random.random() * 1.5)) # hotspot cools down faster than chamber
+
+        # self._sim_temperature_ntc_chamber = max(self._sim_temperature_ntc_chamber_tgt, min(self._sim_temperature_ntc_chamber_tgt, self._sim_temperature_ntc_chamber))
+        # self._sim_temperature_ntc_hotspot = max(self._sim_temperature_max_hotspot, min(self._sim_temperature_max_hotspot, self._sim_temperature_ntc_hotspot))
+
+        # system is running, but chamber not in temp range and heater is off? If yes heater = on
+        if ((self._sim_temperature_ntc_chamber < (self._sim_temperature_ntc_chamber_tgt - self._sim_temperature_chamber_lower_offset)  and not self._sim_temperature_heater)) :
+            self._sim_temperature_heater = 1 # turn on heater if chamber is below target minus x degrees
+
+        # is chamber in temp range? If yes heater = off
+        if ((self._sim_temperature_ntc_chamber > (self._sim_temperature_ntc_chamber_tgt - self._sim_temperature_chamber_lower_offset) or (self._sim_temperature_ntc_chamber > self._sim_temperature_ntc_chamber_tgt + self._sim_temperature_chamber_upper_offset) and self._sim_temperature_heater)) :
+            self._sim_temperature_heater = 0 # turn on heater if chamber is below target minus x degrees
+
+        # if heater overheated? If yes heater = off
+        if (self._sim_temperature_ntc_hotspot >self._sim_temperature_max_hotspot):
+            self._sim_temperature_heater = 0 # turn off heater if hotspot exceeds target
+
+        return (
+            f"[CSV_TEMP];"
+            f"{" ON" if self._sim_temperature_heater else "OFF"};"
+            f"0;0;"
+            f"{int(self._sim_temperature_ntc_hotspot * self._sim_temperature_multiplier_degrees):03d};" 
+            f"0;0;"
+            f"{int(self._sim_temperature_ntc_chamber * self._sim_temperature_multiplier_degrees):03d};"
+            f"{int(self._sim_temperature_ntc_chamber_tgt  * self._sim_temperature_multiplier_degrees):03d};"
+            f"{int(self._sim_temperature_max_hotspot  * self._sim_temperature_multiplier_degrees):03d}"
+        ) 
 
     # ---------------- Log limits ----------------
 
@@ -1521,32 +1703,6 @@ class MainWindow(QMainWindow):
                 f"Listener: OFF — {self._ui_state.bind_ip}:{self._ui_state.port} — "
                 f"shown={self.log.document().blockCount()} dropped={self._trimmed_lines_total} — HL={len(self._hl_rules)}"
             )
-
-    # def _update_connection_ui(self) -> None:
-    #     connected = self._listener is not None
-
-    #     if connected:
-    #         self.chk_timestamp.setEnabled(False)
-
-    #         self.btn_connect.setText("CONNECTED")
-    #         self.btn_connect.setStyleSheet("QToolButton { background-color: #2ecc71; font-weight: bold; }")
-
-    #         self.btn_pause.setEnabled(True)
-    #         if self._ui_paused:
-    #             self.btn_pause.setText("RESUME")
-    #             self.btn_pause.setStyleSheet("QToolButton { background-color: #e74c3c; font-weight: bold; }")
-    #         else:
-    #             self.btn_pause.setText("PAUSE")
-    #             self.btn_pause.setStyleSheet("QToolButton { background-color: #2ecc71; font-weight: bold; }")
-    #     else:
-    #         self.chk_timestamp.setEnabled(True)
-
-    #         self.btn_connect.setText("CONNECT")
-    #         self.btn_connect.setStyleSheet("QToolButton { background-color: #b0b0b0; font-weight: bold; }")
-
-    #         self.btn_pause.setEnabled(False)
-    #         self.btn_pause.setText("PAUSE")
-    #         self.btn_pause.setStyleSheet("QToolButton { background-color: #b0b0b0; font-weight: bold; }")
 
     # --- Live logfile status ---
     @staticmethod

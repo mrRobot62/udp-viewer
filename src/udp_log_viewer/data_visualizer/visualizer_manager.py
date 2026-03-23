@@ -49,6 +49,16 @@ class VisualizerManager:
     def get_window(self, index: int) -> VisualizerWindow | None:
         return self.windows_by_index.get(index)
 
+    def show_window(self, index: int) -> None:
+        window = self.windows_by_index.get(index)
+        if window is not None:
+            window.show()
+
+    def close_window(self, index: int) -> None:
+        window = self.windows_by_index.get(index)
+        if window is not None:
+            window.close()
+
     def _get_or_create_window(self, index: int, config: VisualizerConfig) -> VisualizerWindow:
         existing_window = self.windows_by_index.get(index)
         if existing_window is not None:
