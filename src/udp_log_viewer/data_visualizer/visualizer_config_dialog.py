@@ -14,6 +14,7 @@ from .visualizer_field_config import VisualizerFieldConfig
 class VisualizerConfigDialog(QDialog):
     SCALE_OPTIONS = ("1", "10", "100", "1000")
     AXIS_OPTIONS = ("Y1", "Y2")
+    RENDER_STYLE_OPTIONS = ("Line", "Step")
     COLOR_OPTIONS = ("black", "gray", "red", "blue", "green", "orange", "purple")
     LINESTYLE_OPTIONS = ("solid", "dashed", "dotted", "dashdot")
 
@@ -22,7 +23,7 @@ class VisualizerConfigDialog(QDialog):
         self._config = config
         self.setWindowTitle("CSV_TEMP Visualizer Config")
         self.setModal(True)
-        self.resize(1180, 700)
+        self.resize(1260, 720)
 
         root = QVBoxLayout(self)
         self._enabled = QCheckBox("Enabled")
@@ -86,9 +87,9 @@ class VisualizerConfigDialog(QDialog):
 
         root.addLayout(axes_layout)
 
-        self._table = QTableWidget(0, 9)
+        self._table = QTableWidget(0, 10)
         self._table.setHorizontalHeaderLabels(
-            ["Field Name", "Active", "Numeric", "Scale", "Plot", "Axis", "Color", "Line Style", "Unit"]
+            ["Field Name", "Active", "Numeric", "Scale", "Plot", "Axis", "Render", "Color", "Line Style", "Unit"]
         )
         self._table.verticalHeader().setVisible(False)
         self._table.setSelectionBehavior(self._table.SelectRows)
@@ -125,9 +126,10 @@ class VisualizerConfigDialog(QDialog):
                     scale=int(self._combo_text(row, 3) or "10"),
                     plot=self._combo_text(row, 4).lower() == "yes",
                     axis=self._combo_text(row, 5),
-                    color=self._combo_text(row, 6),
-                    line_style=self._combo_text(row, 7),
-                    unit=self._table.item(row, 8).text().strip() if self._table.item(row, 8) else "",
+                    render_style=self._combo_text(row, 6),
+                    color=self._combo_text(row, 7),
+                    line_style=self._combo_text(row, 8),
+                    unit=self._table.item(row, 9).text().strip() if self._table.item(row, 9) else "",
                 )
             )
 
@@ -167,9 +169,10 @@ class VisualizerConfigDialog(QDialog):
         self._table.setCellWidget(row, 3, self._build_combo(self.SCALE_OPTIONS, str(field.scale)))
         self._table.setCellWidget(row, 4, self._build_combo(("yes", "no"), "yes" if field.plot else "no"))
         self._table.setCellWidget(row, 5, self._build_combo(self.AXIS_OPTIONS, field.axis))
-        self._table.setCellWidget(row, 6, self._build_combo(self.COLOR_OPTIONS, field.color))
-        self._table.setCellWidget(row, 7, self._build_combo(self.LINESTYLE_OPTIONS, field.line_style))
-        self._table.setItem(row, 8, QTableWidgetItem(field.unit))
+        self._table.setCellWidget(row, 6, self._build_combo(self.RENDER_STYLE_OPTIONS, field.render_style))
+        self._table.setCellWidget(row, 7, self._build_combo(self.COLOR_OPTIONS, field.color))
+        self._table.setCellWidget(row, 8, self._build_combo(self.LINESTYLE_OPTIONS, field.line_style))
+        self._table.setItem(row, 9, QTableWidgetItem(field.unit))
 
     def _build_combo(self, values: tuple[str, ...], current: str) -> QComboBox:
         combo = QComboBox()
@@ -194,7 +197,7 @@ class VisualizerConfigDialog(QDialog):
         return combo.currentText().strip() if combo is not None else ""
 
     def _on_add(self) -> None:
-        self._append_row(VisualizerFieldConfig("new_field", True, True, 10, False, "Y1", "gray", "solid", ""))
+        self._append_row(VisualizerFieldConfig("new_field", True, True, 10, False, "Y1", "Line", "gray", "solid", ""))
 
     def _on_delete(self) -> None:
         row = self._table.currentRow()
@@ -227,9 +230,10 @@ class VisualizerConfigDialog(QDialog):
             "scale": self._combo_text(row, 3),
             "plot": self._combo_text(row, 4),
             "axis": self._combo_text(row, 5),
-            "color": self._combo_text(row, 6),
-            "line_style": self._combo_text(row, 7),
-            "unit": self._table.item(row, 8).text() if self._table.item(row, 8) else "",
+            "render_style": self._combo_text(row, 6),
+            "color": self._combo_text(row, 7),
+            "line_style": self._combo_text(row, 8),
+            "unit": self._table.item(row, 9).text() if self._table.item(row, 9) else "",
         }
 
     def _set_row_values(self, row: int, values: dict[str, str]) -> None:
@@ -239,6 +243,7 @@ class VisualizerConfigDialog(QDialog):
         self._table.cellWidget(row, 3).setCurrentText(values["scale"])
         self._table.cellWidget(row, 4).setCurrentText(values["plot"])
         self._table.cellWidget(row, 5).setCurrentText(values["axis"])
-        self._table.cellWidget(row, 6).setCurrentText(values["color"])
-        self._table.cellWidget(row, 7).setCurrentText(values["line_style"])
-        self._table.item(row, 8).setText(values["unit"])
+        self._table.cellWidget(row, 6).setCurrentText(values["render_style"])
+        self._table.cellWidget(row, 7).setCurrentText(values["color"])
+        self._table.cellWidget(row, 8).setCurrentText(values["line_style"])
+        self._table.item(row, 9).setText(values["unit"])

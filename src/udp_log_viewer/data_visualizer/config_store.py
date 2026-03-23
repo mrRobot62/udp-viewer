@@ -73,6 +73,7 @@ class ConfigStore:
                 parser.set(section, f"{prefix}scale", str(field.scale))
                 parser.set(section, f"{prefix}plot", str(bool(field.plot)).lower())
                 parser.set(section, f"{prefix}axis", field.axis)
+                parser.set(section, f"{prefix}render_style", field.render_style)
                 parser.set(section, f"{prefix}color", field.color)
                 parser.set(section, f"{prefix}line_style", field.line_style)
                 parser.set(section, f"{prefix}unit", field.unit)
@@ -104,6 +105,7 @@ class ConfigStore:
                     scale=self._get_int(parser, section, f"{prefix}scale", default=10),
                     plot=self._get_bool(parser, section, f"{prefix}plot", default=True),
                     axis=parser.get(section, f"{prefix}axis", fallback="Y1"),
+                    render_style=parser.get(section, f"{prefix}render_style", fallback="Line"),
                     color=parser.get(section, f"{prefix}color", fallback="blue"),
                     line_style=parser.get(section, f"{prefix}line_style", fallback="solid"),
                     unit=parser.get(section, f"{prefix}unit", fallback=""),
@@ -181,14 +183,14 @@ class ConfigStore:
             y1_axis=VisualizerAxisConfig(label="Temperature", min_value=0.0, max_value=160.0),
             y2_axis=VisualizerAxisConfig(label="State", min_value=-0.1, max_value=3.1),
             fields=[
-                VisualizerFieldConfig("rawHot", active=True, numeric=True, scale=1, plot=False, axis="Y1", color="black", line_style="solid", unit="raw"),
-                VisualizerFieldConfig("hot_mV", active=True, numeric=True, scale=1, plot=False, axis="Y1", color="gray", line_style="solid", unit="mV"),
-                VisualizerFieldConfig("Thot", active=True, numeric=True, scale=10, plot=True, axis="Y1", color="red", line_style="solid", unit="°C"),
-                VisualizerFieldConfig("rawChamber", active=True, numeric=True, scale=1, plot=False, axis="Y1", color="black", line_style="dashed", unit="raw"),
-                VisualizerFieldConfig("chamberMilliVolts", active=True, numeric=True, scale=1, plot=False, axis="Y1", color="gray", line_style="dashed", unit="mV"),
-                VisualizerFieldConfig("Tch", active=True, numeric=True, scale=10, plot=True, axis="Y1", color="blue", line_style="dashed", unit="°C"),
-                VisualizerFieldConfig("heater_on", active=False, numeric=True, scale=1, plot=False, axis="Y2", color="orange", line_style="dotted", unit=""),
-                VisualizerFieldConfig("door_open", active=False, numeric=True, scale=1, plot=False, axis="Y2", color="purple", line_style="dotted", unit=""),
-                VisualizerFieldConfig("state", active=False, numeric=True, scale=1, plot=False, axis="Y2", color="green", line_style="dashdot", unit=""),
+                VisualizerFieldConfig("rawHot", active=True, numeric=True, scale=1, plot=False, axis="Y1", render_style="Line", color="black", line_style="solid", unit="raw"),
+                VisualizerFieldConfig("hot_mV", active=True, numeric=True, scale=1, plot=False, axis="Y1", render_style="Line", color="gray", line_style="solid", unit="mV"),
+                VisualizerFieldConfig("Thot", active=True, numeric=True, scale=10, plot=True, axis="Y1", render_style="Line", color="red", line_style="solid", unit="°C"),
+                VisualizerFieldConfig("rawChamber", active=True, numeric=True, scale=1, plot=False, axis="Y1", render_style="Line", color="black", line_style="dashed", unit="raw"),
+                VisualizerFieldConfig("chamberMilliVolts", active=True, numeric=True, scale=1, plot=False, axis="Y1", render_style="Line", color="gray", line_style="dashed", unit="mV"),
+                VisualizerFieldConfig("Tch", active=True, numeric=True, scale=10, plot=True, axis="Y1", render_style="Line", color="blue", line_style="dashed", unit="°C"),
+                VisualizerFieldConfig("heater_on", active=False, numeric=True, scale=1, plot=False, axis="Y2", render_style="Step", color="orange", line_style="dotted", unit="Bool"),
+                VisualizerFieldConfig("door_open", active=False, numeric=True, scale=1, plot=False, axis="Y2", render_style="Step", color="purple", line_style="dotted", unit="Bool"),
+                VisualizerFieldConfig("state", active=False, numeric=True, scale=1, plot=False, axis="Y2", render_style="Step", color="green", line_style="dashdot", unit=""),
             ],
         )

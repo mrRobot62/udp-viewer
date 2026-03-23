@@ -9,6 +9,7 @@ class VisualizerFieldConfig:
     plot: bool = True
     active: bool = True
     axis: str = "Y1"
+    render_style: str = "Line"
     color: str = "blue"
     line_style: str = "solid"
     unit: str = ""
@@ -16,6 +17,7 @@ class VisualizerFieldConfig:
     def __post_init__(self) -> None:
         self.field_name = (self.field_name or "").strip()
         self.axis = self._normalize_axis(self.axis)
+        self.render_style = self._normalize_render_style(self.render_style)
         self.color = (self.color or "blue").strip() or "blue"
         self.line_style = (self.line_style or "solid").strip() or "solid"
         self.unit = (self.unit or "").strip()
@@ -40,4 +42,11 @@ class VisualizerFieldConfig:
         normalized = (value or "Y1").strip().upper()
         if normalized not in ("Y1", "Y2"):
             return "Y1"
+        return normalized
+
+    @staticmethod
+    def _normalize_render_style(value: str | None) -> str:
+        normalized = (value or "Line").strip().title()
+        if normalized not in ("Line", "Step"):
+            return "Line"
         return normalized

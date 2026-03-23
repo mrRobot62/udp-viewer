@@ -228,13 +228,16 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
                     label = f"{label} [{field.unit}]"
 
                 target_axis = self._axes_y2 if field.axis == "Y2" else self._axes_y1
-                target_axis.plot(
-                    x_values,
-                    y_values,
-                    label=label,
-                    color=field.color or None,
-                    linestyle=_to_matplotlib_linestyle(field.line_style),
-                )
+                plot_kwargs = {
+                    "label": label,
+                    "color": field.color or None,
+                    "linestyle": _to_matplotlib_linestyle(field.line_style),
+                }
+
+                if field.render_style == "Step":
+                    target_axis.step(x_values, y_values, where="post", **plot_kwargs)
+                else:
+                    target_axis.plot(x_values, y_values, **plot_kwargs)
 
                 if field.axis == "Y2":
                     plotted_y2 = True
