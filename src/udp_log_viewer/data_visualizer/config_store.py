@@ -54,18 +54,25 @@ class ConfigStore:
             parser.set(section, "x_min", "" if config.x_axis.min_value is None else str(config.x_axis.min_value))
             parser.set(section, "x_max", "" if config.x_axis.max_value is None else str(config.x_axis.max_value))
 
-            parser.set(section, "y_label", config.y_axis.label)
-            parser.set(section, "y_logarithmic", str(bool(config.y_axis.logarithmic)).lower())
-            parser.set(section, "y_min", "" if config.y_axis.min_value is None else str(config.y_axis.min_value))
-            parser.set(section, "y_max", "" if config.y_axis.max_value is None else str(config.y_axis.max_value))
+            parser.set(section, "y1_label", config.y1_axis.label)
+            parser.set(section, "y1_logarithmic", str(bool(config.y1_axis.logarithmic)).lower())
+            parser.set(section, "y1_min", "" if config.y1_axis.min_value is None else str(config.y1_axis.min_value))
+            parser.set(section, "y1_max", "" if config.y1_axis.max_value is None else str(config.y1_axis.max_value))
+
+            parser.set(section, "y2_label", config.y2_axis.label)
+            parser.set(section, "y2_logarithmic", str(bool(config.y2_axis.logarithmic)).lower())
+            parser.set(section, "y2_min", "" if config.y2_axis.min_value is None else str(config.y2_axis.min_value))
+            parser.set(section, "y2_max", "" if config.y2_axis.max_value is None else str(config.y2_axis.max_value))
 
             parser.set(section, "field_count", str(len(config.fields)))
             for field_index, field in enumerate(config.fields):
                 prefix = f"field_{field_index}_"
                 parser.set(section, f"{prefix}name", field.field_name)
+                parser.set(section, f"{prefix}active", str(bool(field.active)).lower())
                 parser.set(section, f"{prefix}numeric", str(bool(field.numeric)).lower())
                 parser.set(section, f"{prefix}scale", str(field.scale))
                 parser.set(section, f"{prefix}plot", str(bool(field.plot)).lower())
+                parser.set(section, f"{prefix}axis", field.axis)
                 parser.set(section, f"{prefix}color", field.color)
                 parser.set(section, f"{prefix}line_style", field.line_style)
                 parser.set(section, f"{prefix}unit", field.unit)
@@ -92,9 +99,11 @@ class ConfigStore:
             fields.append(
                 VisualizerFieldConfig(
                     field_name=field_name,
+                    active=self._get_bool(parser, section, f"{prefix}active", default=True),
                     numeric=self._get_bool(parser, section, f"{prefix}numeric", default=True),
                     scale=self._get_int(parser, section, f"{prefix}scale", default=10),
                     plot=self._get_bool(parser, section, f"{prefix}plot", default=True),
+                    axis=parser.get(section, f"{prefix}axis", fallback="Y1"),
                     color=parser.get(section, f"{prefix}color", fallback="blue"),
                     line_style=parser.get(section, f"{prefix}line_style", fallback="solid"),
                     unit=parser.get(section, f"{prefix}unit", fallback=""),
@@ -107,11 +116,17 @@ class ConfigStore:
             min_value=self._get_float_or_none(parser, section, "x_min", default=base_config.x_axis.min_value),
             max_value=self._get_float_or_none(parser, section, "x_max", default=base_config.x_axis.max_value),
         )
-        y_axis = VisualizerAxisConfig(
-            label=parser.get(section, "y_label", fallback=base_config.y_axis.label),
-            logarithmic=self._get_bool(parser, section, "y_logarithmic", default=base_config.y_axis.logarithmic),
-            min_value=self._get_float_or_none(parser, section, "y_min", default=base_config.y_axis.min_value),
-            max_value=self._get_float_or_none(parser, section, "y_max", default=base_config.y_axis.max_value),
+        y1_axis = VisualizerAxisConfig(
+            label=parser.get(section, "y1_label", fallback=base_config.y1_axis.label),
+            logarithmic=self._get_bool(parser, section, "y1_logarithmic", default=base_config.y1_axis.logarithmic),
+            min_value=self._get_float_or_none(parser, section, "y1_min", default=base_config.y1_axis.min_value),
+            max_value=self._get_float_or_none(parser, section, "y1_max", default=base_config.y1_axis.max_value),
+        )
+        y2_axis = VisualizerAxisConfig(
+            label=parser.get(section, "y2_label", fallback=base_config.y2_axis.label),
+            logarithmic=self._get_bool(parser, section, "y2_logarithmic", default=base_config.y2_axis.logarithmic),
+            min_value=self._get_float_or_none(parser, section, "y2_min", default=base_config.y2_axis.min_value),
+            max_value=self._get_float_or_none(parser, section, "y2_max", default=base_config.y2_axis.max_value),
         )
 
         return VisualizerConfig(
@@ -121,7 +136,8 @@ class ConfigStore:
             max_samples=self._get_int(parser, section, "max_samples", default=base_config.max_samples),
             window_geometry=parser.get(section, "window_geometry", fallback=base_config.window_geometry or "") or None,
             x_axis=x_axis,
-            y_axis=y_axis,
+            y1_axis=y1_axis,
+            y2_axis=y2_axis,
             fields=fields or list(base_config.fields),
         )
 
@@ -162,16 +178,17 @@ class ConfigStore:
             filter_string="[CSV_TEMP]",
             max_samples=600,
             x_axis=VisualizerAxisConfig(label="Samples", continuous=True, max_value=300),
-            y_axis=VisualizerAxisConfig(label="Temperature", min_value=0.0, max_value=120.0),
+            y1_axis=VisualizerAxisConfig(label="Temperature", min_value=0.0, max_value=160.0),
+            y2_axis=VisualizerAxisConfig(label="State", min_value=-0.1, max_value=3.1),
             fields=[
-                VisualizerFieldConfig("rawHot", numeric=True, scale=1, plot=False, color="black", line_style="solid", unit="raw"),
-                VisualizerFieldConfig("hot_mV", numeric=True, scale=1, plot=False, color="gray", line_style="solid", unit="mV"),
-                VisualizerFieldConfig("Thot", numeric=True, scale=10, plot=True, color="red", line_style="solid", unit="°C"),
-                VisualizerFieldConfig("rawChamber", numeric=True, scale=1, plot=False, color="black", line_style="dashed", unit="raw"),
-                VisualizerFieldConfig("chamberMilliVolts", numeric=True, scale=1, plot=False, color="gray", line_style="dashed", unit="mV"),
-                VisualizerFieldConfig("Tch", numeric=True, scale=10, plot=True, color="blue", line_style="dashed", unit="°C"),
-                VisualizerFieldConfig("heater_on", numeric=True, scale=1, plot=False, color="orange", line_style="dotted", unit=""),
-                VisualizerFieldConfig("door_open", numeric=True, scale=1, plot=False, color="purple", line_style="dotted", unit=""),
-                VisualizerFieldConfig("state", numeric=True, scale=1, plot=False, color="green", line_style="dashdot", unit=""),
+                VisualizerFieldConfig("rawHot", active=True, numeric=True, scale=1, plot=False, axis="Y1", color="black", line_style="solid", unit="raw"),
+                VisualizerFieldConfig("hot_mV", active=True, numeric=True, scale=1, plot=False, axis="Y1", color="gray", line_style="solid", unit="mV"),
+                VisualizerFieldConfig("Thot", active=True, numeric=True, scale=10, plot=True, axis="Y1", color="red", line_style="solid", unit="°C"),
+                VisualizerFieldConfig("rawChamber", active=True, numeric=True, scale=1, plot=False, axis="Y1", color="black", line_style="dashed", unit="raw"),
+                VisualizerFieldConfig("chamberMilliVolts", active=True, numeric=True, scale=1, plot=False, axis="Y1", color="gray", line_style="dashed", unit="mV"),
+                VisualizerFieldConfig("Tch", active=True, numeric=True, scale=10, plot=True, axis="Y1", color="blue", line_style="dashed", unit="°C"),
+                VisualizerFieldConfig("heater_on", active=False, numeric=True, scale=1, plot=False, axis="Y2", color="orange", line_style="dotted", unit=""),
+                VisualizerFieldConfig("door_open", active=False, numeric=True, scale=1, plot=False, axis="Y2", color="purple", line_style="dotted", unit=""),
+                VisualizerFieldConfig("state", active=False, numeric=True, scale=1, plot=False, axis="Y2", color="green", line_style="dashdot", unit=""),
             ],
         )

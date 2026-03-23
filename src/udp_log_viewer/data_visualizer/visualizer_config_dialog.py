@@ -13,6 +13,7 @@ from .visualizer_field_config import VisualizerFieldConfig
 
 class VisualizerConfigDialog(QDialog):
     SCALE_OPTIONS = ("1", "10", "100", "1000")
+    AXIS_OPTIONS = ("Y1", "Y2")
     COLOR_OPTIONS = ("black", "gray", "red", "blue", "green", "orange", "purple")
     LINESTYLE_OPTIONS = ("solid", "dashed", "dotted", "dashdot")
 
@@ -21,7 +22,7 @@ class VisualizerConfigDialog(QDialog):
         self._config = config
         self.setWindowTitle("CSV_TEMP Visualizer Config")
         self.setModal(True)
-        self.resize(980, 620)
+        self.resize(1180, 700)
 
         root = QVBoxLayout(self)
         self._enabled = QCheckBox("Enabled")
@@ -40,16 +41,24 @@ class VisualizerConfigDialog(QDialog):
         root.addLayout(form)
 
         axes_layout = QGridLayout()
+
         self._x_label = QLineEdit(config.x_axis.label)
         self._x_continuous = QCheckBox("Continuous X")
         self._x_continuous.setChecked(config.x_axis.continuous)
         self._x_min = self._build_float_spin(config.x_axis.min_value)
         self._x_max = self._build_float_spin(config.x_axis.max_value)
-        self._y_label = QLineEdit(config.y_axis.label)
-        self._y_log = QCheckBox("Logarithmic Y")
-        self._y_log.setChecked(config.y_axis.logarithmic)
-        self._y_min = self._build_float_spin(config.y_axis.min_value)
-        self._y_max = self._build_float_spin(config.y_axis.max_value)
+
+        self._y1_label = QLineEdit(config.y1_axis.label)
+        self._y1_log = QCheckBox("Y1 Logarithmic")
+        self._y1_log.setChecked(config.y1_axis.logarithmic)
+        self._y1_min = self._build_float_spin(config.y1_axis.min_value)
+        self._y1_max = self._build_float_spin(config.y1_axis.max_value)
+
+        self._y2_label = QLineEdit(config.y2_axis.label)
+        self._y2_log = QCheckBox("Y2 Logarithmic")
+        self._y2_log.setChecked(config.y2_axis.logarithmic)
+        self._y2_min = self._build_float_spin(config.y2_axis.min_value)
+        self._y2_max = self._build_float_spin(config.y2_axis.max_value)
 
         axes_layout.addWidget(QLabel("X Label"), 0, 0)
         axes_layout.addWidget(self._x_label, 0, 1)
@@ -58,18 +67,28 @@ class VisualizerConfigDialog(QDialog):
         axes_layout.addWidget(self._x_min, 1, 1)
         axes_layout.addWidget(QLabel("X Max"), 1, 2)
         axes_layout.addWidget(self._x_max, 1, 3)
-        axes_layout.addWidget(QLabel("Y Label"), 2, 0)
-        axes_layout.addWidget(self._y_label, 2, 1)
-        axes_layout.addWidget(self._y_log, 2, 2)
-        axes_layout.addWidget(QLabel("Y Min"), 3, 0)
-        axes_layout.addWidget(self._y_min, 3, 1)
-        axes_layout.addWidget(QLabel("Y Max"), 3, 2)
-        axes_layout.addWidget(self._y_max, 3, 3)
+
+        axes_layout.addWidget(QLabel("Y1 Label"), 2, 0)
+        axes_layout.addWidget(self._y1_label, 2, 1)
+        axes_layout.addWidget(self._y1_log, 2, 2)
+        axes_layout.addWidget(QLabel("Y1 Min"), 3, 0)
+        axes_layout.addWidget(self._y1_min, 3, 1)
+        axes_layout.addWidget(QLabel("Y1 Max"), 3, 2)
+        axes_layout.addWidget(self._y1_max, 3, 3)
+
+        axes_layout.addWidget(QLabel("Y2 Label"), 4, 0)
+        axes_layout.addWidget(self._y2_label, 4, 1)
+        axes_layout.addWidget(self._y2_log, 4, 2)
+        axes_layout.addWidget(QLabel("Y2 Min"), 5, 0)
+        axes_layout.addWidget(self._y2_min, 5, 1)
+        axes_layout.addWidget(QLabel("Y2 Max"), 5, 2)
+        axes_layout.addWidget(self._y2_max, 5, 3)
+
         root.addLayout(axes_layout)
 
-        self._table = QTableWidget(0, 7)
+        self._table = QTableWidget(0, 9)
         self._table.setHorizontalHeaderLabels(
-            ["Field Name", "Numeric", "Scale", "Plot", "Color", "Line Style", "Unit"]
+            ["Field Name", "Active", "Numeric", "Scale", "Plot", "Axis", "Color", "Line Style", "Unit"]
         )
         self._table.verticalHeader().setVisible(False)
         self._table.setSelectionBehavior(self._table.SelectRows)
@@ -101,12 +120,14 @@ class VisualizerConfigDialog(QDialog):
             fields.append(
                 VisualizerFieldConfig(
                     field_name=field_name,
-                    numeric=self._combo_text(row, 1).lower() == "yes",
-                    scale=int(self._combo_text(row, 2) or "10"),
-                    plot=self._combo_text(row, 3).lower() == "yes",
-                    color=self._combo_text(row, 4),
-                    line_style=self._combo_text(row, 5),
-                    unit=self._table.item(row, 6).text().strip() if self._table.item(row, 6) else "",
+                    active=self._combo_text(row, 1).lower() == "yes",
+                    numeric=self._combo_text(row, 2).lower() == "yes",
+                    scale=int(self._combo_text(row, 3) or "10"),
+                    plot=self._combo_text(row, 4).lower() == "yes",
+                    axis=self._combo_text(row, 5),
+                    color=self._combo_text(row, 6),
+                    line_style=self._combo_text(row, 7),
+                    unit=self._table.item(row, 8).text().strip() if self._table.item(row, 8) else "",
                 )
             )
 
@@ -122,11 +143,17 @@ class VisualizerConfigDialog(QDialog):
                 min_value=self._spin_value_or_none(self._x_min),
                 max_value=self._spin_value_or_none(self._x_max),
             ),
-            y_axis=VisualizerAxisConfig(
-                label=self._y_label.text().strip(),
-                logarithmic=self._y_log.isChecked(),
-                min_value=self._spin_value_or_none(self._y_min),
-                max_value=self._spin_value_or_none(self._y_max),
+            y1_axis=VisualizerAxisConfig(
+                label=self._y1_label.text().strip(),
+                logarithmic=self._y1_log.isChecked(),
+                min_value=self._spin_value_or_none(self._y1_min),
+                max_value=self._spin_value_or_none(self._y1_max),
+            ),
+            y2_axis=VisualizerAxisConfig(
+                label=self._y2_label.text().strip(),
+                logarithmic=self._y2_log.isChecked(),
+                min_value=self._spin_value_or_none(self._y2_min),
+                max_value=self._spin_value_or_none(self._y2_max),
             ),
             fields=fields,
         )
@@ -135,12 +162,14 @@ class VisualizerConfigDialog(QDialog):
         row = self._table.rowCount()
         self._table.insertRow(row)
         self._table.setItem(row, 0, QTableWidgetItem(field.field_name))
-        self._table.setCellWidget(row, 1, self._build_combo(("yes", "no"), "yes" if field.numeric else "no"))
-        self._table.setCellWidget(row, 2, self._build_combo(self.SCALE_OPTIONS, str(field.scale)))
-        self._table.setCellWidget(row, 3, self._build_combo(("yes", "no"), "yes" if field.plot else "no"))
-        self._table.setCellWidget(row, 4, self._build_combo(self.COLOR_OPTIONS, field.color))
-        self._table.setCellWidget(row, 5, self._build_combo(self.LINESTYLE_OPTIONS, field.line_style))
-        self._table.setItem(row, 6, QTableWidgetItem(field.unit))
+        self._table.setCellWidget(row, 1, self._build_combo(("yes", "no"), "yes" if field.active else "no"))
+        self._table.setCellWidget(row, 2, self._build_combo(("yes", "no"), "yes" if field.numeric else "no"))
+        self._table.setCellWidget(row, 3, self._build_combo(self.SCALE_OPTIONS, str(field.scale)))
+        self._table.setCellWidget(row, 4, self._build_combo(("yes", "no"), "yes" if field.plot else "no"))
+        self._table.setCellWidget(row, 5, self._build_combo(self.AXIS_OPTIONS, field.axis))
+        self._table.setCellWidget(row, 6, self._build_combo(self.COLOR_OPTIONS, field.color))
+        self._table.setCellWidget(row, 7, self._build_combo(self.LINESTYLE_OPTIONS, field.line_style))
+        self._table.setItem(row, 8, QTableWidgetItem(field.unit))
 
     def _build_combo(self, values: tuple[str, ...], current: str) -> QComboBox:
         combo = QComboBox()
@@ -165,7 +194,7 @@ class VisualizerConfigDialog(QDialog):
         return combo.currentText().strip() if combo is not None else ""
 
     def _on_add(self) -> None:
-        self._append_row(VisualizerFieldConfig("new_field", True, 10, False, "gray", "solid", ""))
+        self._append_row(VisualizerFieldConfig("new_field", True, True, 10, False, "Y1", "gray", "solid", ""))
 
     def _on_delete(self) -> None:
         row = self._table.currentRow()
@@ -193,19 +222,23 @@ class VisualizerConfigDialog(QDialog):
     def _row_values(self, row: int) -> dict[str, str]:
         return {
             "field_name": self._table.item(row, 0).text() if self._table.item(row, 0) else "",
-            "numeric": self._combo_text(row, 1),
-            "scale": self._combo_text(row, 2),
-            "plot": self._combo_text(row, 3),
-            "color": self._combo_text(row, 4),
-            "line_style": self._combo_text(row, 5),
-            "unit": self._table.item(row, 6).text() if self._table.item(row, 6) else "",
+            "active": self._combo_text(row, 1),
+            "numeric": self._combo_text(row, 2),
+            "scale": self._combo_text(row, 3),
+            "plot": self._combo_text(row, 4),
+            "axis": self._combo_text(row, 5),
+            "color": self._combo_text(row, 6),
+            "line_style": self._combo_text(row, 7),
+            "unit": self._table.item(row, 8).text() if self._table.item(row, 8) else "",
         }
 
     def _set_row_values(self, row: int, values: dict[str, str]) -> None:
         self._table.item(row, 0).setText(values["field_name"])
-        self._table.cellWidget(row, 1).setCurrentText(values["numeric"])
-        self._table.cellWidget(row, 2).setCurrentText(values["scale"])
-        self._table.cellWidget(row, 3).setCurrentText(values["plot"])
-        self._table.cellWidget(row, 4).setCurrentText(values["color"])
-        self._table.cellWidget(row, 5).setCurrentText(values["line_style"])
-        self._table.item(row, 6).setText(values["unit"])
+        self._table.cellWidget(row, 1).setCurrentText(values["active"])
+        self._table.cellWidget(row, 2).setCurrentText(values["numeric"])
+        self._table.cellWidget(row, 3).setCurrentText(values["scale"])
+        self._table.cellWidget(row, 4).setCurrentText(values["plot"])
+        self._table.cellWidget(row, 5).setCurrentText(values["axis"])
+        self._table.cellWidget(row, 6).setCurrentText(values["color"])
+        self._table.cellWidget(row, 7).setCurrentText(values["line_style"])
+        self._table.item(row, 8).setText(values["unit"])

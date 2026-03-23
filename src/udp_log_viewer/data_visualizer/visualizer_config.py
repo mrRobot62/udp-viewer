@@ -13,7 +13,8 @@ class VisualizerConfig:
     window_geometry: str | None = None
 
     x_axis: VisualizerAxisConfig = field(default_factory=VisualizerAxisConfig)
-    y_axis: VisualizerAxisConfig = field(default_factory=VisualizerAxisConfig)
+    y1_axis: VisualizerAxisConfig = field(default_factory=VisualizerAxisConfig)
+    y2_axis: VisualizerAxisConfig = field(default_factory=lambda: VisualizerAxisConfig(label="Y2"))
 
     fields: list[VisualizerFieldConfig] = field(default_factory=list)
 
@@ -26,14 +27,17 @@ class VisualizerConfig:
     def is_routable(self) -> bool:
         return self.enabled and bool(self.filter_string) and bool(self.fields)
 
+    @property
+    def y_axis(self) -> VisualizerAxisConfig:
+        """Backward-compatible alias for existing single-axis code paths."""
+        return self.y1_axis
+
     @staticmethod
     def _normalize_max_samples(value: int | str | None) -> int:
         try:
             parsed = int(value) if value is not None else 2000
         except (TypeError, ValueError):
             return 2000
-
         if parsed <= 0:
             return 2000
-
         return parsed
