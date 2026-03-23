@@ -142,7 +142,8 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._figure = Figure(figsize=(8, 4))
             self._canvas = FigureCanvas(self._figure)
             self._canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-            self._axes: Axes = self._figure.add_subplot(111)
+            self._axes_y1: Axes = self._figure.add_subplot(111)
+            self._axes_y2: Axes = self._axes_y1.twinx()
 
             self._auto_refresh_checkbox = QCheckBox("Auto Refresh")
             self._auto_refresh_checkbox.setChecked(True)
@@ -204,13 +205,17 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
 
         def _render_plot(self) -> None:
             self.setWindowTitle(self._controller.config.title or "Data Visualizer")
-            self._axes.clear()
+            self._axes_y1.clear()
+            self._axes_y2.clear()
 
             samples = self._get_visible_samples()
-            plotted_any = False
+            plotted_y1 = False
+            plotted_y2 = False
             x_values = list(range(len(samples)))
 
             for field in self._controller.config.fields:
+                if not field.active:
+                    continue
                 if not field.plot or not field.field_name:
                     continue
 
@@ -222,22 +227,29 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
                 if field.unit:
                     label = f"{label} [{field.unit}]"
 
-                self._axes.plot(
+                target_axis = self._axes_y2 if field.axis == "Y2" else self._axes_y1
+                target_axis.plot(
                     x_values,
                     y_values,
                     label=label,
                     color=field.color or None,
                     linestyle=_to_matplotlib_linestyle(field.line_style),
                 )
-                plotted_any = True
+
+                if field.axis == "Y2":
+                    plotted_y2 = True
+                else:
+                    plotted_y1 = True
 
             self._apply_axis_settings()
             visible_count = len(samples)
             total_count = len(self._controller.samples)
             self._status_label.setText(f"Samples: {visible_count} visible / {total_count} total")
 
-            if plotted_any:
-                self._axes.legend(loc="best")
+            if plotted_y1:
+                self._axes_y1.legend(loc="upper left")
+            if plotted_y2:
+                self._axes_y2.legend(loc="upper right")
 
             self._figure.tight_layout()
             self._canvas.draw_idle()
@@ -270,26 +282,32 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
 
         def _apply_axis_settings(self) -> None:
             x_axis = self._controller.config.x_axis
-            y_axis = self._controller.config.y_axis
+            y1_axis = self._controller.config.y1_axis
+            y2_axis = self._controller.config.y2_axis
 
-            self._axes.set_xlabel(x_axis.label or "Samples")
-            self._axes.set_ylabel(y_axis.label or "Value")
+            self._axes_y1.set_xlabel(x_axis.label or "Samples")
+            self._axes_y1.set_ylabel(y1_axis.label or "Y1")
+            self._axes_y2.set_ylabel(y2_axis.label or "Y2")
 
-            if y_axis.logarithmic:
-                self._axes.set_yscale("log")
+            if y1_axis.logarithmic:
+                self._axes_y1.set_yscale("log")
+            if y2_axis.logarithmic:
+                self._axes_y2.set_yscale("log")
 
-            if y_axis.min_value is not None or y_axis.max_value is not None:
-                self._axes.set_ylim(bottom=y_axis.min_value, top=y_axis.max_value)
+            if y1_axis.min_value is not None or y1_axis.max_value is not None:
+                self._axes_y1.set_ylim(bottom=y1_axis.min_value, top=y1_axis.max_value)
+            if y2_axis.min_value is not None or y2_axis.max_value is not None:
+                self._axes_y2.set_ylim(bottom=y2_axis.min_value, top=y2_axis.max_value)
 
             visible_samples = self._get_visible_samples()
             if x_axis.continuous and x_axis.max_value is not None and visible_samples:
                 right = len(visible_samples) - 1
                 left = 0
-                self._axes.set_xlim(left=left, right=max(right, 1))
+                self._axes_y1.set_xlim(left=left, right=max(right, 1))
             elif not x_axis.continuous and visible_samples:
-                self._axes.set_xlim(left=0, right=max(len(visible_samples) - 1, 1))
+                self._axes_y1.set_xlim(left=0, right=max(len(visible_samples) - 1, 1))
 
-            self._axes.grid(True)
+            self._axes_y1.grid(True)
 
         @staticmethod
         def _sanitize_filename(value: str) -> str:
