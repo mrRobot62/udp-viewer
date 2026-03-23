@@ -49,10 +49,8 @@ class VisualizerWindow:
         self.freeze_sample_index: int | None = None
         self.refresh_request_count = 0
         self.rebuild_request_count = 0
-
         self._widget: _VisualizerWindowWidget | None = None
-        if self._can_create_widget():
-            self._widget = _VisualizerWindowWidget(self)
+        self._ensure_widget()
 
     def append_sample(self, sample: VisualizerSample) -> None:
         self.samples.append(sample)
@@ -73,24 +71,39 @@ class VisualizerWindow:
 
     def refresh_plot(self) -> None:
         self.refresh_request_count += 1
-        if self._widget is not None:
-            self._widget.refresh_plot()
+        widget = self._ensure_widget()
+        if widget is not None:
+            widget.refresh_plot()
 
     def rebuild_plot(self) -> None:
         self.rebuild_request_count += 1
-        if self._widget is not None:
-            self._widget.rebuild_plot()
+        widget = self._ensure_widget()
+        if widget is not None:
+            widget.rebuild_plot()
 
     def show(self) -> None:
-        if self._widget is not None:
-            self._widget.show()
+        widget = self._ensure_widget()
+        if widget is not None:
+            widget.show()
+            widget.raise_()
+            widget.activateWindow()
 
     def close(self) -> None:
         if self._widget is not None:
             self._widget.close()
 
     def is_gui_available(self) -> bool:
-        return self._widget is not None
+        return self._ensure_widget() is not None
+
+    def _ensure_widget(self) -> "_VisualizerWindowWidget | None":
+        if self._widget is not None:
+            return self._widget
+
+        if not self._can_create_widget():
+            return None
+
+        self._widget = _VisualizerWindowWidget(self)
+        return self._widget
 
     def _trim_samples_if_needed(self) -> None:
         max_samples = self.config.max_samples
@@ -161,6 +174,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._controller.set_auto_refresh(enabled)
 
         def _render_plot(self) -> None:
+            self.setWindowTitle(self._controller.config.title or "Data Visualizer")
             self._axes.clear()
 
             samples = self._get_visible_samples()
@@ -189,7 +203,9 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
                 plotted_any = True
 
             self._apply_axis_settings()
-            self._status_label.setText(f"Samples: {len(self._controller.samples)}")
+            visible_count = len(samples)
+            total_count = len(self._controller.samples)
+            self._status_label.setText(f"Samples: {visible_count} visible / {total_count} total")
 
             if plotted_any:
                 self._axes.legend(loc="best")
@@ -236,12 +252,13 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             if y_axis.min_value is not None or y_axis.max_value is not None:
                 self._axes.set_ylim(bottom=y_axis.min_value, top=y_axis.max_value)
 
-            if x_axis.continuous and x_axis.max_value is not None:
-                visible_samples = self._get_visible_samples()
-                if visible_samples:
-                    right = len(visible_samples) - 1
-                    left = 0
-                    self._axes.set_xlim(left=left, right=max(right, 1))
+            visible_samples = self._get_visible_samples()
+            if x_axis.continuous and x_axis.max_value is not None and visible_samples:
+                right = len(visible_samples) - 1
+                left = 0
+                self._axes.set_xlim(left=left, right=max(right, 1))
+            elif not x_axis.continuous and visible_samples:
+                self._axes.set_xlim(left=0, right=max(len(visible_samples) - 1, 1))
 
             self._axes.grid(True)
 
@@ -258,6 +275,12 @@ else:
             pass
 
         def show(self) -> None:
+            pass
+
+        def raise_(self) -> None:
+            pass
+
+        def activateWindow(self) -> None:
             pass
 
         def close(self) -> None:

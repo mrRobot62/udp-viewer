@@ -51,11 +51,12 @@ class VisualizerManager:
         return self.windows_by_index.get(index)
 
     def show_window(self, index: int) -> None:
-        window = self.windows_by_index.get(index)
-        if window is None and 0 <= index < len(self.visualizers):
-            window = self._get_or_create_window(index, self.visualizers[index])
-        if window is not None:
-            window.show()
+        if not self.visualizers:
+            self.load_configs()
+        if not (0 <= index < len(self.visualizers)):
+            return
+        window = self._get_or_create_window(index, self.visualizers[index])
+        window.show()
 
     def close_window(self, index: int) -> None:
         window = self.windows_by_index.get(index)

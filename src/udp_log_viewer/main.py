@@ -1346,14 +1346,17 @@ class MainWindow(QMainWindow):
             self._sim_temperature_heater = 0 # turn off heater if hotspot exceeds target
 
         return (
-            f"[CSV_TEMP];"
-            f"{" ON" if self._sim_temperature_heater else "OFF"};"
+            f";[CSV_TEMP];"
+            #f"{" ON" if self._sim_temperature_heater else "OFF"};"
             f"0;0;"
             f"{int(self._sim_temperature_ntc_hotspot * self._sim_temperature_multiplier_degrees):03d};" 
             f"0;0;"
             f"{int(self._sim_temperature_ntc_chamber * self._sim_temperature_multiplier_degrees):03d};"
-            f"{int(self._sim_temperature_ntc_chamber_tgt  * self._sim_temperature_multiplier_degrees):03d};"
-            f"{int(self._sim_temperature_max_hotspot  * self._sim_temperature_multiplier_degrees):03d}"
+            f"{int(self._sim_temperature_heater)};"
+            f"1;" # valid flag
+            f"2" # state
+            #f"{int(self._sim_temperature_ntc_chamber_tgt  * self._sim_temperature_multiplier_degrees):03d};"
+            #f"{int(self._sim_temperature_max_hotspot  * self._sim_temperature_multiplier_degrees):03d}"
         ) 
 
     # ---------------- Log limits ----------------
