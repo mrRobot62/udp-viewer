@@ -11,6 +11,7 @@ class VisualizerConfig:
     filter_string: str = ""
     max_samples: int = 2000
     window_geometry: str | None = None
+    graph_type: str = "plot"  # NEW: "plot" | "logic"
 
     x_axis: VisualizerAxisConfig = field(default_factory=VisualizerAxisConfig)
     y1_axis: VisualizerAxisConfig = field(default_factory=VisualizerAxisConfig)

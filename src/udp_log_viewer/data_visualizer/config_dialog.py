@@ -39,3 +39,13 @@ class ConfigDialog(QDialog):
         c.addItems(values)
         c.setCurrentText(str(current).lower() if isinstance(current,bool) else str(current))
         return c
+
+    def configure_logic(self, parent=None):
+        config = self._configs[0]  # oder eigener Slot später
+
+        config.graph_type = "logic"
+
+        dlg = LogicVisualizerConfigDialog(config, parent)
+        if dlg.exec_():
+            dlg.apply()
+            self.save_configs()

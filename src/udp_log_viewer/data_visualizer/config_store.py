@@ -46,6 +46,7 @@ class ConfigStore:
             parser.set(section, "enabled", str(bool(config.enabled)).lower())
             parser.set(section, "title", config.title)
             parser.set(section, "filter_string", config.filter_string)
+            parser.set(section, "graph_type", getattr(config, "graph_type", "plot"))
             parser.set(section, "max_samples", str(config.max_samples))
             parser.set(section, "window_geometry", config.window_geometry or "")
 
@@ -135,6 +136,7 @@ class ConfigStore:
             enabled=self._get_bool(parser, section, "enabled", default=base_config.enabled),
             title=parser.get(section, "title", fallback=base_config.title),
             filter_string=parser.get(section, "filter_string", fallback=base_config.filter_string),
+            graph_type=parser.get(section, "graph_type", fallback=getattr(base_config, "graph_type", "plot")),
             max_samples=self._get_int(parser, section, "max_samples", default=base_config.max_samples),
             window_geometry=parser.get(section, "window_geometry", fallback=base_config.window_geometry or "") or None,
             x_axis=x_axis,
@@ -178,6 +180,7 @@ class ConfigStore:
             enabled=True,
             title="CSV_TEMP Graph",
             filter_string="[CSV_TEMP]",
+            graph_type="plot",
             max_samples=600,
             x_axis=VisualizerAxisConfig(label="Samples", continuous=True, max_value=300),
             y1_axis=VisualizerAxisConfig(label="Temperature", min_value=0.0, max_value=160.0),

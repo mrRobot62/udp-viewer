@@ -441,6 +441,7 @@ class MainWindow(QMainWindow):
 
         visualize_menu = self.menuBar().addMenu("Visualize")
 
+        # Plot Visualizer
         self.menu_visualize_temperature = visualize_menu.addMenu("Temperature")
 
         self.act_visualizer_csv_temp_config = QAction("Config", self)
@@ -451,6 +452,19 @@ class MainWindow(QMainWindow):
         self.act_visualizer_csv_temp_show.triggered.connect(self.on_visualizer_csv_temp_show_clicked)
         self.menu_visualize_temperature.addAction(self.act_visualizer_csv_temp_show)
 
+        # LogicVisualizer
+        self.logic_menu = visualize_menu.addMenu("Logic")
+
+        self.act_logic_config = QAction("Config", self)
+        self.act_logic_config.triggered.connect(self.on_visualizer_logic_config_clicked)
+
+
+        self.act_logic_show = QAction("Show", self)
+        self.act_logic_show.triggered.connect(self.on_visualizer_logic_show_clicked)
+
+
+        self.logic_menu.addAction(self.act_logic_config)
+        self.logic_menu.addAction(self.act_logic_show)
 
     def _chip_style(self, color: str) -> str:
         bg = "#f5f5f5"
@@ -1170,6 +1184,15 @@ class MainWindow(QMainWindow):
 
     def on_visualizer_csv_temp_show_clicked(self) -> None:
         self._visualizer_manager.show_window(0)
+
+    def on_visualizer_logic_config_clicked(self) -> None:
+        changed = self._visualizer_manager.configure_logic(parent=self)
+        if changed:
+            self.statusBar().showMessage("Logic visualizer config saved", 3000)
+
+
+    def on_visualizer_logic_show_clicked(self) -> None:
+        self._visualizer_manager.show_logic_window()
 
     def on_simulate_toggled(self, checked: bool) -> None:
         if checked:

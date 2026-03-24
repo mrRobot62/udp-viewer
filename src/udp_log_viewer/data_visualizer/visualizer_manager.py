@@ -9,7 +9,8 @@ from .csv_log_parser import CsvLogParser
 from .visualizer_config import VisualizerConfig
 from .visualizer_config_dialog import VisualizerConfigDialog
 from .visualizer_window import VisualizerWindow
-
+from .logic_visualizer_window import LogicVisualizerWindow
+from .logic_visualizer_config_dialog import LogicVisualizerConfigDialog
 
 class VisualizerManager:
     def __init__(
@@ -97,6 +98,28 @@ class VisualizerManager:
         existing_window = self.windows_by_index.get(index)
         if existing_window is not None:
             return existing_window
-        window = VisualizerWindow(config=config, screenshot_dir=self.screenshot_dir)
+        #window = VisualizerWindow(config=config, screenshot_dir=self.screenshot_dir)
+        if config.graph_type == "logic":
+            window = LogicVisualizerWindow(config, screenshot_dir=self.screenshot_dir)
+        else:
+            window = VisualizerWindow(config, screenshot_dir=self.screenshot_dir)
+
         self.windows_by_index[index] = window
         return window
+
+    def configure_logic(self, parent=None):
+        config = self.visualizers[0]
+
+        config.graph_type = "logic"
+
+        dlg = LogicVisualizerConfigDialog(config, parent)
+        if dlg.exec_():
+            dlg.apply()
+            self.save_configs()
+
+    def show_logic_window(self):
+        config = self.visualizers[0]
+        config.graph_type = "logic"
+
+        window = self._get_or_create_window(0, config)
+        window.show()
