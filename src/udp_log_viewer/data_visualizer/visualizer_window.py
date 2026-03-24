@@ -9,9 +9,10 @@ from .visualizer_config import VisualizerConfig
 from .visualizer_sample import VisualizerSample
 
 try:
-    from PyQt5.QtCore import Qt
+    from PyQt5.QtCore import Qt, QSettings
     from PyQt5.QtWidgets import (
         QCheckBox,
+        QFileDialog,
         QHBoxLayout,
         QLabel,
         QPushButton,
@@ -22,6 +23,8 @@ try:
     _PYQT_AVAILABLE = True
 except Exception:  # pragma: no cover - fallback for non-Qt test environments
     Qt = None
+    QSettings = None
+    QFileDialog = None
     QWidget = object  # type: ignore[assignment]
     _PYQT_AVAILABLE = False
 
@@ -132,6 +135,10 @@ class VisualizerWindow:
 if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
 
     class _VisualizerWindowWidget(QWidget):
+        _SETTINGS_ORG = "LocalTools"
+        _SETTINGS_APP = "UdpLogViewer"
+        _SETTINGS_KEY = "visualizer/screenshot_dir"
+
         def __init__(self, controller: VisualizerWindow) -> None:
             super().__init__()
             self._controller = controller
@@ -180,18 +187,66 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._render_plot()
 
         def save_screenshot(self) -> Path | None:
-            target_dir = self._controller.screenshot_dir
-            if target_dir is None:
-                target_dir = Path.cwd() / "screenshots"
-            target_dir.mkdir(parents=True, exist_ok=True)
+            if QFileDialog is None:
+                return None
 
-            safe_title = self._sanitize_filename(self._controller.config.title or "visualizer")
-            filename = f"{safe_title}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
-            target_path = target_dir / filename
+            default_dir = self._get_default_screenshot_dir()
+            suggested_name = self._build_screenshot_filename()
 
+            selected_path, _ = QFileDialog.getSaveFileName(
+                self,
+                "Save Screenshot",
+                str(default_dir / suggested_name),
+                "PNG Files (*.png)",
+            )
+            if not selected_path:
+                self._status_label.setText("Screenshot canceled")
+                return None
+
+            target_path = Path(selected_path)
+            if target_path.suffix.lower() != ".png":
+                target_path = target_path.with_suffix(".png")
+
+            target_path.parent.mkdir(parents=True, exist_ok=True)
             self._figure.savefig(target_path, dpi=150, bbox_inches="tight")
+            self._save_last_screenshot_dir(target_path.parent)
             self._status_label.setText(f"Screenshot saved: {target_path.name}")
             return target_path
+
+        def _get_default_screenshot_dir(self) -> Path:
+            persisted = self._load_last_screenshot_dir()
+            if persisted is not None:
+                return persisted
+            return Path.cwd()
+
+        def _load_last_screenshot_dir(self) -> Path | None:
+            settings = self._settings()
+            if settings is None:
+                return None
+
+            raw = settings.value(self._SETTINGS_KEY, "", type=str)
+            if not raw:
+                return None
+
+            candidate = Path(raw)
+            if candidate.exists() and candidate.is_dir():
+                return candidate
+            return None
+
+        def _save_last_screenshot_dir(self, path: Path) -> None:
+            settings = self._settings()
+            if settings is None:
+                return
+            settings.setValue(self._SETTINGS_KEY, str(path))
+
+        def _settings(self) -> QSettings | None:
+            if QSettings is None:
+                return None
+            return QSettings(self._SETTINGS_ORG, self._SETTINGS_APP)
+
+        def _build_screenshot_filename(self) -> str:
+            safe_title = self._sanitize_filename(self._controller.config.title or "visualizer")
+            return f"{safe_title}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
 
         def _on_auto_refresh_changed(self, state: int) -> None:
             enabled = state == Qt.Checked
@@ -234,7 +289,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
                     "linestyle": _to_matplotlib_linestyle(field.line_style),
                 }
 
-                if field.render_style == "Step":
+                if getattr(field, "render_style", "Line") == "Step":
                     target_axis.step(x_values, y_values, where="post", **plot_kwargs)
                 else:
                     target_axis.plot(x_values, y_values, **plot_kwargs)
@@ -318,7 +373,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
 
 else:
 
-    class _VisualizerWindowWidget:  # pragma: no cover - placeholder only
+    class _VisualizerWindowWidget:  # pragma: no cover
         def __init__(self, controller: VisualizerWindow) -> None:
             self._controller = controller
 
