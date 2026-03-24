@@ -46,7 +46,7 @@ from .data_visualizer.visualizer_manager import VisualizerManager
 
 APP_ORG = "LocalTools"
 APP_NAME = "UdpLogViewer"
-APP_VERSION = "0.15.0"
+APP_VERSION = "0.15.0 (T3.6.2)"
 
 SLOT_COUNT = 5
 
