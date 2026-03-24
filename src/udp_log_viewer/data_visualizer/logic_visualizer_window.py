@@ -16,7 +16,11 @@ class LogicVisualizerWindow(QWidget):
         self.resize(800, 400)
 
         layout = QVBoxLayout()
-        self.label = QLabel("LogicGraph (T3.7.0 placeholder)")
+        field_names = [f.field_name for f in config.fields if getattr(f, "plot", False)]
+        self.label = QLabel(
+            "LogicGraph (T3.7.1 placeholder)\\n"
+            f"Configured channels: {', '.join(field_names) if field_names else 'none'}"
+        )
         layout.addWidget(self.label)
 
         self.setLayout(layout)

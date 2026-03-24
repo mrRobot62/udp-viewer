@@ -107,19 +107,41 @@ class VisualizerManager:
         self.windows_by_index[index] = window
         return window
 
-    def configure_logic(self, parent=None):
+    def configure_logic(self, parent=None) -> bool:
+        if not self.visualizers:
+            self.load_configs()
+
         config = self.visualizers[0]
 
-        config.graph_type = "logic"
+        if getattr(config, "graph_type", "plot") != "logic":
+            config = self.config_store._build_default_logic_config()
+            self.visualizers[0] = config
 
         dlg = LogicVisualizerConfigDialog(config, parent)
-        if dlg.exec_():
-            dlg.apply()
-            self.save_configs()
+        if dlg.exec_() != dlg.Accepted:
+            return False
 
-    def show_logic_window(self):
+        dlg.apply()
+        self.visualizers[0] = config
+        self.save_configs()
+
+        existing_window = self.windows_by_index.pop(0, None)
+        if existing_window is not None:
+            existing_window.close()
+
+        self.sample_counters_by_index[0] = 0
+        return True
+
+    def show_logic_window(self) -> None:
+        if not self.visualizers:
+            self.load_configs()
+
         config = self.visualizers[0]
-        config.graph_type = "logic"
+
+        if getattr(config, "graph_type", "plot") != "logic":
+            config = self.config_store._build_default_logic_config()
+            self.visualizers[0] = config
+            self.save_configs()
 
         window = self._get_or_create_window(0, config)
         window.show()

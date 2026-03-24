@@ -197,3 +197,26 @@ class ConfigStore:
                 VisualizerFieldConfig("state", active=False, numeric=True, scale=1, plot=False, axis="Y2", render_style="Step", color="green", line_style="dashdot", unit=""),
             ],
         )
+
+    @staticmethod
+    def _build_default_logic_config() -> VisualizerConfig:
+        return VisualizerConfig(
+            enabled=True,
+            title="Logic Graph",
+            filter_string="[CSV_LOGIC]",
+            graph_type="logic",
+            max_samples=600,
+            x_axis=VisualizerAxisConfig(label="Samples", continuous=True, max_value=300),
+            y1_axis=VisualizerAxisConfig(label="Logic", min_value=0.0, max_value=1.0),
+            y2_axis=VisualizerAxisConfig(label="Y2", min_value=0.0, max_value=1.0),
+            fields=[
+                VisualizerFieldConfig("ch0", active=True, numeric=True, scale=1, plot=True, axis="Y1", render_style="Step", color="red", line_style="solid", unit=""),
+                VisualizerFieldConfig("ch1", active=True, numeric=True, scale=1, plot=True, axis="Y1", render_style="Step", color="blue", line_style="solid", unit=""),
+                VisualizerFieldConfig("ch2", active=True, numeric=True, scale=1, plot=True, axis="Y1", render_style="Step", color="green", line_style="solid", unit=""),
+                VisualizerFieldConfig("ch3", active=True, numeric=True, scale=1, plot=True, axis="Y1", render_style="Step", color="orange", line_style="solid", unit=""),
+                VisualizerFieldConfig("ch4", active=False, numeric=True, scale=1, plot=True, axis="Y1", render_style="Step", color="purple", line_style="solid", unit=""),
+                VisualizerFieldConfig("ch5", active=False, numeric=True, scale=1, plot=True, axis="Y1", render_style="Step", color="black", line_style="solid", unit=""),
+                VisualizerFieldConfig("ch6", active=False, numeric=True, scale=1, plot=True, axis="Y1", render_style="Step", color="gray", line_style="solid", unit=""),
+                VisualizerFieldConfig("ch7", active=False, numeric=True, scale=1, plot=True, axis="Y1", render_style="Step", color="red", line_style="dashed", unit=""),
+            ],
+        )
