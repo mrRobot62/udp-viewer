@@ -203,25 +203,20 @@ class MainWindow(QMainWindow):
 
         self._sim_temperature_enabled = False
         self._sim_temperature_timer = QTimer(self)
-        self._sim_temperature_timer.setInterval(120)  # ms
+        self._sim_temperature_timer.setInterval(500)  # ms
         self._sim_temperature_timer.timeout.connect(self._on_sim_temperature_tick)
         self._sim_temperature_seq = 0
         self._sim_temperature_running=False
-        # self._sim_temperature_ntc_chamber = 21.9
-        # self._sim_temperature_ntc_hotspot = 21.5
-        # self._sim_temperature_ntc_chamber_tgt = 60.0
-        # self._sim_temperature_heater = 0
-        # self._sim_temperature_max_hotspot = 150.0
-        # self._sim_temperature_min_hotspot_on = 2.0
-        # self._sim_temperature_max_hotspot_on = 5.0
-        # self._sim_temperature_chamber_lower_offset = 5.0    # target = 45, min target = 45-5 = 40
-        # self._sim_temperature_chamber_upper_offset = 5.0    # target = 45, max target = 45+5 = 50
-        # self._sim_temperature_chamber_increase_deg = 0.3
-        # self._sim_temperature_hotspot_increase_deg = 1.0
-        # self._sim_temperature_multiplier_degrees = 10
-        # self._sim_temperaturemask = 0x0000
         self._sim_temperature_heater = 0
         # self._sim_temperature_mask = 0x0000
+
+        self._sim_logic_enabled = False
+        self._sim_logic_timer = QTimer(self)
+        self._sim_logic_timer.setInterval(1000)
+        self._sim_logic_timer.timeout.connect(self._on_sim_logic_tick)
+
+        self._sim_logic_state = [0] * 8
+
 
         # Replay (inject without UDP)
         self._replay_timer = QTimer(self)
@@ -439,6 +434,12 @@ class MainWindow(QMainWindow):
         self.act_simulate_temperature.toggled.connect(self.on_simulate_toggled_temperature)
         tools_menu.addAction(self.act_simulate_temperature)
 
+        self.act_simulate_logic = QAction("Simulate Logic Traffic", self)
+        self.act_simulate_logic.setCheckable(True)
+        self.act_simulate_logic.toggled.connect(self.on_simulate_logic_toggled)
+        tools_menu.addAction(self.act_simulate_logic)
+
+
         visualize_menu = self.menuBar().addMenu("Visualize")
 
         # Plot Visualizer
@@ -458,13 +459,14 @@ class MainWindow(QMainWindow):
         self.act_logic_config = QAction("Config", self)
         self.act_logic_config.triggered.connect(self.on_visualizer_logic_config_clicked)
 
-
         self.act_logic_show = QAction("Show", self)
         self.act_logic_show.triggered.connect(self.on_visualizer_logic_show_clicked)
 
-
         self.logic_menu.addAction(self.act_logic_config)
         self.logic_menu.addAction(self.act_logic_show)
+
+
+
 
     def _chip_style(self, color: str) -> str:
         bg = "#f5f5f5"
@@ -1183,7 +1185,7 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("CSV_TEMP visualizer config saved", 3000)
 
     def on_visualizer_csv_temp_show_clicked(self) -> None:
-        self._visualizer_manager.show_window(0)
+        self._visualizer_manager.show_window(self._visualizer_manager.PLOT_SLOT_INDEX)
 
     def on_visualizer_logic_config_clicked(self) -> None:
         changed = self._visualizer_manager.configure_logic(parent=self)
@@ -1217,6 +1219,13 @@ class MainWindow(QMainWindow):
             self._start_simulation_temperature()
         else:
             self._stop_simulation_temperature()
+
+    def on_simulate_logic_toggled(self, checked: bool) -> None:
+        self._sim_logic_enabled = checked
+        if checked:
+            self._sim_logic_timer.start()
+        else:
+            self._sim_logic_timer.stop()
 
     def _start_simulation(self) -> None:
         if self._sim_timer.isActive():
@@ -1362,7 +1371,8 @@ class MainWindow(QMainWindow):
             self._sim_temperature_heater = 1 # turn on heater if chamber is below target minus x degrees
 
         # is chamber in temp range? If yes heater = off
-        if ((self._sim_temperature_ntc_chamber > (self._sim_temperature_ntc_chamber_tgt - self._sim_temperature_chamber_lower_offset) or (self._sim_temperature_ntc_chamber > self._sim_temperature_ntc_chamber_tgt + self._sim_temperature_chamber_upper_offset) and self._sim_temperature_heater)) :
+        if ((self._sim_temperature_ntc_chamber > (self._sim_temperature_ntc_chamber_tgt - self._sim_temperature_chamber_lower_offset) 
+             or (self._sim_temperature_ntc_chamber > self._sim_temperature_ntc_chamber_tgt + self._sim_temperature_chamber_upper_offset) and self._sim_temperature_heater)) :
             self._sim_temperature_heater = 0 # turn on heater if chamber is below target minus x degrees
 
         # if heater overheated? If yes heater = off
@@ -1382,6 +1392,24 @@ class MainWindow(QMainWindow):
             #f"{int(self._sim_temperature_ntc_chamber_tgt  * self._sim_temperature_multiplier_degrees):03d};"
             #f"{int(self._sim_temperature_max_hotspot  * self._sim_temperature_multiplier_degrees):03d}"
         ) 
+
+
+    def _on_sim_logic_tick(self) -> None:
+        import random
+
+        # zufällige toggles
+        for i in range(len(self._sim_logic_state)):
+            if random.random() < 0.2:
+                self._sim_logic_state[i] ^= 1
+
+        values = ";".join(str(v) for v in self._sim_logic_state)
+
+        line = f"[CSV_LOGIC];{values}"
+
+        self._ingest_line(line)
+
+
+    
 
     # ---------------- Log limits ----------------
 

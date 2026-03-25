@@ -131,6 +131,11 @@ class LogicVisualizerConfigDialog(QDialog):
         self.config.x_axis.continuous = self.chk_x_continuous.isChecked()
         self.config.x_axis.max_value = float(self.sb_x_max.value())
 
+        # logic view uses fixed logical y-range
+        self.config.y1_axis.label = "Logic"
+        self.config.y1_axis.min_value = 0.0
+        self.config.y1_axis.max_value = 1.0
+
         new_fields = []
         for row in range(self.table.rowCount()):
             field_name = self.table.item(row, 0).text().strip() if self.table.item(row, 0) else ""
@@ -170,10 +175,13 @@ class LogicVisualizerConfigDialog(QDialog):
                 base.render_style = "Step"
                 base.scale = 1
                 base.numeric = True
+                base.line_style = "solid"
+                base.unit = ""
 
             new_fields.append(base)
 
         self.config.fields = new_fields[:8]
+
 
     def _move_up(self):
         row = self.table.currentRow()

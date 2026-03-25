@@ -13,6 +13,9 @@ from .logic_visualizer_window import LogicVisualizerWindow
 from .logic_visualizer_config_dialog import LogicVisualizerConfigDialog
 
 class VisualizerManager:
+    PLOT_SLOT_INDEX = 0
+    LOGIC_SLOT_INDEX = 1
+
     def __init__(
         self,
         config_path: str | Path | None = None,
@@ -83,15 +86,15 @@ class VisualizerManager:
     def configure_csv_temp(self, parent: QWidget | None = None) -> bool:
         if not self.visualizers:
             self.load_configs()
-        dialog = VisualizerConfigDialog(config=self.visualizers[0], parent=parent)
+        dialog = VisualizerConfigDialog(config=self.visualizers[self.PLOT_SLOT_INDEX], parent=parent)
         if dialog.exec_() != dialog.Accepted:
             return False
-        self.visualizers[0] = dialog.result_config()
+        self.visualizers[self.PLOT_SLOT_INDEX] = dialog.result_config()
         self.save_configs()
-        existing_window = self.windows_by_index.pop(0, None)
+        existing_window = self.windows_by_index.pop(self.PLOT_SLOT_INDEX, None)
         if existing_window is not None:
             existing_window.close()
-        self.sample_counters_by_index[0] = 0
+        self.sample_counters_by_index[self.PLOT_SLOT_INDEX] = 0
         return True
 
     def _get_or_create_window(self, index: int, config: VisualizerConfig) -> VisualizerWindow:
@@ -111,37 +114,43 @@ class VisualizerManager:
         if not self.visualizers:
             self.load_configs()
 
-        config = self.visualizers[0]
+        while len(self.visualizers) <= self.LOGIC_SLOT_INDEX:
+            self.visualizers.append(VisualizerConfig())
+
+        config = self.visualizers[self.LOGIC_SLOT_INDEX]
 
         if getattr(config, "graph_type", "plot") != "logic":
             config = self.config_store._build_default_logic_config()
-            self.visualizers[0] = config
+            self.visualizers[self.LOGIC_SLOT_INDEX] = config
 
         dlg = LogicVisualizerConfigDialog(config, parent)
         if dlg.exec_() != dlg.Accepted:
             return False
 
         dlg.apply()
-        self.visualizers[0] = config
+        self.visualizers[self.LOGIC_SLOT_INDEX] = config
         self.save_configs()
 
-        existing_window = self.windows_by_index.pop(0, None)
+        existing_window = self.windows_by_index.pop(self.LOGIC_SLOT_INDEX, None)
         if existing_window is not None:
             existing_window.close()
 
-        self.sample_counters_by_index[0] = 0
+        self.sample_counters_by_index[self.LOGIC_SLOT_INDEX] = 0
         return True
 
     def show_logic_window(self) -> None:
         if not self.visualizers:
             self.load_configs()
 
-        config = self.visualizers[0]
+        while len(self.visualizers) <= self.LOGIC_SLOT_INDEX:
+            self.visualizers.append(VisualizerConfig())
+
+        config = self.visualizers[self.LOGIC_SLOT_INDEX]
 
         if getattr(config, "graph_type", "plot") != "logic":
             config = self.config_store._build_default_logic_config()
-            self.visualizers[0] = config
+            self.visualizers[self.LOGIC_SLOT_INDEX] = config
             self.save_configs()
 
-        window = self._get_or_create_window(0, config)
+        window = self._get_or_create_window(self.LOGIC_SLOT_INDEX, config)
         window.show()
