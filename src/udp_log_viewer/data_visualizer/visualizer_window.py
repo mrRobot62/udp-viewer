@@ -223,11 +223,9 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             settings = self._settings()
             if settings is None:
                 return None
-
             raw = settings.value(self._SETTINGS_KEY, "", type=str)
             if not raw:
                 return None
-
             candidate = Path(raw)
             if candidate.exists() and candidate.is_dir():
                 return candidate
@@ -299,7 +297,8 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
                 else:
                     plotted_y1 = True
 
-            self._apply_axis_settings()
+            self._apply_axis_settings(samples)
+
             visible_count = len(samples)
             total_count = len(self._controller.samples)
             self._status_label.setText(f"Samples: {visible_count} visible / {total_count} total")
@@ -309,7 +308,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             if plotted_y2:
                 self._axes_y2.legend(loc="upper right")
 
-            self._figure.tight_layout()
+            self._figure.subplots_adjust(bottom=0.24)
             self._canvas.draw_idle()
 
         def _get_visible_samples(self) -> list[VisualizerSample]:
@@ -338,14 +337,17 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
 
             return visible[-window_size:]
 
-        def _apply_axis_settings(self) -> None:
+        def _apply_axis_settings(self, visible_samples: list[VisualizerSample]) -> None:
             x_axis = self._controller.config.x_axis
             y1_axis = self._controller.config.y1_axis
             y2_axis = self._controller.config.y2_axis
 
-            self._axes_y1.set_xlabel(x_axis.label or "Samples")
+            self._axes_y1.set_xlabel("Time")
             self._axes_y1.set_ylabel(y1_axis.label or "Y1")
             self._axes_y2.set_ylabel(y2_axis.label or "Y2")
+
+            # Only primary axis shows x labels
+            self._axes_y2.tick_params(axis="x", which="both", bottom=False, top=False, labelbottom=False)
 
             if y1_axis.logarithmic:
                 self._axes_y1.set_yscale("log")
@@ -357,15 +359,60 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             if y2_axis.min_value is not None or y2_axis.max_value is not None:
                 self._axes_y2.set_ylim(bottom=y2_axis.min_value, top=y2_axis.max_value)
 
-            visible_samples = self._get_visible_samples()
-            if x_axis.continuous and x_axis.max_value is not None and visible_samples:
-                right = len(visible_samples) - 1
-                left = 0
-                self._axes_y1.set_xlim(left=left, right=max(right, 1))
-            elif not x_axis.continuous and visible_samples:
+            if visible_samples:
                 self._axes_y1.set_xlim(left=0, right=max(len(visible_samples) - 1, 1))
 
+                tick_positions = self._build_tick_positions(len(visible_samples))
+                tick_labels = [self._format_time_label(visible_samples[i].timestamp_raw) for i in tick_positions]
+
+                self._axes_y1.set_xticks(tick_positions)
+                self._axes_y1.set_xticklabels(tick_labels)
+                self._axes_y1.tick_params(axis="x", labelbottom=True)
+
+                for label in self._axes_y1.get_xticklabels():
+                    label.set_rotation(45)
+                    label.set_horizontalalignment("right")
+                    label.set_visible(True)
+            else:
+                self._axes_y1.set_xlim(left=0, right=1)
+                self._axes_y1.set_xticks([])
+                self._axes_y1.tick_params(axis="x", labelbottom=True)
+
             self._axes_y1.grid(True)
+
+        @staticmethod
+        def _build_tick_positions(count: int) -> list[int]:
+            if count <= 0:
+                return []
+            if count == 1:
+                return [0]
+
+            max_ticks = 8
+            if count <= max_ticks:
+                return list(range(count))
+
+            step = max(1, count // (max_ticks - 1))
+            positions = list(range(0, count, step))
+            if positions[-1] != count - 1:
+                positions.append(count - 1)
+            return positions
+
+        @staticmethod
+        def _format_time_label(timestamp_raw: str) -> str:
+            if not timestamp_raw:
+                return ""
+
+            value = timestamp_raw.strip()
+
+            if "-" in value:
+                parts = value.split("-", 1)
+                if len(parts) == 2:
+                    value = parts[1]
+
+            if "." in value:
+                value = value.split(".", 1)[0]
+
+            return value
 
         @staticmethod
         def _sanitize_filename(value: str) -> str:

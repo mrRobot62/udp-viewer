@@ -203,7 +203,7 @@ class MainWindow(QMainWindow):
 
         self._sim_temperature_enabled = False
         self._sim_temperature_timer = QTimer(self)
-        self._sim_temperature_timer.setInterval(500)  # ms
+        self._sim_temperature_timer.setInterval(250)  # ms
         self._sim_temperature_timer.timeout.connect(self._on_sim_temperature_tick)
         self._sim_temperature_seq = 0
         self._sim_temperature_running=False
@@ -1050,7 +1050,11 @@ class MainWindow(QMainWindow):
         raw_line = line
 
         try:
-            self._visualizer_manager.process_log_line(raw_line)
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y%m%d-%H:%M:%S.%f")[:-3]
+            raw_line_ts = f"{timestamp}{raw_line}"
+            #self._visualizer_manager.process_log_line(raw_line)
+            self._visualizer_manager.process_log_line(raw_line_ts)
         except Exception:
             # T3.1.1: keep visualizer integration non-blocking for the main viewer path.
             pass
@@ -1345,9 +1349,10 @@ class MainWindow(QMainWindow):
         # If the chamber temperature reaches the target temperature minus 5 degrees, the heater remains off until this target temperature minus 5 degrees is again exceeded.
         # ------------------------------------------------------------------------------------------------------------------------------------------
 
-        if self._sim_temperature_seq == 100: # do not start earlier as xxx ticks (100=10 seconds)
-            self._sim_temperature_heater = 1 
-            self._sim_temperature_running = True
+        # if self._sim_temperature_seq == 10: # do not start earlier as xxx ticks (100=10 seconds)
+        #     self._sim_temperature_heater = 1 
+        #     self._sim_temperature_running = True
+        self._sim_temperature_running = True
 
         if self._sim_temperature_running == False:
             # before starting the simulation, keep the temperature stable

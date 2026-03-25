@@ -320,6 +320,24 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             if plotted_count > 0:
                 self._axes.legend(loc="upper right")
 
+            # --- X axis: timestamp labels ---
+            visible_samples = self._get_visible_samples()
+            if visible_samples:
+                count = len(visible_samples)
+
+                step = max(1, count // 8)
+                indices = list(range(0, count, step))
+                if indices[-1] != count - 1:
+                    indices.append(count - 1)
+
+                labels = [
+                    self._format_time_label(visible_samples[i].timestamp_raw)
+                    for i in indices
+                ]
+
+                self._axes.set_xticks(indices)
+                self._axes.set_xticklabels(labels, rotation=45, ha="right")
+
             # Keep cursor hidden after full redraw until mouse enters again
             self._cursor_line = self._axes.axvline(x=0, color="gray", linestyle="--", visible=False)
             self._figure.tight_layout()
@@ -380,6 +398,21 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
                 return visible
 
             return visible[-window_size:]
+
+        def _format_time_label(self, timestamp_raw: str) -> str:
+            if not timestamp_raw:
+                return ""
+
+            try:
+                # erwartet Format: YYYYMMDD-HH:MM:SS.xxx
+                time_part = timestamp_raw.split(" ")[0]
+                if "-" in time_part:
+                    time_part = time_part.split("-")[1]
+                if "." in time_part:
+                    time_part = time_part.split(".")[0]
+                return time_part
+            except Exception:
+                return ""
 
         @staticmethod
         def _sanitize_filename(value: str) -> str:
