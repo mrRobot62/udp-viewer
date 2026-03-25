@@ -48,6 +48,7 @@ class LogicVisualizerWindow:
         self.auto_refresh_enabled = True
         self.freeze_sample_index: int | None = None
         self._widget: _LogicVisualizerWindowWidget | None = None
+
         self._ensure_widget()
 
     def append_sample(self, sample) -> None:
@@ -142,6 +143,13 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._canvas = FigureCanvas(self._figure)
             self._canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
             self._axes: Axes = self._figure.add_subplot(111)
+
+            # Vertical cursor line
+            self._cursor_line = self._axes.axvline(x=0, color="gray", linestyle="--", visible=False)
+
+            # Mouse tracking on matplotlib canvas
+            self._canvas.mpl_connect("motion_notify_event", self._on_mouse_move)
+            self._canvas.mpl_connect("axes_leave_event", self._on_mouse_leave)
 
             self._auto_refresh_checkbox = QCheckBox("Auto Refresh")
             self._auto_refresh_checkbox.setChecked(True)
@@ -246,6 +254,20 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
         def _on_screenshot_clicked(self) -> None:
             self.save_screenshot()
 
+        def _on_mouse_move(self, event) -> None:
+            if event.inaxes != self._axes:
+                return
+            if event.xdata is None:
+                return
+
+            self._cursor_line.set_xdata([event.xdata, event.xdata])
+            self._cursor_line.set_visible(True)
+            self._canvas.draw_idle()
+
+        def _on_mouse_leave(self, event) -> None:
+            self._cursor_line.set_visible(False)
+            self._canvas.draw_idle()
+
         def _render_plot(self) -> None:
             self.setWindowTitle(self._controller.config.title or "Logic Visualizer")
             self._axes.clear()
@@ -298,6 +320,8 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             if plotted_count > 0:
                 self._axes.legend(loc="upper right")
 
+            # Keep cursor hidden after full redraw until mouse enters again
+            self._cursor_line = self._axes.axvline(x=0, color="gray", linestyle="--", visible=False)
             self._figure.tight_layout()
             self._canvas.draw_idle()
 
