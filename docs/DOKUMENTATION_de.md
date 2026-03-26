@@ -454,7 +454,12 @@ Sinnvolle nächste Verbesserungen im Repository:
 - Screenshots für das Visualizer-Subsystem ergänzen
 - Release- und Build-Anleitungen für macOS und Windows zentral dokumentieren
 
-## 16. Dateiverweise
+## 16. Weiterführende Referenzen
+
+- [SUPPORTED_CSV_INPUT_FORMATS_de.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/SUPPORTED_CSV_INPUT_FORMATS_de.md)
+- [CONFIGURATION_REFERENCE_de.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/CONFIGURATION_REFERENCE_de.md)
+
+## 17. Dateiverweise
 
 Zentrale Dateien zur weiteren Analyse:
 
