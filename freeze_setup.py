@@ -18,11 +18,14 @@ from cx_Freeze import Executable, setup
 #   - Entry-point uses freeze_entry.py to make package-relative imports work when frozen
 # -----------------------------------------------------------------------------
 
-APP_NAME = "UDPLogViewer"
-APP_VERSION = "0.14.0"  # keep PEP 440 compliant here
-
 ROOT = Path(__file__).resolve().parent
 SRC_DIR = ROOT / "src"
+sys.path.insert(0, str(SRC_DIR))
+
+from udp_log_viewer import __version__
+
+APP_NAME = "UDPLogViewer"
+APP_VERSION = __version__
 
 ENTRY_SCRIPT = str(ROOT / "freeze_entry.py")
 

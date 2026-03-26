@@ -20,10 +20,14 @@ from cx_Freeze import Executable, setup
 #     work reliably when frozen.
 # -----------------------------------------------------------------------------
 
-APP_NAME = "UDPLogViewer"
-APP_VERSION = "0.14.0"
-
 ROOT = Path(__file__).resolve().parent
+SRC_DIR = ROOT / "src"
+sys.path.insert(0, str(SRC_DIR))
+
+from udp_log_viewer import __version__
+
+APP_NAME = "UDPLogViewer"
+APP_VERSION = __version__
 
 # Icons (we reuse placeholders for now; user can replace later)
 MAC_ICON = ROOT / "packaging" / "macos" / "app.icns"

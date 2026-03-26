@@ -9,11 +9,14 @@ from cx_Freeze import Executable, setup
 # -----------------------------
 # Project metadata
 # -----------------------------
-APP_NAME = "UDPLogViewer"
-APP_VERSION = "0.14.0"  # keep SemVer here (PEP 440 compatible)
-
 ROOT = Path(__file__).resolve().parent
 SRC = ROOT / "src"
+sys.path.insert(0, str(SRC))
+
+from udp_log_viewer import __version__
+
+APP_NAME = "UDPLogViewer"
+APP_VERSION = __version__
 
 # IMPORTANT:
 # Use a top-level entry script (not src/udp_log_viewer/main.py) so frozen builds don't

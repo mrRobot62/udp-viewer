@@ -39,6 +39,7 @@ from PyQt5.QtWidgets import (
 )
 
 from .app_paths import AppPathsConfig, load_or_create_config
+from . import __display_version__
 from .highlighter import HighlightRule, LogHighlighter
 from .udp_listener import UdpListenerThread
 from .udp_log_utils import drain_queue, compile_patterns
@@ -46,7 +47,7 @@ from .data_visualizer.visualizer_manager import VisualizerManager
 
 APP_ORG = "LocalTools"
 APP_NAME = "UdpLogViewer"
-APP_VERSION = "0.15.0 (T3.6.2)"
+APP_VERSION = __display_version__
 
 SLOT_COUNT = 5
 
@@ -228,7 +229,7 @@ class MainWindow(QMainWindow):
         # Replay CSV Temperature lines (inject without UDP)
         self._replay_timer_temperature = QTimer(self)
         self._replay_timer_temperature.setInterval(REPLAY_TICK_MS)
-        self._replay_timer_temperature.timeout.connect(self._replay_tick)
+        self._replay_timer_temperature.timeout.connect(self._replay_tick_temperature)
         self._replay_lines_temperature: Deque[str] = deque()
         self._replay_active_temperature = False
 
@@ -1090,9 +1091,9 @@ class MainWindow(QMainWindow):
             return
 
         for _ in range(REPLAY_LINES_PER_TICK):
-            if not self._replay_lines:
+            if not self._replay_lines_temperature:
                 break
-            self._ingest_line(self._replay_lines.popleft())
+            self._ingest_line(self._replay_lines_temperature.popleft())
 
     def _replay_tick_temperature(self) -> None:
         if not self._replay_lines_temperature:
@@ -1133,18 +1134,18 @@ class MainWindow(QMainWindow):
             # CSV_TEMP Zimmertemperatur
             "[CSV_TEMP];14047;2633;228;14220;2666;221;0;0;1",
         ]
-        self.on_stop_replay__temperature_clicked()
+        self.on_stop_replay_temperature_clicked()
         self._replay_lines_temperature = deque(sample)
         self._replay_active_temperature = True
         self._replay_timer_temperature.start()
         self.statusBar().showMessage("Replay: temperature sample", 2000)
 
     def on_stop_replay_temperature_clicked(self) -> None:
-        if self._replay_timer.isActive():
-            self._replay_timer.stop()
-        self._replay_lines.clear()
-        self._replay_active = False
-        self.statusBar().showMessage("Replay stopped", 1500)
+        if self._replay_timer_temperature.isActive():
+            self._replay_timer_temperature.stop()
+        self._replay_lines_temperature.clear()
+        self._replay_active_temperature = False
+        self.statusBar().showMessage("Replay temperature stopped", 1500)
 
     # -------------------------------------------------------
     # simulation user friendly log entries
@@ -1262,7 +1263,6 @@ class MainWindow(QMainWindow):
         self._sim_temperature_chamber_increase_deg = 0.3
         self._sim_temperature_hotspot_increase_deg = 0.9
         self._sim_temperature_multiplier_degrees = 10
-        self._sim_temperaturemask = 0x0000
         self._sim_temperature_heater = 0
         self._sim_temperature_mask = 0x0000
         self._sim_temperature_timer.start()
@@ -1275,7 +1275,7 @@ class MainWindow(QMainWindow):
             self._sim_timer.stop()
         self.statusBar().showMessage("Simulation: OFF", 1500)
 
-    def _stop_simulation_temperatue(self) -> None:
+    def _stop_simulation_temperature(self) -> None:
         self._sim_temperature_enabled = False
         if self._sim_temperature_timer.isActive():
             self._sim_temperature_timer.stop()
@@ -1354,7 +1354,7 @@ class MainWindow(QMainWindow):
         #     self._sim_temperature_running = True
         self._sim_temperature_running = True
 
-        if self._sim_temperature_running == False:
+        if not self._sim_temperature_running:
             # before starting the simulation, keep the temperature stable
             self._sim_temperature_ntc_chamber = 21.9
             self._sim_temperature_ntc_hotspot = 21.5
@@ -1372,17 +1372,28 @@ class MainWindow(QMainWindow):
         # self._sim_temperature_ntc_hotspot = max(self._sim_temperature_max_hotspot, min(self._sim_temperature_max_hotspot, self._sim_temperature_ntc_hotspot))
 
         # system is running, but chamber not in temp range and heater is off? If yes heater = on
-        if ((self._sim_temperature_ntc_chamber < (self._sim_temperature_ntc_chamber_tgt - self._sim_temperature_chamber_lower_offset)  and not self._sim_temperature_heater)) :
-            self._sim_temperature_heater = 1 # turn on heater if chamber is below target minus x degrees
+        if (
+            self._sim_temperature_ntc_chamber
+            < (self._sim_temperature_ntc_chamber_tgt - self._sim_temperature_chamber_lower_offset)
+            and not self._sim_temperature_heater
+        ):
+            self._sim_temperature_heater = 1  # turn on heater if chamber is below target minus x degrees
 
         # is chamber in temp range? If yes heater = off
-        if ((self._sim_temperature_ntc_chamber > (self._sim_temperature_ntc_chamber_tgt - self._sim_temperature_chamber_lower_offset) 
-             or (self._sim_temperature_ntc_chamber > self._sim_temperature_ntc_chamber_tgt + self._sim_temperature_chamber_upper_offset) and self._sim_temperature_heater)) :
-            self._sim_temperature_heater = 0 # turn on heater if chamber is below target minus x degrees
+        if (
+            self._sim_temperature_ntc_chamber
+            > (self._sim_temperature_ntc_chamber_tgt - self._sim_temperature_chamber_lower_offset)
+            or (
+                self._sim_temperature_ntc_chamber
+                > self._sim_temperature_ntc_chamber_tgt + self._sim_temperature_chamber_upper_offset
+                and self._sim_temperature_heater
+            )
+        ):
+            self._sim_temperature_heater = 0  # turn off heater once the chamber is in range
 
         # if heater overheated? If yes heater = off
-        if (self._sim_temperature_ntc_hotspot >self._sim_temperature_max_hotspot):
-            self._sim_temperature_heater = 0 # turn off heater if hotspot exceeds target
+        if self._sim_temperature_ntc_hotspot > self._sim_temperature_max_hotspot:
+            self._sim_temperature_heater = 0  # turn off heater if hotspot exceeds target
 
         return (
             f";[CSV_TEMP];"
