@@ -49,6 +49,11 @@ from .connection_runtime import (
     open_live_log,
 )
 from .highlighter import HighlightRule, LogHighlighter
+from .listener_runtime import (
+    parse_listener_request,
+    reset_pause_state,
+    stop_listener_thread,
+)
 from .replay_simulation import (
     TextSimulationState,
     build_temperature_replay_sample,
@@ -1324,28 +1329,19 @@ class MainWindow(QMainWindow):
         if self._listener is not None:
             return True
 
-        bind_ip = self.ed_bind_ip.text().strip() or "0.0.0.0"
-        port_text = self.ed_port.text().strip()
-
-        if not port_text:
-            QMessageBox.warning(self, "Missing Port", "Port is empty. Please enter a port number.")
+        request, error = parse_listener_request(self.ed_bind_ip.text(), self.ed_port.text())
+        if request is None:
+            title = "Missing Port" if "empty" in (error or "").lower() else "Invalid Port"
+            QMessageBox.warning(self, title, error or "Invalid listener settings.")
             return False
 
-        try:
-            port = int(port_text)
-            if not (1 <= port <= 65535):
-                raise ValueError("Port out of range")
-        except Exception:
-            QMessageBox.warning(self, "Invalid Port", "Port must be a number between 1 and 65535.")
-            return False
-
-        self._ui_state.bind_ip = bind_ip
-        self._ui_state.port = port
+        self._ui_state.bind_ip = request.bind_ip
+        self._ui_state.port = request.port
 
         self._connection_state.rx_packets = 0
         self._connection_state.rx_lines = 0
 
-        t = UdpListenerThread(bind_ip, port, parent=self)
+        t = UdpListenerThread(request.bind_ip, request.port, parent=self)
         t.line_received.connect(self._on_line_received)
         t.status_changed.connect(self._on_listener_status)
         t.error.connect(self._on_listener_error)
@@ -1363,12 +1359,7 @@ class MainWindow(QMainWindow):
         t = self._listener
         self._listener = None
 
-        try:
-            t.stop()
-            t.wait(800)
-        except Exception:
-            pass
-
+        stop_listener_thread(t, wait_ms=800)
         self._close_live_log()
 
     def _on_line_received(self, line: str) -> None:
@@ -1525,7 +1516,10 @@ class MainWindow(QMainWindow):
                 self._update_connection_ui()
                 return
 
-            self._ui_paused = False
+            self._pause_buffer, self._pause_dropped, self._ui_paused = reset_pause_state(
+                self._pause_buffer,
+                maxlen=self._pause_buffer.maxlen or 2000,
+            )
             self.btn_pause.blockSignals(True)
             self.btn_pause.setChecked(False)
             self.btn_pause.blockSignals(False)
@@ -1564,9 +1558,10 @@ class MainWindow(QMainWindow):
             except Exception:
                 pass
 
-            self._ui_paused = False
-            self._pause_buffer.clear()
-            self._pause_dropped = 0
+            self._pause_buffer, self._pause_dropped, self._ui_paused = reset_pause_state(
+                self._pause_buffer,
+                maxlen=self._pause_buffer.maxlen or 2000,
+            )
             self.btn_pause.blockSignals(True)
             self.btn_pause.setChecked(False)
             self.btn_pause.blockSignals(False)
@@ -1579,9 +1574,10 @@ class MainWindow(QMainWindow):
     def on_pause_toggled(self) -> None:
         if self._listener is None:
             self.btn_pause.setChecked(False)
-            self._ui_paused = False
-            self._pause_buffer.clear()
-            self._pause_dropped = 0
+            self._pause_buffer, self._pause_dropped, self._ui_paused = reset_pause_state(
+                self._pause_buffer,
+                maxlen=self._pause_buffer.maxlen or 2000,
+            )
             self._update_connection_ui()
             return
 
