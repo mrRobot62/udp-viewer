@@ -38,6 +38,7 @@ from PyQt5.QtWidgets import (
 
 from .app_paths import AppPathsConfig, get_default_config_path, load_or_create_config
 from . import __display_version__
+from .config_runtime import normalize_config_selection, resolve_config_path
 from .connection_runtime import (
     LiveLogState,
     append_live_log_line,
@@ -48,6 +49,7 @@ from .connection_runtime import (
     live_status_snippet,
     open_live_log,
 )
+from .file_runtime import copy_log_file, default_save_name, fsync_file_handle, write_text_log
 from .highlighter import HighlightRule, LogHighlighter
 from .listener_runtime import (
     parse_listener_request,
@@ -298,31 +300,12 @@ class MainWindow(QMainWindow):
     # ---------------- Helpers ----------------
 
     def _resolve_config_path(self) -> Path:
-        remembered = self._settings.value(self._QSETTINGS_CONFIG_PATH_KEY, "", type=str).strip()
-        default_path = get_default_config_path(APP_ORG, APP_NAME)
-
-        candidates: list[Path] = []
-        if remembered:
-            candidates.append(Path(remembered).expanduser())
-        if default_path not in candidates:
-            candidates.append(default_path)
-
-        for candidate in candidates:
-            if candidate.exists() and self._is_config_path_writable(candidate):
-                self._settings.setValue(self._QSETTINGS_CONFIG_PATH_KEY, str(candidate))
-                self._settings.sync()
-                return candidate
-
-        selected = self._prompt_for_config_path(default_path)
-        self._settings.setValue(self._QSETTINGS_CONFIG_PATH_KEY, str(selected))
-        self._settings.sync()
-        return selected
-
-    @staticmethod
-    def _is_config_path_writable(path: Path) -> bool:
-        if path.exists():
-            return os.access(path, os.W_OK)
-        return os.access(path.parent, os.W_OK)
+        return resolve_config_path(
+            self._settings,
+            settings_key=self._QSETTINGS_CONFIG_PATH_KEY,
+            default_path=get_default_config_path(APP_ORG, APP_NAME),
+            prompt_callback=self._prompt_for_config_path,
+        )
 
     def _prompt_for_config_path(self, suggested_path: Path) -> Path:
         QMessageBox.information(
@@ -338,20 +321,14 @@ class MainWindow(QMainWindow):
             "INI Files (*.ini);;All Files (*)",
         )
 
-        if not selected_path:
-            return suggested_path
-
-        target = Path(selected_path).expanduser()
-        if target.suffix.lower() != ".ini":
-            target = target.with_suffix(".ini")
-        return target
+        return normalize_config_selection(selected_path, suggested_path)
 
     @staticmethod
     def _now_stamp() -> str:
         return _dt.datetime.now().strftime("%Y%m%d_%H%M%S")
 
     def _default_save_name(self) -> str:
-        return f"udp_log_{self._now_stamp()}.txt"
+        return default_save_name(self._now_stamp())
 
     def _update_window_title(self) -> None:
         self.setWindowTitle(f"UDP Log Viewer — {APP_VERSION} — {self._local_ip}")
@@ -1462,8 +1439,7 @@ class MainWindow(QMainWindow):
             try:
                 if self._connection_state.handle is not None:
                     try:
-                        self._connection_state.handle.flush()
-                        os.fsync(self._connection_state.handle.fileno())
+                        fsync_file_handle(self._connection_state.handle)
                     except Exception:
                         pass
             except Exception:
@@ -1473,8 +1449,7 @@ class MainWindow(QMainWindow):
 
         if src is not None and src.exists():
             try:
-                import shutil
-                shutil.copy2(str(src), path)
+                copy_log_file(src, path)
                 self.statusBar().showMessage(f"Saved: {os.path.basename(path)}", 4000)
                 return
             except Exception as e:
@@ -1482,11 +1457,7 @@ class MainWindow(QMainWindow):
                 return
 
         try:
-            content = self.log.toPlainText()
-            with open(path, "w", encoding="utf-8", newline="\n") as f:
-                f.write(content)
-                if not content.endswith("\n"):
-                    f.write("\n")
+            write_text_log(path, self.log.toPlainText())
             self.statusBar().showMessage(f"Saved: {os.path.basename(path)}", 4000)
         except Exception as e:
             QMessageBox.critical(self, "Save Failed", f"Could not save file:\n{e}")
