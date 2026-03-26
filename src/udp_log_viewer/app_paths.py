@@ -7,7 +7,7 @@ Goals:
 - Provide a stable, writable base directory for config + logs in bundled apps.
 - Default logs dir:
   - macOS:   ~/Library/Application Support/<ORG>/<APP>/logs
-  - Windows: %APPDATA%\<ORG>\<APP>\logs
+  - Windows: %APPDATA%\\<ORG>\\<APP>\\logs
   - Linux:   ~/.local/share/<ORG>/<APP>/logs
 
 The config file is stored next to logs dir as:
@@ -41,11 +41,29 @@ def _get_app_support_dir(org: str, app: str) -> Path:
     return Path.home() / ".local" / "share" / org / app
 
 
-def load_or_create_config(org: str, app: str, version: str) -> AppPathsConfig:
-    root = _get_app_support_dir(org, app)
+def get_default_app_support_dir(org: str, app: str) -> Path:
+    return _get_app_support_dir(org, app)
+
+
+def get_default_config_path(org: str, app: str) -> Path:
+    return get_default_app_support_dir(org, app) / "config.ini"
+
+
+def load_or_create_config(
+    org: str,
+    app: str,
+    version: str,
+    *,
+    config_path: str | Path | None = None,
+) -> AppPathsConfig:
+    if config_path is None:
+        cfg_path = get_default_config_path(org, app)
+    else:
+        cfg_path = Path(config_path).expanduser()
+
+    root = cfg_path.parent
     root.mkdir(parents=True, exist_ok=True)
 
-    cfg_path = root / "config.ini"
     logs_dir_default = root / "logs"
 
     cp = configparser.ConfigParser()

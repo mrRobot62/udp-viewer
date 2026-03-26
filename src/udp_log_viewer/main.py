@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 import datetime as _dt
-import json
 import os
 import random
 import socket
 import sys
 from collections import deque
-from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Deque, List, Optional, Tuple
@@ -38,11 +36,31 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from .app_paths import AppPathsConfig, load_or_create_config
+from .app_paths import AppPathsConfig, get_default_config_path, load_or_create_config
 from . import __display_version__
 from .highlighter import HighlightRule, LogHighlighter
+from .replay_simulation import (
+    TextSimulationState,
+    build_temperature_replay_sample,
+    build_text_replay_sample,
+    drain_replay_batch,
+    next_logic_simulation_line,
+    next_text_simulation_line,
+)
+from .rule_slots import (
+    PatternSlot,
+    build_highlight_rules,
+    compile_slot_patterns,
+    find_first_free_slot,
+    match_exclude_slots,
+    match_include_slots,
+    slots_from_json,
+    slots_to_json,
+)
+from .settings_store import SettingsStore
+from .ui_state import UiState
 from .udp_listener import UdpListenerThread
-from .udp_log_utils import drain_queue, compile_patterns
+from .udp_log_utils import drain_queue
 from .data_visualizer.visualizer_manager import VisualizerManager
 
 APP_ORG = "LocalTools"
@@ -56,24 +74,6 @@ DEFAULT_TRIM_CHUNK = 2000
 
 REPLAY_TICK_MS = 25
 REPLAY_LINES_PER_TICK = 40
-
-
-@dataclass
-class UiState:
-    bind_ip: str = "0.0.0.0"
-    port: int = 10514
-    autoscroll: bool = True
-
-    timestamp_enabled: bool = False
-    max_lines: int = DEFAULT_MAX_LINES
-
-
-@dataclass
-class PatternSlot:
-    pattern: str = ""
-    mode: str = "Substring"  # "Substring" | "Regex"
-    color: str = "None"      # chip tint; for Highlight also drives log coloring
-
 
 class PatternEditDialog(QDialog):
     """
@@ -162,15 +162,23 @@ class MainWindow(QMainWindow):
     _INI_KEY_FILTER = "filter_slots_json"
     _INI_KEY_EXCLUDE = "exclude_slots_json"
     _INI_KEY_HL = "hl_slots_json"
+    _QSETTINGS_CONFIG_PATH_KEY = "config/selected_path"
 
     def __init__(self) -> None:
         super().__init__()
 
-        # config.ini paths (AppSupport) + logs dir
-        self._paths_cfg: AppPathsConfig = load_or_create_config(APP_ORG, APP_NAME, APP_VERSION)
-
         # QSettings (small UI toggles are ok here)
         self._settings = QSettings(APP_ORG, APP_NAME)
+        config_path = self._resolve_config_path()
+
+        # config.ini paths (AppSupport/custom) + logs dir
+        self._paths_cfg: AppPathsConfig = load_or_create_config(
+            APP_ORG,
+            APP_NAME,
+            APP_VERSION,
+            config_path=config_path,
+        )
+        self._settings_store = SettingsStore(self._settings, self._paths_cfg.config_path)
         self._ui_state = UiState()
 
         # UDP listener
@@ -195,12 +203,7 @@ class MainWindow(QMainWindow):
         self._sim_timer = QTimer(self)
         self._sim_timer.setInterval(120)  # ms
         self._sim_timer.timeout.connect(self._on_sim_tick)
-        self._sim_seq = 0
-        self._sim_ntc = 22.0
-        self._sim_core = 23.0
-        self._sim_tgt = 40.0
-        self._sim_heater = 0
-        self._sim_mask = 0x0000
+        self._text_simulation = TextSimulationState()
 
         self._sim_temperature_enabled = False
         self._sim_temperature_timer = QTimer(self)
@@ -288,6 +291,55 @@ class MainWindow(QMainWindow):
 
     # ---------------- Helpers ----------------
 
+    def _resolve_config_path(self) -> Path:
+        remembered = self._settings.value(self._QSETTINGS_CONFIG_PATH_KEY, "", type=str).strip()
+        default_path = get_default_config_path(APP_ORG, APP_NAME)
+
+        candidates: list[Path] = []
+        if remembered:
+            candidates.append(Path(remembered).expanduser())
+        if default_path not in candidates:
+            candidates.append(default_path)
+
+        for candidate in candidates:
+            if candidate.exists() and self._is_config_path_writable(candidate):
+                self._settings.setValue(self._QSETTINGS_CONFIG_PATH_KEY, str(candidate))
+                self._settings.sync()
+                return candidate
+
+        selected = self._prompt_for_config_path(default_path)
+        self._settings.setValue(self._QSETTINGS_CONFIG_PATH_KEY, str(selected))
+        self._settings.sync()
+        return selected
+
+    @staticmethod
+    def _is_config_path_writable(path: Path) -> bool:
+        if path.exists():
+            return os.access(path, os.W_OK)
+        return os.access(path.parent, os.W_OK)
+
+    def _prompt_for_config_path(self, suggested_path: Path) -> Path:
+        QMessageBox.information(
+            self,
+            "Config.ini Missing",
+            "No config.ini was found.\n\nPlease choose a location for an existing config.ini or select a new location so the application can create one.",
+        )
+
+        selected_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Select Config.ini Location",
+            str(suggested_path),
+            "INI Files (*.ini);;All Files (*)",
+        )
+
+        if not selected_path:
+            return suggested_path
+
+        target = Path(selected_path).expanduser()
+        if target.suffix.lower() != ".ini":
+            target = target.with_suffix(".ini")
+        return target
+
     @staticmethod
     def _now_stamp() -> str:
         return _dt.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -354,39 +406,14 @@ class MainWindow(QMainWindow):
     # ---------------- INI helpers (config.ini) ----------------
 
     def _ini_read(self) -> dict:
-        import configparser
-        cp = configparser.ConfigParser()
-        try:
-            if self._paths_cfg.config_path.exists():
-                cp.read(self._paths_cfg.config_path, encoding="utf-8")
-        except Exception:
-            return {}
-        out: dict = {}
-        for sec in cp.sections():
-            out[sec] = dict(cp.items(sec))
-        return out
+        return self._settings_store.ini_read()
 
     def _ini_get(self, section: str, key: str, default: str = "") -> str:
-        import configparser
-        cp = configparser.ConfigParser()
-        try:
-            if self._paths_cfg.config_path.exists():
-                cp.read(self._paths_cfg.config_path, encoding="utf-8")
-            return cp.get(section, key, fallback=default)
-        except Exception:
-            return default
+        return self._settings_store.ini_get(section, key, default)
 
     def _ini_set(self, section: str, key: str, value: str) -> None:
-        import configparser
-        cp = configparser.ConfigParser()
         try:
-            if self._paths_cfg.config_path.exists():
-                cp.read(self._paths_cfg.config_path, encoding="utf-8")
-            if not cp.has_section(section):
-                cp.add_section(section)
-            cp.set(section, key, value)
-            with open(self._paths_cfg.config_path, "w", encoding="utf-8", newline="\n") as f:
-                cp.write(f)
+            self._settings_store.ini_set(section, key, value)
         except Exception as e:
             self.log.appendPlainText(f"[UI/WARN] config.ini write failed: {e}")
 
@@ -672,31 +699,30 @@ class MainWindow(QMainWindow):
     # ---------------- Settings ----------------
 
     def _load_settings(self) -> None:
-        s = self._settings
-        self._ui_state.bind_ip = s.value("net/bind_ip", self._ui_state.bind_ip, type=str)
-        self._ui_state.port = s.value("net/port", self._ui_state.port, type=int)
-        self._ui_state.autoscroll = s.value("ui/autoscroll", self._ui_state.autoscroll, type=bool)
-        self._ui_state.timestamp_enabled = s.value("ui/timestamp", self._ui_state.timestamp_enabled, type=bool)
-        self._ui_state.max_lines = s.value("log/max_lines", self._ui_state.max_lines, type=int)
+        self._ui_state = self._settings_store.load_ui_state(self._ui_state)
 
     def _save_settings(self) -> None:
-        s = self._settings
-        s.setValue("net/bind_ip", self._ui_state.bind_ip)
-        s.setValue("net/port", int(self._ui_state.port))
-        s.setValue("ui/autoscroll", bool(self._ui_state.autoscroll))
-        s.setValue("ui/timestamp", bool(self._ui_state.timestamp_enabled))
-        s.setValue("log/max_lines", int(self._ui_state.max_lines))
-
-        self._save_filter_slots()
-        self._save_exclude_slots()
-        self._save_highlight_slots()
+        self._settings_store.save_ui_state(self._ui_state)
 
     def _apply_state_to_widgets(self) -> None:
-        self.ed_bind_ip.setText(self._ui_state.bind_ip)
-        self.ed_port.setText(str(self._ui_state.port))
-        self.chk_autoscroll.setChecked(self._ui_state.autoscroll)
-        self.chk_timestamp.setChecked(self._ui_state.timestamp_enabled)
-        self.ed_max_lines.setText(str(self._ui_state.max_lines))
+        widgets = [
+            self.ed_bind_ip,
+            self.ed_port,
+            self.chk_autoscroll,
+            self.chk_timestamp,
+            self.ed_max_lines,
+        ]
+        for widget in widgets:
+            widget.blockSignals(True)
+        try:
+            self.ed_bind_ip.setText(self._ui_state.bind_ip)
+            self.ed_port.setText(str(self._ui_state.port))
+            self.chk_autoscroll.setChecked(self._ui_state.autoscroll)
+            self.chk_timestamp.setChecked(self._ui_state.timestamp_enabled)
+            self.ed_max_lines.setText(str(self._ui_state.max_lines))
+        finally:
+            for widget in widgets:
+                widget.blockSignals(False)
 
     def on_settings_edited(self) -> None:
         self._ui_state.bind_ip = self.ed_bind_ip.text().strip() or "0.0.0.0"
@@ -718,116 +744,69 @@ class MainWindow(QMainWindow):
     # ---------------- Slot persistence ----------------
 
     def _load_slot_list_from_json(self, raw: str) -> List[PatternSlot]:
-        if not raw:
-            return [PatternSlot() for _ in range(SLOT_COUNT)]
-        try:
-            items = json.loads(raw)
-            if not isinstance(items, list):
-                return [PatternSlot() for _ in range(SLOT_COUNT)]
-            out: List[PatternSlot] = [PatternSlot() for _ in range(SLOT_COUNT)]
-            for i in range(min(SLOT_COUNT, len(items))):
-                if not isinstance(items[i], dict):
-                    continue
-                out[i] = PatternSlot(
-                    pattern=str(items[i].get("pattern", "")).strip(),
-                    mode=str(items[i].get("mode", "Substring")).strip() or "Substring",
-                    color=str(items[i].get("color", "None")).strip() or "None",
-                )
-            return out
-        except Exception:
-            return [PatternSlot() for _ in range(SLOT_COUNT)]
+        return slots_from_json(raw, SLOT_COUNT)
 
     def _save_slot_list_to_json(self, slots: List[PatternSlot]) -> str:
-        items = [{"pattern": s.pattern, "mode": s.mode, "color": s.color} for s in slots]
-        return json.dumps(items, ensure_ascii=False)
+        return slots_to_json(slots)
 
     def _load_filter_slots(self) -> None:
-        # First try INI
-        raw = self._ini_get(self._INI_SECTION_RULES, self._INI_KEY_FILTER, "")
-        slots = self._load_slot_list_from_json(raw)
-        # Legacy fallback from QSettings if INI empty
-        if all(not s.pattern.strip() for s in slots):
-            raw_q = self._settings.value("filter/slots_json", "", type=str)
-            if raw_q:
-                slots = self._load_slot_list_from_json(raw_q)
-        self._filter_slots = slots
+        self._filter_slots = self._settings_store.load_rule_slots(
+            ini_section=self._INI_SECTION_RULES,
+            ini_key=self._INI_KEY_FILTER,
+            qsettings_key="filter/slots_json",
+            slot_count=SLOT_COUNT,
+        )
 
     def _save_filter_slots(self) -> None:
-        payload = self._save_slot_list_to_json(self._filter_slots)
-        self._ini_set(self._INI_SECTION_RULES, self._INI_KEY_FILTER, payload)
-        # Also keep QSettings in sync (optional)
-        self._settings.setValue("filter/slots_json", payload)
+        self._settings_store.save_rule_slots(
+            self._filter_slots,
+            ini_section=self._INI_SECTION_RULES,
+            ini_key=self._INI_KEY_FILTER,
+            qsettings_key="filter/slots_json",
+        )
 
     def _load_exclude_slots(self) -> None:
-        raw = self._ini_get(self._INI_SECTION_RULES, self._INI_KEY_EXCLUDE, "")
-        slots = self._load_slot_list_from_json(raw)
-        if all(not s.pattern.strip() for s in slots):
-            raw_q = self._settings.value("exclude/slots_json", "", type=str)
-            if raw_q:
-                slots = self._load_slot_list_from_json(raw_q)
-        self._exclude_slots = slots
+        self._exclude_slots = self._settings_store.load_rule_slots(
+            ini_section=self._INI_SECTION_RULES,
+            ini_key=self._INI_KEY_EXCLUDE,
+            qsettings_key="exclude/slots_json",
+            slot_count=SLOT_COUNT,
+        )
 
     def _save_exclude_slots(self) -> None:
-        payload = self._save_slot_list_to_json(self._exclude_slots)
-        self._ini_set(self._INI_SECTION_RULES, self._INI_KEY_EXCLUDE, payload)
-        self._settings.setValue("exclude/slots_json", payload)
+        self._settings_store.save_rule_slots(
+            self._exclude_slots,
+            ini_section=self._INI_SECTION_RULES,
+            ini_key=self._INI_KEY_EXCLUDE,
+            qsettings_key="exclude/slots_json",
+        )
 
     def _load_highlight_slots(self) -> None:
-        raw = self._ini_get(self._INI_SECTION_RULES, self._INI_KEY_HL, "")
-        slots = self._load_slot_list_from_json(raw)
-        if all(not s.pattern.strip() for s in slots):
-            raw_q = self._settings.value("hl/slots_json", "", type=str)
-            if raw_q:
-                slots = self._load_slot_list_from_json(raw_q)
-        self._hl_slots = slots
+        self._hl_slots = self._settings_store.load_rule_slots(
+            ini_section=self._INI_SECTION_RULES,
+            ini_key=self._INI_KEY_HL,
+            qsettings_key="hl/slots_json",
+            slot_count=SLOT_COUNT,
+        )
 
     def _save_highlight_slots(self) -> None:
-        payload = self._save_slot_list_to_json(self._hl_slots)
-        self._ini_set(self._INI_SECTION_RULES, self._INI_KEY_HL, payload)
-        self._settings.setValue("hl/slots_json", payload)
+        self._settings_store.save_rule_slots(
+            self._hl_slots,
+            ini_section=self._INI_SECTION_RULES,
+            ini_key=self._INI_KEY_HL,
+            qsettings_key="hl/slots_json",
+        )
 
     # ---------------- Filter matching ----------------
 
     def _compile_slot_patterns(self, slots: List[PatternSlot]) -> List[List[object]]:
-        compiled: List[List[object]] = []
-        for s in slots:
-            if not s.pattern.strip():
-                continue
-            pats = compile_patterns(s.pattern, s.mode)
-            if pats:
-                compiled.append(pats)
-        return compiled
+        return compile_slot_patterns(slots)
 
     def _match_include_slots(self, line: str) -> bool:
-        if not self._filter_slot_patterns:
-            return True
-        for pats in self._filter_slot_patterns:
-            if not self._match_all(line, pats):
-                return False
-        return True
+        return match_include_slots(line, self._filter_slot_patterns)
 
     def _match_exclude_slots(self, line: str) -> bool:
-        for pats in self._exclude_slot_patterns:
-            if self._match_all(line, pats):
-                return True
-        return False
-
-    @staticmethod
-    def _match_all(line: str, patterns: List[object]) -> bool:
-        for p in patterns:
-            try:
-                if hasattr(p, "search"):
-                    if p.search(line) is None:
-                        return False
-                elif callable(p):
-                    if not bool(p(line)):
-                        return False
-                else:
-                    if str(p) not in line:
-                        return False
-            except Exception:
-                return False
-        return True
+        return match_exclude_slots(line, self._exclude_slot_patterns)
 
     def _rebuild_filter_patterns(self) -> None:
         self._filter_slot_patterns = self._compile_slot_patterns(self._filter_slots)
@@ -836,16 +815,7 @@ class MainWindow(QMainWindow):
     # ---------------- Highlight ----------------
 
     def _rebuild_highlight_rules(self) -> None:
-        rules: List[HighlightRule] = []
-        for s in self._hl_slots:
-            if not s.pattern.strip():
-                continue
-            if s.color.strip().lower() == "none":
-                continue
-            r = HighlightRule.create(s.pattern, s.mode, s.color)
-            if r is not None:
-                rules.append(r)
-        self._hl_rules = rules
+        self._hl_rules = build_highlight_rules(self._hl_slots)
 
     def _apply_highlighter(self) -> None:
         self._highlighter.set_rules(self._hl_rules)
@@ -854,10 +824,7 @@ class MainWindow(QMainWindow):
     # ---------------- Chip UI helpers ----------------
 
     def _find_first_free_slot(self, slots: List[PatternSlot]) -> Optional[int]:
-        for i, s in enumerate(slots):
-            if not s.pattern.strip():
-                return i
-        return None
+        return find_first_free_slot(slots)
 
     def _refresh_chips(self, layout: QHBoxLayout, slots: List[PatternSlot], on_edit, on_remove) -> None:
         while layout.count():
@@ -1090,10 +1057,8 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Replay finished", 2000)
             return
 
-        for _ in range(REPLAY_LINES_PER_TICK):
-            if not self._replay_lines_temperature:
-                break
-            self._ingest_line(self._replay_lines_temperature.popleft())
+        for line in drain_replay_batch(self._replay_lines, REPLAY_LINES_PER_TICK):
+            self._ingest_line(line)
 
     def _replay_tick_temperature(self) -> None:
         if not self._replay_lines_temperature:
@@ -1102,10 +1067,8 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Replay temperature finished", 2000)
             return
 
-        for _ in range(REPLAY_LINES_PER_TICK):
-            if not self._replay_lines:
-                break
-            self._ingest_line(self._replay_lines.popleft())
+        for line in drain_replay_batch(self._replay_lines_temperature, REPLAY_LINES_PER_TICK):
+            self._ingest_line(line)
 
 
     def on_open_log_clicked(self) -> None:
@@ -1130,12 +1093,8 @@ class MainWindow(QMainWindow):
     # simulation CSV Temperature lines
     # -------------------------------------------------------
     def on_replay_sample_temperature_clicked(self) -> None:
-        sample = [
-            # CSV_TEMP Zimmertemperatur
-            "[CSV_TEMP];14047;2633;228;14220;2666;221;0;0;1",
-        ]
         self.on_stop_replay_temperature_clicked()
-        self._replay_lines_temperature = deque(sample)
+        self._replay_lines_temperature = deque(build_temperature_replay_sample())
         self._replay_active_temperature = True
         self._replay_timer_temperature.start()
         self.statusBar().showMessage("Replay: temperature sample", 2000)
@@ -1151,26 +1110,8 @@ class MainWindow(QMainWindow):
     # simulation user friendly log entries
     # -------------------------------------------------------
     def on_replay_sample_clicked(self) -> None:
-        sample = [
-            "[MAIN/INFO] ======================================================",
-            "[MAIN/INFO] === ESP32-S3 + ST7701 480x480 + LVGL 9.4.x + Touch ===",
-            "[MAIN/INFO] ======================================================",
-            "[WIFI] Connected. IP: 192.168.0.103",
-            "[UDP] selftest: sending 3 packets...",
-            "[HOST/INFO] STATUS received, mask=0x0000 (    0x0000), adc=[203,0,0,0] tempRaw=203",
-            "[OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=20.30 core=23.15 ui=23.15 ctrl=23.15 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=0 heatRemMs=0 restRemMs=0",
-            "[OVEN/INFO] [T11] mode=0 door=0 lock=0 ntc=20.80 core=23.20 ui=23.20 ctrl=23.20 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=1 heatRemMs=2000 restRemMs=0",
-            "[HEATER/DBG] pwm=4000Hz duty=50%",
-            "[HOST/INFO] STATUS received, mask=0x1010 (    0x1010), adc=[205,0,0,0] tempRaw=205",
-            "[UI/INFO] Listener: ON — 0.0.0.0:10514",
-            "[UI/ERROR] UDP listener error: [Errno 9] Bad file descriptor",
-            "[OVEN/WARN] Door opened — entering WAIT",
-            "[OVEN/INFO] [T11] mode=1 door=1 lock=1 ntc=21.00 core=23.25 ui=23.25 ctrl=23.25 tgt=40.00 lo=37.00 hi=43.00 heaterIntent=0 heatRemMs=0 restRemMs=3000",
-            "[MAIN/INFO] Sample done.", 
-        ]
-
         self.on_stop_replay_clicked()
-        self._replay_lines = deque(sample)
+        self._replay_lines = deque(build_text_replay_sample())
         self._replay_active = True
         self._replay_timer.start()
         self.statusBar().showMessage("Replay: sample", 2000)
@@ -1236,12 +1177,7 @@ class MainWindow(QMainWindow):
         if self._sim_timer.isActive():
             return
         self._sim_enabled = True
-        self._sim_seq = 0
-        self._sim_ntc = 22.0
-        self._sim_core = 23.0
-        self._sim_tgt = 40.0
-        self._sim_heater = 0
-        self._sim_mask = 0x0000
+        self._text_simulation = TextSimulationState()
         self._sim_timer.start()
         self.statusBar().showMessage("Simulation: ON (default profile)", 2500)
 
@@ -1290,44 +1226,7 @@ class MainWindow(QMainWindow):
 
 
     def _sim_next_line(self) -> str:
-        self._sim_seq += 1
-        if self._sim_seq % 13 == 0:
-            self._sim_heater = 1 - self._sim_heater
-        if self._sim_heater:
-            self._sim_ntc += 0.15 + random.random() * 0.05
-            self._sim_core += 0.05 + random.random() * 0.03
-        else:
-            self._sim_ntc -= 0.03 + random.random() * 0.02
-            self._sim_core -= 0.01 + random.random() * 0.01
-        self._sim_ntc = max(18.0, min(80.0, self._sim_ntc))
-        self._sim_core = max(18.0, min(70.0, self._sim_core))
-        if self._sim_seq % 40 == 0:
-            self._sim_mask ^= 0x0010
-        if self._sim_seq % 97 == 0:
-            self._sim_mask ^= 0x0040
-        r = random.random()
-        if r < 0.45:
-            adc0 = int(self._sim_ntc * 10)
-            return f"[HOST/INFO] STATUS received, mask=0x{self._sim_mask:04x} (    0x{self._sim_mask:04x}), adc=[{adc0},0,0,0] tempRaw={adc0}"
-        if r < 0.70:
-            heater_intent = 1 if self._sim_heater and self._sim_core < (self._sim_tgt - 0.3) else 0
-            heat_rem = 800 if self._sim_heater else 0
-            rest_rem = 0 if self._sim_heater else 1200
-            lo = self._sim_tgt - 3.0
-            hi = self._sim_tgt + 3.0
-            return (
-                f"[OVEN/INFO] [T11] mode=0 door=0 lock=0 "
-                f"ntc={self._sim_ntc:0.2f} core={self._sim_core:0.2f} ui={self._sim_core:0.2f} ctrl={self._sim_core:0.2f} "
-                f"tgt={self._sim_tgt:0.2f} lo={lo:0.2f} hi={hi:0.2f} "
-                f"heaterIntent={heater_intent} heatRemMs={heat_rem} restRemMs={rest_rem}"
-            )
-        if r < 0.80:
-            return f"[HEATER/INFO] {'ON' if self._sim_heater else 'OFF'} pwm=4000Hz duty=50%"
-        if r < 0.90:
-            return "[UI/DEBUG] screen_main tick"
-        if r < 0.97:
-            return "[HOST/DEBUG] RX burst: 128 bytes"
-        return "[HOST/ERROR] UART timeout while polling STATUS"
+        return next_text_simulation_line(self._text_simulation)
 
 
     def _on_sim_temperature_tick(self) -> None:
@@ -1411,18 +1310,7 @@ class MainWindow(QMainWindow):
 
 
     def _on_sim_logic_tick(self) -> None:
-        import random
-
-        # zufällige toggles
-        for i in range(len(self._sim_logic_state)):
-            if random.random() < 0.2:
-                self._sim_logic_state[i] ^= 1
-
-        values = ";".join(str(v) for v in self._sim_logic_state)
-
-        line = f"[CSV_LOGIC];{values}"
-
-        self._ingest_line(line)
+        self._ingest_line(next_logic_simulation_line(self._sim_logic_state))
 
 
     
