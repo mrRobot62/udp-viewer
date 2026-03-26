@@ -1,128 +1,41 @@
 # UDP Log Viewer
 
-Leichtgewichtiger UDP Log Viewer für Embedded Systeme wie ESP32.
+Plattformübergreifender UDP Log Viewer für ESP32 und andere Embedded-Systeme, entwickelt mit Python und PyQt5.
 
-Dieses Tool ermöglicht das Empfangen, Anzeigen und Analysieren von UDP
-Logdaten in Echtzeit.
+## Dokumentation
 
-------------------------------------------------------------------------
+Vollständige deutsche Dokumentation:
 
-## Übersicht
+- [docs/DOKUMENTATION_de.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/DOKUMENTATION_de.md)
 
-UDP Log Viewer ist eine Desktop-Anwendung basierend auf Python und
-PyQt5.\
-Sie wurde speziell für das Debugging von Embedded-Systemen über Netzwerk
-entwickelt.
+Vollständige englische Dokumentation:
 
-Typische Anwendungsfälle:
+- [docs/DOCUMENTATION_en.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/DOCUMENTATION_en.md)
 
--   ESP32 Debugging über WLAN
--   Loganalyse ohne USB-Verbindung
--   Echtzeitüberwachung während Hardwaretests
--   Remote-Diagnose
+## Aktueller Umfang
 
-------------------------------------------------------------------------
+Die aktuelle Codebasis enthält:
 
-## Screenshot
+- Echtzeit-UDP-Logempfang
+- Filter-, Exclude- und Highlight-Regeln
+- Live-Session-Logging
+- Replay gespeicherter Logdateien
+- integrierte Simulation für Text-, Temperatur- und Logic-Traffic
+- CSV-basierte Datenvisualisierung
+- Logic-Kanal-Visualisierung
+- Packaging-Skripte für macOS und Windows
 
-```{=html}
-<!-- Hier Screenshots einfügen -->
-```
-![Hauptfenster](docs/screenshots/main_window.png)
+## Start aus dem Quellcode
 
-![Filter und Highlight](docs/screenshots/filter_highlight.png)
-
-------------------------------------------------------------------------
-
-## Features
-
--   Echtzeit UDP Log Empfang
--   Schnelle und schlanke Oberfläche
--   Highlight-, Filter- und Exclude-System
--   Zeitstempel-Unterstützung
--   Logs speichern
--   Pause/Resume
--   Simulation und Replay
--   Plattformübergreifend (macOS, Windows, Linux)
-
-------------------------------------------------------------------------
-
-## Installation
-
-Start aus Source-Code:
-
-``` bash
+```bash
 python -m venv venv
 source venv/bin/activate
-pip install -e .
+pip install -e .[dev]
 udp-log-viewer
 ```
 
-------------------------------------------------------------------------
+## Entwickler-Bootstrap
 
-## Kurzanleitung (User Manual)
-
-### Schritt 1 -- Anwendung starten
-
-``` bash
-udp-log-viewer
-```
-
-------------------------------------------------------------------------
-
-### Schritt 2 -- Gerät konfigurieren
-
-Das Gerät muss UDP Logs an die IP-Adresse des PCs senden.
-
-------------------------------------------------------------------------
-
-### Schritt 3 -- Logs anzeigen
-
-Logs erscheinen automatisch im Hauptfenster.
-
-------------------------------------------------------------------------
-
-### Schritt 4 -- Filter verwenden
-
-Filter ermöglichen:
-
--   Hervorhebung wichtiger Meldungen
--   Ausblenden unwichtiger Logs
-
-------------------------------------------------------------------------
-
-## Entwicklung
-
-Bootstrap:
-
-``` bash
+```bash
 ./scripts/bootstrap_macos_linux.sh
 ```
-
-Start:
-
-``` bash
-./scripts/dev_run.sh
-```
-
-Tests:
-
-``` bash
-./scripts/dev_test.sh
-```
-
-------------------------------------------------------------------------
-
-## Roadmap
-
-Geplante Erweiterungen:
-
--   Erweiterte Filter
--   Plugin-System
--   Erweiterte Exportfunktionen
-
-------------------------------------------------------------------------
-
-## Autor
-
-Bernhard Klein
