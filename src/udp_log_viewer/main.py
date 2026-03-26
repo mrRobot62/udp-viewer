@@ -38,6 +38,16 @@ from PyQt5.QtWidgets import (
 
 from .app_paths import AppPathsConfig, get_default_config_path, load_or_create_config
 from . import __display_version__
+from .connection_runtime import (
+    LiveLogState,
+    append_live_log_line,
+    build_connection_status,
+    close_live_log,
+    ensure_logs_dir,
+    format_bytes,
+    live_status_snippet,
+    open_live_log,
+)
 from .highlighter import HighlightRule, LogHighlighter
 from .replay_simulation import (
     TextSimulationState,
@@ -183,8 +193,7 @@ class MainWindow(QMainWindow):
 
         # UDP listener
         self._listener: Optional[UdpListenerThread] = None
-        self._rx_packets = 0
-        self._rx_lines = 0
+        self._connection_state = LiveLogState()
 
         # Queue + batching for UI
         self._queue: Deque[str] = deque()
@@ -247,14 +256,6 @@ class MainWindow(QMainWindow):
 
         # Highlight rules
         self._hl_rules: List[HighlightRule] = []
-
-        # Log limit counters
-        self._trimmed_lines_total = 0
-
-        # Continuous file logging per connection
-        self._live_log_path: Optional[Path] = None
-        self._live_log_handle = None  # type: ignore[assignment]
-        self._last_session_log_path: Optional[Path] = None
 
         self._local_ip = _get_local_ipv4()
         self._update_window_title()
@@ -351,54 +352,31 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(f"UDP Log Viewer — {APP_VERSION} — {self._local_ip}")
 
     def _ensure_logs_dir(self) -> Path:
-        p = Path(self._paths_cfg.logs_dir)
-        try:
-            p.mkdir(parents=True, exist_ok=True)
-        except Exception:
-            # caller will handle errors when opening file
-            pass
-        return p
+        return ensure_logs_dir(self._paths_cfg.logs_dir)
 
     def _open_new_live_log(self) -> None:
         self._close_live_log()
 
-        logs_dir = self._ensure_logs_dir()
-        name = f"udp_live_{self._now_stamp()}.txt"
-        path = logs_dir / name
-
         try:
-            f = open(path, "w", encoding="utf-8", newline="\n")
-            self._live_log_handle = f
-            self._live_log_path = path
-            f.write(f"# UDP Log Viewer live session — {self._now_stamp()}\n")
-            f.flush()
+            handle, path = open_live_log(self._ensure_logs_dir(), self._now_stamp())
+            self._connection_state.handle = handle
+            self._connection_state.active_path = path
             # Keep status short (filename only)
             self.statusBar().showMessage(f"Live log: {path.name}", 3000)
         except Exception as e:
-            self._live_log_handle = None
-            self._live_log_path = None
+            self._connection_state.handle = None
+            self._connection_state.active_path = None
             QMessageBox.critical(self, "Logfile Error", f"Could not create live logfile:\n{e}")
             self.log.appendPlainText(f"[UI/ERROR] Could not create live logfile: {e}")
 
     def _close_live_log(self) -> None:
-        try:
-            if self._live_log_handle is not None:
-                try:
-                    self._live_log_handle.flush()
-                except Exception:
-                    pass
-                self._live_log_handle.close()
-        except Exception:
-            pass
-        self._last_session_log_path = self._live_log_path
-        self._live_log_handle = None
-        self._live_log_path = None
+        close_live_log(self._connection_state)
 
     def _append_to_live_log(self, line: str) -> None:
-        if self._live_log_handle is None:
+        if self._connection_state.handle is None:
             return
         try:
-            self._live_log_handle.write(line + "\n")
+            append_live_log_line(self._connection_state, line)
         except Exception as e:
             self.log.appendPlainText(f"[UI/ERROR] Live logfile write failed: {e}")
             self._close_live_log()
@@ -1338,7 +1316,7 @@ class MainWindow(QMainWindow):
             cursor.removeSelectedText()
             cursor.deleteChar()
 
-        self._trimmed_lines_total += remove_n
+        self._connection_state.trimmed_lines_total += remove_n
 
     # ---------------- UDP listener ----------------
 
@@ -1364,8 +1342,8 @@ class MainWindow(QMainWindow):
         self._ui_state.bind_ip = bind_ip
         self._ui_state.port = port
 
-        self._rx_packets = 0
-        self._rx_lines = 0
+        self._connection_state.rx_packets = 0
+        self._connection_state.rx_lines = 0
 
         t = UdpListenerThread(bind_ip, port, parent=self)
         t.line_received.connect(self._on_line_received)
@@ -1426,25 +1404,25 @@ class MainWindow(QMainWindow):
     #     )
 
     def _on_rx_stats(self, packets: int, lines: int) -> None:
-        self._rx_packets = packets
-        self._rx_lines = lines
+        self._connection_state.rx_packets = packets
+        self._connection_state.rx_lines = lines
         if self._listener is None:
             return
-
-        paused_txt = ""
-        if getattr(self, "_ui_paused", False):
-            paused_txt = f" — PAUSED (tail={len(self._pause_buffer)} drop={self._pause_dropped})"
-
-        live_txt = ""
-        if getattr(self, "_live_log_path", None):
-            live_txt = f" — {self._live_status_snippet()}"
-
         self.statusBar().showMessage(
-            f"Listener: ON — {self._ui_state.bind_ip}:{self._ui_state.port} — "
-            f"pkts={packets} lines={lines} — shown={self.log.document().blockCount()} "
-            f"dropped={self._trimmed_lines_total} — HL={len(self._hl_rules)}"
-            + live_txt
-            + paused_txt
+            build_connection_status(
+                connected=True,
+                bind_ip=self._ui_state.bind_ip,
+                port=self._ui_state.port,
+                shown_lines=self.log.document().blockCount(),
+                trimmed_lines_total=self._connection_state.trimmed_lines_total,
+                highlight_count=len(self._hl_rules),
+                rx_packets=packets,
+                rx_lines=lines,
+                live_snippet=self._live_status_snippet(),
+                paused_tail=len(self._pause_buffer),
+                paused_dropped=self._pause_dropped,
+                paused=bool(self._ui_paused),
+            )
         )
 
     def _flush_log_queue(self) -> None:
@@ -1459,8 +1437,8 @@ class MainWindow(QMainWindow):
                 self.log.appendPlainText(line)
 
             try:
-                if self._live_log_handle is not None:
-                    self._live_log_handle.flush()
+                if self._connection_state.handle is not None:
+                    self._connection_state.handle.flush()
             except Exception:
                 self._close_live_log()
 
@@ -1488,19 +1466,19 @@ class MainWindow(QMainWindow):
             return
 
         src: Optional[Path] = None
-        if self._live_log_path is not None:
-            src = self._live_log_path
+        if self._connection_state.active_path is not None:
+            src = self._connection_state.active_path
             try:
-                if self._live_log_handle is not None:
+                if self._connection_state.handle is not None:
                     try:
-                        self._live_log_handle.flush()
-                        os.fsync(self._live_log_handle.fileno())
+                        self._connection_state.handle.flush()
+                        os.fsync(self._connection_state.handle.fileno())
                     except Exception:
                         pass
             except Exception:
                 pass
-        elif self._last_session_log_path is not None and self._last_session_log_path.exists():
-            src = self._last_session_log_path
+        elif self._connection_state.last_session_path is not None and self._connection_state.last_session_path.exists():
+            src = self._connection_state.last_session_path
 
         if src is not None and src.exists():
             try:
@@ -1524,7 +1502,7 @@ class MainWindow(QMainWindow):
 
     def on_clear_clicked(self) -> None:
         self.log.clear()
-        self._trimmed_lines_total = 0
+        self._connection_state.trimmed_lines_total = 0
         self.statusBar().showMessage("Cleared (UI only)", 2000)
 
     def on_copy_clicked(self) -> None:
@@ -1553,8 +1531,8 @@ class MainWindow(QMainWindow):
             self.btn_pause.blockSignals(False)
 
             self._append_log_line(f"[UI/INFO] Listening on {self._ui_state.bind_ip}:{self._ui_state.port}", write_live=False)
-            if self._live_log_path is not None:
-                self.log.appendPlainText(f"[UI/INFO] Live logfile: {self._live_log_path.name}")
+            if self._connection_state.active_path is not None:
+                self.log.appendPlainText(f"[UI/INFO] Live logfile: {self._connection_state.active_path.name}")
         else:
             if self._listener is not None:
                 mb = QMessageBox(self)
@@ -1657,20 +1635,21 @@ class MainWindow(QMainWindow):
                 self.btn_pause.setText("PAUSE")
                 self.btn_pause.setStyleSheet("QToolButton { background-color: #2ecc71; font-weight: bold; }")
 
-            paused_txt = ""
-            if self._ui_paused:
-                paused_txt = f" — PAUSED (tail={len(self._pause_buffer)} drop={self._pause_dropped})"
-
-            live_txt = ""
-            if getattr(self, "_live_log_path", None):
-                live_txt = f" — {self._live_status_snippet()}"
-
             self.statusBar().showMessage(
-                f"Listener: ON — {self._ui_state.bind_ip}:{self._ui_state.port} — "
-                f"pkts={self._rx_packets} lines={self._rx_lines} — shown={self.log.document().blockCount()} "
-                f"dropped={self._trimmed_lines_total} — HL={len(self._hl_rules)}"
-                + live_txt
-                + paused_txt
+                build_connection_status(
+                    connected=True,
+                    bind_ip=self._ui_state.bind_ip,
+                    port=self._ui_state.port,
+                    shown_lines=self.log.document().blockCount(),
+                    trimmed_lines_total=self._connection_state.trimmed_lines_total,
+                    highlight_count=len(self._hl_rules),
+                    rx_packets=self._connection_state.rx_packets,
+                    rx_lines=self._connection_state.rx_lines,
+                    live_snippet=self._live_status_snippet(),
+                    paused_tail=len(self._pause_buffer),
+                    paused_dropped=self._pause_dropped,
+                    paused=bool(self._ui_paused),
+                )
             )
         else:
             self.chk_timestamp.setEnabled(True)
@@ -1682,20 +1661,20 @@ class MainWindow(QMainWindow):
             self.btn_pause.setStyleSheet("QToolButton { background-color: #b0b0b0; font-weight: bold; }")
 
             self.statusBar().showMessage(
-                f"Listener: OFF — {self._ui_state.bind_ip}:{self._ui_state.port} — "
-                f"shown={self.log.document().blockCount()} dropped={self._trimmed_lines_total} — HL={len(self._hl_rules)}"
+                build_connection_status(
+                    connected=False,
+                    bind_ip=self._ui_state.bind_ip,
+                    port=self._ui_state.port,
+                    shown_lines=self.log.document().blockCount(),
+                    trimmed_lines_total=self._connection_state.trimmed_lines_total,
+                    highlight_count=len(self._hl_rules),
+                )
             )
 
     # --- Live logfile status ---
     @staticmethod
     def _format_bytes(n: int) -> str:
-        if n < 1024:
-            return f"{n} B"
-        if n < 1024 * 1024:
-            return f"{n/1024.0:.1f} KB"
-        if n < 1024 * 1024 * 1024:
-            return f"{n/(1024.0*1024.0):.1f} MB"
-        return f"{n/(1024.0*1024.0*1024.0):.2f} GB"
+        return format_bytes(n)
 
     @staticmethod
     def _format_timestamp_prefix(dt: datetime) -> str:
@@ -1708,7 +1687,7 @@ class MainWindow(QMainWindow):
 
         self.log.appendPlainText(out_line)
 
-        if write_live and getattr(self, "_live_log_handle", None) is not None:
+        if write_live and self._connection_state.handle is not None:
             try:
                 self._append_to_live_log(out_line)
             except Exception:
@@ -1718,13 +1697,7 @@ class MainWindow(QMainWindow):
             self.log.verticalScrollBar().setValue(self.log.verticalScrollBar().maximum())
 
     def _live_status_snippet(self) -> str:
-        if getattr(self, "_live_log_path", None) is None:
-            return ""
-        try:
-            size = self._live_log_path.stat().st_size
-        except Exception:
-            size = 0
-        return f"LIVE: {self._live_log_path.name} ({self._format_bytes(size)})"
+        return live_status_snippet(self._connection_state.active_path)
 
     # ---------------- Qt overrides ----------------
 
