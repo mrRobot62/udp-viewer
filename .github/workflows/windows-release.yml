@@ -39,7 +39,13 @@ jobs:
         id: package
         shell: pwsh
         run: |
-          $version = python -c "import pathlib, re; text = pathlib.Path('src/udp_log_viewer/__init__.py').read_text(encoding='utf-8'); print(re.search(r'__version__ = \"([^\"]+)\"', text).group(1))"
+          $versionFile = Get-Content 'src/udp_log_viewer/__init__.py' -Raw
+          if ($versionFile -match '__version__\s*=\s*"([^"]+)"') {
+            $version = $Matches[1]
+          } else {
+            throw "Could not determine version from src/udp_log_viewer/__init__.py"
+          }
+
           $installer = Get-ChildItem -Path . -Recurse -Filter 'UDPLogViewer-Setup-*.exe' |
             Sort-Object LastWriteTime -Descending |
             Select-Object -First 1
