@@ -467,3 +467,8 @@ Primary files for further inspection:
 - [csv_log_parser.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/data_visualizer/csv_log_parser.py)
 - [config_store.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/data_visualizer/config_store.py)
 
+## 17. Further References
+
+- [USER_GUIDE_en.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/USER_GUIDE_en.md)
+- [BUILD_AND_PACKAGING_REFERENCE_en.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/BUILD_AND_PACKAGING_REFERENCE_en.md)
+- [DOKUMENTATION_de.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/DOKUMENTATION_de.md)
