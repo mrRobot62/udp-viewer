@@ -48,6 +48,8 @@ class ConfigStore:
             parser.set(section, "filter_string", config.filter_string)
             parser.set(section, "graph_type", getattr(config, "graph_type", "plot"))
             parser.set(section, "max_samples", str(config.max_samples))
+            parser.set(section, "sliding_window_enabled", str(bool(config.sliding_window_enabled)).lower())
+            parser.set(section, "default_window_size", str(config.default_window_size))
             parser.set(section, "window_geometry", config.window_geometry or "")
 
             parser.set(section, "x_label", config.x_axis.label)
@@ -132,12 +134,38 @@ class ConfigStore:
             max_value=self._get_float_or_none(parser, section, "y2_max", default=base_config.y2_axis.max_value),
         )
 
+        max_samples = self._get_int(parser, section, "max_samples", default=base_config.max_samples)
+        legacy_sliding_enabled = self._get_bool(
+            parser,
+            section,
+            "x_continuous",
+            default=base_config.sliding_window_enabled,
+        )
+        legacy_window_size = self._get_int(
+            parser,
+            section,
+            "x_max",
+            default=base_config.default_window_size,
+        )
+
         return VisualizerConfig(
             enabled=self._get_bool(parser, section, "enabled", default=base_config.enabled),
             title=parser.get(section, "title", fallback=base_config.title),
             filter_string=parser.get(section, "filter_string", fallback=base_config.filter_string),
             graph_type=parser.get(section, "graph_type", fallback=getattr(base_config, "graph_type", "plot")),
-            max_samples=self._get_int(parser, section, "max_samples", default=base_config.max_samples),
+            max_samples=max_samples,
+            sliding_window_enabled=self._get_bool(
+                parser,
+                section,
+                "sliding_window_enabled",
+                default=legacy_sliding_enabled,
+            ),
+            default_window_size=self._get_int(
+                parser,
+                section,
+                "default_window_size",
+                default=legacy_window_size,
+            ),
             window_geometry=parser.get(section, "window_geometry", fallback=base_config.window_geometry or "") or None,
             x_axis=x_axis,
             y1_axis=y1_axis,
@@ -182,6 +210,8 @@ class ConfigStore:
             filter_string="[CSV_TEMP]",
             graph_type="plot",
             max_samples=600,
+            sliding_window_enabled=True,
+            default_window_size=300,
             x_axis=VisualizerAxisConfig(label="Samples", continuous=True, max_value=300),
             y1_axis=VisualizerAxisConfig(label="Temperature", min_value=0.0, max_value=160.0),
             y2_axis=VisualizerAxisConfig(label="State", min_value=-0.1, max_value=3.1),
@@ -206,6 +236,8 @@ class ConfigStore:
             filter_string="[CSV_LOGIC]",
             graph_type="logic",
             max_samples=600,
+            sliding_window_enabled=True,
+            default_window_size=300,
             x_axis=VisualizerAxisConfig(label="Samples", continuous=True, max_value=300),
             y1_axis=VisualizerAxisConfig(label="Logic", min_value=0.0, max_value=1.0),
             y2_axis=VisualizerAxisConfig(label="Y2", min_value=0.0, max_value=1.0),

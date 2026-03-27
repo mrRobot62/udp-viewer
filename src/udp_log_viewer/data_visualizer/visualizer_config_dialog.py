@@ -33,21 +33,24 @@ class VisualizerConfigDialog(QDialog):
         self._max_samples = QSpinBox()
         self._max_samples.setRange(50, 100000)
         self._max_samples.setValue(config.max_samples)
+        self._sliding_window_enabled = QCheckBox("Sliding Window Enabled by Default")
+        self._sliding_window_enabled.setChecked(config.sliding_window_enabled)
+        self._default_window_size = QSpinBox()
+        self._default_window_size.setRange(10, 100000)
+        self._default_window_size.setValue(config.default_window_size)
 
         form = QFormLayout()
         form.addRow(self._enabled)
         form.addRow("Title", self._title)
         form.addRow("Filter", self._filter)
         form.addRow("Max Samples", self._max_samples)
+        form.addRow(self._sliding_window_enabled)
+        form.addRow("Default Window Size", self._default_window_size)
         root.addLayout(form)
 
         axes_layout = QGridLayout()
 
         self._x_label = QLineEdit(config.x_axis.label)
-        self._x_continuous = QCheckBox("Continuous X")
-        self._x_continuous.setChecked(config.x_axis.continuous)
-        self._x_min = self._build_float_spin(config.x_axis.min_value)
-        self._x_max = self._build_float_spin(config.x_axis.max_value)
 
         self._y1_label = QLineEdit(config.y1_axis.label)
         self._y1_log = QCheckBox("Y1 Logarithmic")
@@ -63,27 +66,21 @@ class VisualizerConfigDialog(QDialog):
 
         axes_layout.addWidget(QLabel("X Label"), 0, 0)
         axes_layout.addWidget(self._x_label, 0, 1)
-        axes_layout.addWidget(self._x_continuous, 0, 2)
-        axes_layout.addWidget(QLabel("X Min"), 1, 0)
-        axes_layout.addWidget(self._x_min, 1, 1)
-        axes_layout.addWidget(QLabel("X Max"), 1, 2)
-        axes_layout.addWidget(self._x_max, 1, 3)
+        axes_layout.addWidget(QLabel("Y1 Label"), 1, 0)
+        axes_layout.addWidget(self._y1_label, 1, 1)
+        axes_layout.addWidget(self._y1_log, 1, 2)
+        axes_layout.addWidget(QLabel("Y1 Min"), 2, 0)
+        axes_layout.addWidget(self._y1_min, 2, 1)
+        axes_layout.addWidget(QLabel("Y1 Max"), 2, 2)
+        axes_layout.addWidget(self._y1_max, 2, 3)
 
-        axes_layout.addWidget(QLabel("Y1 Label"), 2, 0)
-        axes_layout.addWidget(self._y1_label, 2, 1)
-        axes_layout.addWidget(self._y1_log, 2, 2)
-        axes_layout.addWidget(QLabel("Y1 Min"), 3, 0)
-        axes_layout.addWidget(self._y1_min, 3, 1)
-        axes_layout.addWidget(QLabel("Y1 Max"), 3, 2)
-        axes_layout.addWidget(self._y1_max, 3, 3)
-
-        axes_layout.addWidget(QLabel("Y2 Label"), 4, 0)
-        axes_layout.addWidget(self._y2_label, 4, 1)
-        axes_layout.addWidget(self._y2_log, 4, 2)
-        axes_layout.addWidget(QLabel("Y2 Min"), 5, 0)
-        axes_layout.addWidget(self._y2_min, 5, 1)
-        axes_layout.addWidget(QLabel("Y2 Max"), 5, 2)
-        axes_layout.addWidget(self._y2_max, 5, 3)
+        axes_layout.addWidget(QLabel("Y2 Label"), 3, 0)
+        axes_layout.addWidget(self._y2_label, 3, 1)
+        axes_layout.addWidget(self._y2_log, 3, 2)
+        axes_layout.addWidget(QLabel("Y2 Min"), 4, 0)
+        axes_layout.addWidget(self._y2_min, 4, 1)
+        axes_layout.addWidget(QLabel("Y2 Max"), 4, 2)
+        axes_layout.addWidget(self._y2_max, 4, 3)
 
         root.addLayout(axes_layout)
 
@@ -138,12 +135,14 @@ class VisualizerConfigDialog(QDialog):
             title=self._title.text().strip(),
             filter_string=self._filter.text().strip(),
             max_samples=int(self._max_samples.value()),
+            sliding_window_enabled=self._sliding_window_enabled.isChecked(),
+            default_window_size=int(self._default_window_size.value()),
             window_geometry=self._config.window_geometry,
             x_axis=VisualizerAxisConfig(
                 label=self._x_label.text().strip(),
-                continuous=self._x_continuous.isChecked(),
-                min_value=self._spin_value_or_none(self._x_min),
-                max_value=self._spin_value_or_none(self._x_max),
+                continuous=self._config.x_axis.continuous,
+                min_value=self._config.x_axis.min_value,
+                max_value=self._config.x_axis.max_value,
             ),
             y1_axis=VisualizerAxisConfig(
                 label=self._y1_label.text().strip(),

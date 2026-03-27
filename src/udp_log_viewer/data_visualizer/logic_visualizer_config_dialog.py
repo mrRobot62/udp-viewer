@@ -39,23 +39,21 @@ class LogicVisualizerConfigDialog(QDialog):
         self.sb_max = QSpinBox()
         self.sb_max.setRange(100, 100000)
         self.sb_max.setValue(config.max_samples)
+        self.chk_sliding_default = QCheckBox()
+        self.chk_sliding_default.setChecked(config.sliding_window_enabled)
+        self.sb_window_default = QSpinBox()
+        self.sb_window_default.setRange(10, 100000)
+        self.sb_window_default.setValue(config.default_window_size)
 
         self.ed_x_label = QLineEdit(config.x_axis.label)
-
-        self.chk_x_continuous = QCheckBox()
-        self.chk_x_continuous.setChecked(config.x_axis.continuous)
-
-        self.sb_x_max = QSpinBox()
-        self.sb_x_max.setRange(10, 100000)
-        self.sb_x_max.setValue(int(config.x_axis.max_value or 300))
 
         form.addRow("Enabled", self.chk_enabled)
         form.addRow("Title", self.ed_title)
         form.addRow("Filter", self.ed_filter)
         form.addRow("Max Samples", self.sb_max)
+        form.addRow("Sliding Window Default", self.chk_sliding_default)
+        form.addRow("Default Window Size", self.sb_window_default)
         form.addRow("X Label", self.ed_x_label)
-        form.addRow("X Continuous", self.chk_x_continuous)
-        form.addRow("X Max", self.sb_x_max)
 
         layout.addLayout(form)
 
@@ -125,11 +123,11 @@ class LogicVisualizerConfigDialog(QDialog):
         self.config.title = self.ed_title.text().strip()
         self.config.filter_string = self.ed_filter.text().strip()
         self.config.max_samples = self.sb_max.value()
+        self.config.sliding_window_enabled = self.chk_sliding_default.isChecked()
+        self.config.default_window_size = self.sb_window_default.value()
         self.config.graph_type = "logic"
 
         self.config.x_axis.label = self.ed_x_label.text().strip()
-        self.config.x_axis.continuous = self.chk_x_continuous.isChecked()
-        self.config.x_axis.max_value = float(self.sb_x_max.value())
 
         # logic view uses fixed logical y-range
         self.config.y1_axis.label = "Logic"

@@ -16,6 +16,7 @@ try:
         QHBoxLayout,
         QLabel,
         QPushButton,
+        QSpinBox,
         QSizePolicy,
         QVBoxLayout,
         QWidget,
@@ -42,12 +43,16 @@ if TYPE_CHECKING:
 
 
 class VisualizerWindow:
+    WINDOW_SIZE_PRESETS = (100, 300, 1000, 3000)
+
     def __init__(self, config: VisualizerConfig, screenshot_dir: str | Path | None = None) -> None:
         self.config = config
         self.screenshot_dir = Path(screenshot_dir) if screenshot_dir is not None else None
         self.samples: list[VisualizerSample] = []
         self.auto_refresh_enabled = True
         self.freeze_sample_index: int | None = None
+        self.runtime_sliding_window_enabled = bool(config.sliding_window_enabled)
+        self.runtime_window_size = self._normalize_runtime_window_size(config.default_window_size)
         self.refresh_request_count = 0
         self.rebuild_request_count = 0
         self._widget: _VisualizerWindowWidget | None = None
@@ -71,6 +76,19 @@ class VisualizerWindow:
             self.rebuild_plot()
             return
         self.freeze_sample_index = len(self.samples)
+
+    def set_runtime_sliding_window_enabled(self, enabled: bool) -> None:
+        self.runtime_sliding_window_enabled = bool(enabled)
+        self.rebuild_plot()
+
+    def set_runtime_window_size(self, value: int) -> None:
+        self.runtime_window_size = self._normalize_runtime_window_size(value)
+        self.rebuild_plot()
+
+    def reset_runtime_window(self) -> None:
+        self.runtime_sliding_window_enabled = bool(self.config.sliding_window_enabled)
+        self.runtime_window_size = self._normalize_runtime_window_size(self.config.default_window_size)
+        self.rebuild_plot()
 
     def refresh_plot(self) -> None:
         self.refresh_request_count += 1
@@ -104,6 +122,14 @@ class VisualizerWindow:
     def is_gui_available(self) -> bool:
         return self._ensure_widget() is not None
 
+    def get_visible_samples_for_test(self) -> list[VisualizerSample]:
+        visible = self.samples[: self.freeze_sample_index] if self.freeze_sample_index is not None else self.samples
+        if not visible:
+            return []
+        if not self.runtime_sliding_window_enabled:
+            return list(visible)
+        return list(visible[-self.runtime_window_size :])
+
     def _ensure_widget(self) -> "_VisualizerWindowWidget | None":
         if self._widget is not None:
             return self._widget
@@ -120,6 +146,15 @@ class VisualizerWindow:
         del self.samples[:overflow]
         if self.freeze_sample_index is not None:
             self.freeze_sample_index = max(0, self.freeze_sample_index - overflow)
+
+    def _normalize_runtime_window_size(self, value: int | str | None) -> int:
+        try:
+            parsed = int(value) if value is not None else self.config.default_window_size
+        except (TypeError, ValueError):
+            parsed = self.config.default_window_size
+        if parsed <= 0:
+            parsed = self.config.default_window_size
+        return min(parsed, self.config.max_samples)
 
     @staticmethod
     def _can_create_widget() -> bool:
@@ -159,6 +194,26 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._refresh_button = QPushButton("Refresh")
             self._refresh_button.clicked.connect(self._on_refresh_clicked)
 
+            self._sliding_window_checkbox = QCheckBox("Sliding Window")
+            self._sliding_window_checkbox.setChecked(self._controller.runtime_sliding_window_enabled)
+            self._sliding_window_checkbox.stateChanged.connect(self._on_sliding_window_changed)
+
+            self._window_size_spin = QSpinBox()
+            self._window_size_spin.setRange(10, max(10, self._controller.config.max_samples))
+            self._window_size_spin.setSingleStep(50)
+            self._window_size_spin.setKeyboardTracking(False)
+            self._window_size_spin.setValue(self._controller.runtime_window_size)
+            self._window_size_spin.valueChanged.connect(self._on_window_size_changed)
+
+            self._preset_buttons: list[QPushButton] = []
+            for preset in self._controller.WINDOW_SIZE_PRESETS:
+                button = QPushButton(str(preset))
+                button.clicked.connect(lambda _checked=False, value=preset: self._set_window_preset(value))
+                self._preset_buttons.append(button)
+
+            self._reset_button = QPushButton("Reset")
+            self._reset_button.clicked.connect(self._on_reset_window_clicked)
+
             self._screenshot_button = QPushButton("Screenshot")
             self._screenshot_button.clicked.connect(self._on_screenshot_clicked)
 
@@ -167,6 +222,12 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             top_bar = QHBoxLayout()
             top_bar.addWidget(self._auto_refresh_checkbox)
             top_bar.addWidget(self._refresh_button)
+            top_bar.addWidget(self._sliding_window_checkbox)
+            for button in self._preset_buttons:
+                top_bar.addWidget(button)
+            top_bar.addWidget(QLabel("Window Size"))
+            top_bar.addWidget(self._window_size_spin)
+            top_bar.addWidget(self._reset_button)
             top_bar.addWidget(self._screenshot_button)
             top_bar.addWidget(self._status_label)
             top_bar.addStretch(1)
@@ -184,6 +245,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._render_plot()
 
         def rebuild_plot(self) -> None:
+            self._sync_runtime_controls()
             self._render_plot()
 
         def save_screenshot(self) -> Path | None:
@@ -253,8 +315,30 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
         def _on_refresh_clicked(self) -> None:
             self._controller.clear_samples()
 
+        def _on_sliding_window_changed(self, state: int) -> None:
+            self._controller.set_runtime_sliding_window_enabled(state == Qt.Checked)
+
+        def _on_window_size_changed(self, value: int) -> None:
+            self._controller.set_runtime_window_size(value)
+
+        def _set_window_preset(self, value: int) -> None:
+            self._window_size_spin.setValue(min(value, self._controller.config.max_samples))
+
+        def _on_reset_window_clicked(self) -> None:
+            self._controller.reset_runtime_window()
+
         def _on_screenshot_clicked(self) -> None:
             self.save_screenshot()
+
+        def _sync_runtime_controls(self) -> None:
+            self._sliding_window_checkbox.blockSignals(True)
+            self._window_size_spin.blockSignals(True)
+            self._sliding_window_checkbox.setChecked(self._controller.runtime_sliding_window_enabled)
+            self._window_size_spin.setMaximum(max(10, self._controller.config.max_samples))
+            self._window_size_spin.setValue(self._controller.runtime_window_size)
+            self._window_size_spin.setEnabled(self._controller.runtime_sliding_window_enabled)
+            self._sliding_window_checkbox.blockSignals(False)
+            self._window_size_spin.blockSignals(False)
 
         def _render_plot(self) -> None:
             self.setWindowTitle(self._controller.config.title or "Data Visualizer")
@@ -320,22 +404,9 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             if not visible:
                 return []
 
-            if not self._controller.config.x_axis.continuous:
+            if not self._controller.runtime_sliding_window_enabled:
                 return visible
-
-            x_max = self._controller.config.x_axis.max_value
-            if x_max is None:
-                return visible
-
-            try:
-                window_size = int(x_max)
-            except (TypeError, ValueError):
-                return visible
-
-            if window_size <= 0:
-                return visible
-
-            return visible[-window_size:]
+            return visible[-self._controller.runtime_window_size :]
 
         def _apply_axis_settings(self, visible_samples: list[VisualizerSample]) -> None:
             x_axis = self._controller.config.x_axis
