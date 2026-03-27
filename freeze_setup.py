@@ -63,6 +63,7 @@ build_exe_options = {
         "PyQt5.QtQuick",
         "PyQt5.QtQuickWidgets",
         "PyQt5.QtQmlModels",
+        "PyQt5.QtSql",
     ],
     "include_files": [
         # Ensure our package code is included (src layout)
