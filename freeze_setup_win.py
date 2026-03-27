@@ -57,9 +57,10 @@ build_exe_options = {
 }
 
 # Windows GUI base (no console window)
+# Newer cx_Freeze releases expect the generic "gui" base name.
 base = None
 if sys.platform.startswith("win"):
-    base = "Win32GUI"
+    base = "gui"
 
 executables = [
     Executable(
