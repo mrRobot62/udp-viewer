@@ -80,6 +80,14 @@ class VisualizerManager:
         if window is not None:
             window.close()
 
+    def close_all_windows(self) -> None:
+        for window in list(self.windows_by_index.values()):
+            try:
+                window.close()
+            except Exception:
+                pass
+        self.windows_by_index.clear()
+
     def clear_all_buffers(self) -> None:
         self.sample_counters_by_index.clear()
         for window in self.windows_by_index.values():

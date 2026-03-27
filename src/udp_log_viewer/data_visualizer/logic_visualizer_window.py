@@ -32,10 +32,12 @@ except Exception:  # pragma: no cover
 try:
     from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
     from matplotlib.figure import Figure
+    from matplotlib import transforms
     _MATPLOTLIB_AVAILABLE = True
 except Exception:  # pragma: no cover
     FigureCanvas = None
     Figure = None
+    transforms = None
     _MATPLOTLIB_AVAILABLE = False
 
 if TYPE_CHECKING:
@@ -371,7 +373,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             plotted_count = 0
 
             for idx, field in enumerate(active_fields):
-                base = idx * 2.0
+                base = idx * 3.0
                 y_values = []
                 has_any = False
 
@@ -394,11 +396,13 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
                     where="post",
                     color=getattr(field, "color", None) or None,
                     linestyle="-",
+                    linewidth=1.8,
                     label=field.field_name,
                 )
 
-                # track separators
-                self._axes.axhline(base, color="#d0d0d0", linestyle="--", linewidth=0.7)
+                self._axes.axhline(base, color="#b8b8b8", linestyle=":", linewidth=0.9)
+                self._axes.axhline(base + 1.0, color="#b8b8b8", linestyle=":", linewidth=0.9)
+                self._axes.axhline(base + 2.0, color="#7a7a7a", linestyle="-", linewidth=1.2)
                 plotted_count += 1
 
             self._apply_axis_settings(active_fields, len(visible_samples))
@@ -408,6 +412,8 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
 
             if plotted_count > 0:
                 self._axes.legend(loc="upper right")
+
+            self._draw_logic_level_labels(active_fields)
 
             # --- X axis: timestamp labels ---
             visible_samples = self._get_visible_samples()
@@ -448,8 +454,8 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
                 self._axes.set_yticklabels(yticklabels)
 
             if active_fields:
-                top = (len(active_fields) - 1) * 2.0 + 1.3
-                self._axes.set_ylim(-0.3, top)
+                top = (len(active_fields) - 1) * 3.0 + 2.3
+                self._axes.set_ylim(-0.5, top)
             else:
                 self._axes.set_ylim(-0.3, 1.3)
 
@@ -457,6 +463,40 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
                 self._axes.set_xlim(0, max(visible_count - 1, 1))
 
             self._axes.grid(True, axis="x")
+
+        def _draw_logic_level_labels(self, active_fields) -> None:
+            if not active_fields or transforms is None:
+                return
+
+            text_transform = transforms.blended_transform_factory(
+                self._axes.transAxes,
+                self._axes.transData,
+            )
+
+            for idx, _field in enumerate(active_fields):
+                base = idx * 3.0
+                self._axes.text(
+                    -0.035,
+                    base + 1.0,
+                    "1",
+                    transform=text_transform,
+                    ha="right",
+                    va="center",
+                    fontsize=9,
+                    color="#505050",
+                    clip_on=False,
+                )
+                self._axes.text(
+                    -0.035,
+                    base,
+                    "0",
+                    transform=text_transform,
+                    ha="right",
+                    va="center",
+                    fontsize=9,
+                    color="#505050",
+                    clip_on=False,
+                )
 
         def _get_visible_samples(self) -> list[VisualizerSample]:
             if self._controller.freeze_sample_index is not None:

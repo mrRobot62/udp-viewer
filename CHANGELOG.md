@@ -7,6 +7,32 @@ The format is based on Keep a Changelog and follows semantic versioning
 principles where applicable.
 
 ------------------------------------------------------------------------
+## 0.15.1 -- 2026-03-27
+### Improved
+
+-   Added a global `Preferences...` dialog backed by `config.ini` for
+    application defaults and visualizer presets
+-   Refined the visualizer sliding-window UX with more realistic preset
+    values and live graph controls
+-   Improved logic visualizer readability with clearer level markers and
+    stronger channel separation
+-   Updated German documentation, including the user guide, to cover the
+    new preferences and graph behavior
+
+### Fixed
+
+-   Ensured all visualizer windows close when quitting the application
+    or closing the main window
+-   Restored platform-native menu behavior so `Preferences...` and
+    `Quit` follow the active operating system conventions
+
+### Technical
+
+-   Bumped application and package version metadata to `0.15.1`
+-   Added test coverage for preference persistence and visualizer window
+    shutdown behavior
+
+------------------------------------------------------------------------
 ## 0.15.0 -- 2026-03-27
 ### Improved
 

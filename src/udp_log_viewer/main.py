@@ -1716,6 +1716,10 @@ class MainWindow(QMainWindow):
             self._stop_listener()
         except Exception:
             pass
+        try:
+            self._visualizer_manager.close_all_windows()
+        except Exception:
+            pass
         self._save_settings()
         super().closeEvent(event)
 
