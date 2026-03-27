@@ -39,17 +39,18 @@ jobs:
         id: package
         shell: pwsh
         run: |
-          $version = python -c "from udp_log_viewer import __version__; print(__version__)"
-          $installer = Get-ChildItem -Path dist -Filter 'UDPLogViewer-Setup-*.exe' |
+          $version = python -c "import pathlib, re; text = pathlib.Path('src/udp_log_viewer/__init__.py').read_text(encoding='utf-8'); print(re.search(r'__version__ = \"([^\"]+)\"', text).group(1))"
+          $installer = Get-ChildItem -Path . -Recurse -Filter 'UDPLogViewer-Setup-*.exe' |
             Sort-Object LastWriteTime -Descending |
             Select-Object -First 1
 
           if (-not $installer) {
-            throw "No installer was produced in dist/."
+            throw "No installer was produced by the Windows build."
           }
 
           $assetName = "UDPLogViewer-$version-Setup.exe"
-          $assetPath = Join-Path $installer.DirectoryName $assetName
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          $assetPath = Join-Path (Resolve-Path dist) $assetName
           Copy-Item $installer.FullName $assetPath -Force
 
           "version=$version" >> $env:GITHUB_OUTPUT
