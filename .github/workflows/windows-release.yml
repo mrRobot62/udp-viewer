@@ -108,9 +108,10 @@ jobs:
             Accept = "application/vnd.github+json"
             "Content-Type" = "application/octet-stream"
           }
+          $assetUploadUrl = "$($uploadUrl)?name=$([uri]::EscapeDataString($env:ASSET_NAME))"
 
           Invoke-RestMethod `
             -Method Post `
             -Headers $uploadHeaders `
             -InFile $env:ASSET_PATH `
-            -Uri "$uploadUrl?name=$env:ASSET_NAME" | Out-Null
+            -Uri $assetUploadUrl | Out-Null
