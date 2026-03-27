@@ -202,13 +202,13 @@ Interpretation:
 For a Windows setup installer, the repository contains:
 
 - [build_windows_installer.bat](/Users/bernhardklein/workspace/python/udp-viewer/scripts/build_windows_installer.bat)
-- [packaging_windows_installer.iss](/Users/bernhardklein/workspace/python/udp-viewer/packaging/windows/packaging_windows_installer.iss)
+- [installer.iss](/Users/bernhardklein/workspace/python/udp-viewer/packaging/windows/installer.iss)
 
 The batch flow is conceptually:
 
 1. create a local `.venv`
 2. install `cx_Freeze`
-3. run `python freeze_setup_win.py build`
+3. run `python freeze_setup_win.py build_exe`
 4. invoke Inno Setup via `ISCC.exe`
 
 ## 7. Current Inconsistencies and Risks
@@ -217,9 +217,8 @@ The packaging state is usable, but not fully consolidated.
 
 Important current observations:
 
-- [build_windows_installer.bat](/Users/bernhardklein/workspace/python/udp-viewer/scripts/build_windows_installer.bat) expects `packaging\windows\installer.iss`, but the repository currently contains [packaging_windows_installer.iss](/Users/bernhardklein/workspace/python/udp-viewer/packaging/windows/packaging_windows_installer.iss). In its current state, the installer build path is not fully consistent.
-- [packaging_windows_installer.iss](/Users/bernhardklein/workspace/python/udp-viewer/packaging/windows/packaging_windows_installer.iss) still contains the hard-coded version `0.14.0` instead of the centralized package version.
-- the same `.iss` file also contains a fixed `BuildDir` with a Python-version-specific directory name, which is fragile for reproducible installer builds
+- the installer build path is now standardized on [installer.iss](/Users/bernhardklein/workspace/python/udp-viewer/packaging/windows/installer.iss).
+- the app version and `build\exe.*` directory are now passed to Inno Setup dynamically during the installer build.
 - [bootstrap_windows.bat](/Users/bernhardklein/workspace/python/udp-viewer/scripts/bootstrap_windows.bat) appears syntactically damaged and should not currently be treated as the recommended Windows bootstrap path
 - [freeze_setup.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup.py), [freeze_setup_win.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup_win.py), and [freeze_setup_dmg.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup_dmg.py) are overlapping build entry points
 
@@ -238,7 +237,7 @@ For macOS packaging:
 For Windows packaging:
 
 - primarily [freeze_setup.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup.py) or, if a Windows-specific path is intentionally desired, [freeze_setup_win.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup_win.py)
-- installer generation only after the current `.iss` and batch-path inconsistencies are cleaned up
+- installer generation via [build_windows_installer.bat](/Users/bernhardklein/workspace/python/udp-viewer/scripts/build_windows_installer.bat)
 
 ## 9. Boundaries
 

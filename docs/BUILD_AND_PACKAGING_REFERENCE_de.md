@@ -202,13 +202,13 @@ Einordnung:
 Für einen Setup-Installer existieren:
 
 - [build_windows_installer.bat](/Users/bernhardklein/workspace/python/udp-viewer/scripts/build_windows_installer.bat)
-- [packaging_windows_installer.iss](/Users/bernhardklein/workspace/python/udp-viewer/packaging/windows/packaging_windows_installer.iss)
+- [installer.iss](/Users/bernhardklein/workspace/python/udp-viewer/packaging/windows/installer.iss)
 
 Der Batch-Ablauf ist konzeptionell:
 
 1. lokales `.venv` anlegen
 2. `cx_Freeze` installieren
-3. `python freeze_setup_win.py build`
+3. `python freeze_setup_win.py build_exe`
 4. Inno Setup per `ISCC.exe` ausführen
 
 ## 7. Aktuelle Inkonsistenzen und Risiken
@@ -217,9 +217,8 @@ Der Packaging-Bestand ist nutzbar, aber nicht vollständig konsolidiert.
 
 Wichtige aktuelle Beobachtungen:
 
-- [build_windows_installer.bat](/Users/bernhardklein/workspace/python/udp-viewer/scripts/build_windows_installer.bat) erwartet `packaging\windows\installer.iss`, im Repository liegt aber [packaging_windows_installer.iss](/Users/bernhardklein/workspace/python/udp-viewer/packaging/windows/packaging_windows_installer.iss). Der Installer-Build ist damit im aktuellen Stand nicht ohne Anpassung konsistent.
-- [packaging_windows_installer.iss](/Users/bernhardklein/workspace/python/udp-viewer/packaging/windows/packaging_windows_installer.iss) enthält noch die harte Version `0.14.0` statt der inzwischen zentralisierten Paketversion.
-- dieselbe `.iss`-Datei enthält einen festen `BuildDir` mit Python-spezifischem Verzeichnisnamen. Das ist für reproduzierbare Installer-Builds fragil.
+- der Installer-Build ist inzwischen auf [installer.iss](/Users/bernhardklein/workspace/python/udp-viewer/packaging/windows/installer.iss) vereinheitlicht.
+- Version und `build\exe.*`-Pfad werden beim Installer-Build dynamisch an Inno Setup übergeben.
 - [bootstrap_windows.bat](/Users/bernhardklein/workspace/python/udp-viewer/scripts/bootstrap_windows.bat) wirkt syntaktisch beschädigt und sollte im aktuellen Stand nicht als empfohlener Windows-Bootstrap gelten.
 - mit [freeze_setup.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup.py), [freeze_setup_win.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup_win.py) und [freeze_setup_dmg.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup_dmg.py) existieren mehrere sich teilweise überlappende Build-Einstiegspunkte.
 
@@ -238,7 +237,7 @@ Für macOS-Packaging:
 Für Windows-Packaging:
 
 - primär [freeze_setup.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup.py) oder bei explizitem Windows-Sonderpfad [freeze_setup_win.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup_win.py)
-- Installer-Generierung nur nach vorheriger Bereinigung der Inkonsistenzen im `.iss`-/Batch-Pfad
+- Installer-Generierung über [build_windows_installer.bat](/Users/bernhardklein/workspace/python/udp-viewer/scripts/build_windows_installer.bat)
 
 ## 9. Abgrenzung
 

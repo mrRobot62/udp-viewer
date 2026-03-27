@@ -1,23 +1,37 @@
 ; Inno Setup script for UDPLogViewer
-; Place this file in: packaging/windows/installer.iss (recommended)
 ; Requires Inno Setup 6.x
 
-#define AppName "UDPLogViewer"
-#define AppExe "UDPLogViewer.exe"
-#define AppPublisher "Bernhard Klein"
-#define AppURL "https://github.com/<your-username>/udp-log-viewer"
-#define AppSupportURL "https://github.com/<your-username>/udp-log-viewer/issues"
+#ifndef AppName
+  #define AppName "UDPLogViewer"
+#endif
 
-; Version: keep in sync with your freeze_setup_win.py / pyproject.toml tag/release
-#define AppVersion "0.14.0"
+#ifndef AppExe
+  #define AppExe "UDPLogViewer.exe"
+#endif
 
-; Relative path to cx_Freeze output folder (resolved by build script)
-; Example produced by cx_Freeze:
-;   build\exe.win-amd64-3.12\
-#define BuildDir "build\exe.win-amd64-3.12"
+#ifndef AppPublisher
+  #define AppPublisher "Bernhard Klein"
+#endif
 
-; Optional: provide an icon
-#define AppIcon "packaging\windows\app.ico"
+#ifndef AppURL
+  #define AppURL "https://github.com/<your-username>/udp-log-viewer"
+#endif
+
+#ifndef AppSupportURL
+  #define AppSupportURL "https://github.com/<your-username>/udp-log-viewer/issues"
+#endif
+
+#ifndef AppVersion
+  #define AppVersion "0.0.0"
+#endif
+
+#ifndef BuildDir
+  #define BuildDir "build\exe.win-amd64-3.12"
+#endif
+
+#ifndef AppIcon
+  #define AppIcon "packaging\windows\app.ico"
+#endif
 
 [Setup]
 AppId={{A9B8F8D8-3B36-4B0A-9F8C-UDPLOGVIEWER-0001}}
@@ -35,14 +49,7 @@ OutputBaseFilename={#AppName}-Setup-{#AppVersion}
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
-
-; Use icon if present (optional)
 SetupIconFile={#AppIcon}
-
-; Uncomment once you have a license file
-; LicenseFile=LICENSE
-
-; Modern Windows
 MinVersion=10.0
 ArchitecturesAllowed=x64
 ArchitecturesInstallIn64BitMode=x64
@@ -51,7 +58,7 @@ ArchitecturesInstallIn64BitMode=x64
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-; Copy everything from the cx_Freeze build directory into the install dir
+; Copy everything from the cx_Freeze output directory into the install dir.
 Source: "{#BuildDir}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
 
 [Icons]
