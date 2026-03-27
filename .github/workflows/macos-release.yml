@@ -1,0 +1,90 @@
+name: macOS Release Build
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: Existing release tag to attach the generated DMG to
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos-dmg:
+    runs-on: macos-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install --upgrade cx-Freeze .
+
+      - name: Build DMG
+        shell: bash
+        run: |
+          chmod +x build_dmg.sh
+          ./build_dmg.sh
+
+      - name: Collect DMG metadata
+        id: package
+        shell: bash
+        run: |
+          VERSION="$(python -c 'from udp_log_viewer import __version__; print(__version__)')"
+          if [ -z "$VERSION" ]; then
+            echo "Could not determine version from package metadata." >&2
+            exit 1
+          fi
+
+          DMG_PATH="$(find "$GITHUB_WORKSPACE" -type f -name 'UDPLogViewer*.dmg' | head -n 1)"
+          if [ -z "$DMG_PATH" ]; then
+            echo "No DMG was produced by the macOS build." >&2
+            exit 1
+          fi
+
+          ASSET_NAME="UDPLogViewer-${VERSION}.dmg"
+          mkdir -p dist
+          ASSET_PATH="$GITHUB_WORKSPACE/dist/$ASSET_NAME"
+          cp "$DMG_PATH" "$ASSET_PATH"
+
+          {
+            echo "version=$VERSION"
+            echo "asset_name=$ASSET_NAME"
+            echo "asset_path=$ASSET_PATH"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.package.outputs.asset_name }}
+          path: ${{ steps.package.outputs.asset_path }}
+          if-no-files-found: error
+
+      - name: Attach DMG to release
+        if: ${{ github.event_name == 'release' || inputs.tag_name != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.tag_name }}
+          ASSET_NAME: ${{ steps.package.outputs.asset_name }}
+          ASSET_PATH: ${{ steps.package.outputs.asset_path }}
+        shell: bash
+        run: |
+          if ! gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            echo "No release found for tag $TAG_NAME. Skipping upload."
+            exit 0
+          fi
+
+          gh release upload "$TAG_NAME" "$ASSET_PATH#$ASSET_NAME" --clobber

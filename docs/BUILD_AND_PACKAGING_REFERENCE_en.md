@@ -239,6 +239,11 @@ For Windows packaging:
 - primarily [freeze_setup.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup.py) or, if a Windows-specific path is intentionally desired, [freeze_setup_win.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup_win.py)
 - installer generation via [build_windows_installer.bat](/Users/bernhardklein/workspace/python/udp-viewer/scripts/build_windows_installer.bat)
 
+For release attachments via GitHub Actions:
+
+- Windows Setup.exe via [windows-release.yml](/Users/bernhardklein/workspace/python/udp-viewer/.github/workflows/windows-release.yml)
+- macOS DMG via [macos-release.yml](/Users/bernhardklein/workspace/python/udp-viewer/.github/workflows/macos-release.yml)
+
 ## 9. Boundaries
 
 This reference only documents the current state of the scripts found in the repository. It does not guarantee that every packaging path is immediately reproducible in every environment.

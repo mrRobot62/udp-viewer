@@ -239,6 +239,11 @@ Für Windows-Packaging:
 - primär [freeze_setup.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup.py) oder bei explizitem Windows-Sonderpfad [freeze_setup_win.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup_win.py)
 - Installer-Generierung über [build_windows_installer.bat](/Users/bernhardklein/workspace/python/udp-viewer/scripts/build_windows_installer.bat)
 
+Für Release-Attachments via GitHub Actions:
+
+- Windows Setup.exe über [windows-release.yml](/Users/bernhardklein/workspace/python/udp-viewer/.github/workflows/windows-release.yml)
+- macOS DMG über [macos-release.yml](/Users/bernhardklein/workspace/python/udp-viewer/.github/workflows/macos-release.yml)
+
 ## 9. Abgrenzung
 
 Diese Referenz beschreibt nur den Stand der vorhandenen Skripte im Repository. Sie garantiert nicht, dass jeder Packaging-Pfad in jeder Umgebung sofort reproduzierbar funktioniert.
