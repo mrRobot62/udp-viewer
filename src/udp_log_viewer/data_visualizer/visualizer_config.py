@@ -9,6 +9,7 @@ class VisualizerConfig:
     enabled: bool = False
     title: str = ""
     filter_string: str = ""
+    show_legend: bool = True
     max_samples: int = 2000
     sliding_window_enabled: bool = True
     default_window_size: int = 300

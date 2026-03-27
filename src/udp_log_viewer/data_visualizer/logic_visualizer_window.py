@@ -445,7 +445,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
                 f"Samples: {len(visible_samples)} visible / {len(self._controller.samples)} total"
             )
 
-            if plotted_count > 0:
+            if plotted_count > 0 and getattr(self._controller.config, "show_legend", True):
                 self._axes.legend(loc="upper right")
 
             # --- X axis: timestamp labels ---

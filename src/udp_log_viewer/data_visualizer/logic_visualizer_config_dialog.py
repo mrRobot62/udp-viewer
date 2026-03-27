@@ -35,6 +35,9 @@ class LogicVisualizerConfigDialog(QDialog):
 
         self.ed_title = QLineEdit(config.title)
         self.ed_filter = QLineEdit(config.filter_string)
+        self.ed_filter.setMinimumWidth(420)
+        self.chk_show_legend = QCheckBox()
+        self.chk_show_legend.setChecked(getattr(config, "show_legend", True))
 
         self.sb_max = QSpinBox()
         self.sb_max.setRange(100, 100000)
@@ -50,6 +53,7 @@ class LogicVisualizerConfigDialog(QDialog):
         form.addRow("Enabled", self.chk_enabled)
         form.addRow("Title", self.ed_title)
         form.addRow("Filter", self.ed_filter)
+        form.addRow("Show Legend", self.chk_show_legend)
         form.addRow("Max Samples", self.sb_max)
         form.addRow("Sliding Window Default", self.chk_sliding_default)
         form.addRow("Default Window Size", self.sb_window_default)
@@ -122,6 +126,7 @@ class LogicVisualizerConfigDialog(QDialog):
         self.config.enabled = self.chk_enabled.isChecked()
         self.config.title = self.ed_title.text().strip()
         self.config.filter_string = self.ed_filter.text().strip()
+        self.config.show_legend = self.chk_show_legend.isChecked()
         self.config.max_samples = self.sb_max.value()
         self.config.sliding_window_enabled = self.chk_sliding_default.isChecked()
         self.config.default_window_size = self.sb_window_default.value()
