@@ -7,12 +7,40 @@ The format is based on Keep a Changelog and follows semantic versioning
 principles where applicable.
 
 ------------------------------------------------------------------------
-## 0.15.0 -- 2026-03-16
+## 0.15.0 -- 2026-03-27
 ### Improved
+
+-   Modernized the main window internals by extracting connection,
+    listener, file, configuration, and settings runtime helpers
+-   Unified version handling across packaging scripts and application
+    metadata
+-   Expanded documentation for user workflows, configuration, CSV input,
+    packaging, and release-related tasks
+-   Improved asset organization and prepared repository-managed
+    screenshot handling
+-   Aligned platform-specific menu and preferences behavior with the
+    active operating system conventions
 
 ### Added
 
+-   Data visualizer support with dedicated plotting windows, axis and
+    field configuration, and sliding-window controls
+-   Logic visualizer support with configurable channels, step rendering,
+    and timestamp-based X-axis handling
+-   Persistent preferences and settings storage infrastructure
+-   Additional GUI and headless test coverage for runtime helpers,
+    settings storage, plotting behavior, and visualizer workflows
+-   Windows installer generation via Inno Setup using centrally managed
+    application version information
+
 ### Technical
+
+-   Refactored `main.py` into smaller runtime and support modules to
+    reduce coupling and improve testability
+-   Added supporting modules for replay simulation, rule slots, app
+    paths, and UI state handling
+-   Updated packaging and developer scripts to consume version metadata
+    from the Python package directly
 
 ---
 ## 0.14.0 -- 2026-02-18
