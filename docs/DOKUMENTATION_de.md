@@ -33,6 +33,7 @@ Die aktuelle Codebasis implementiert folgende sichtbare Funktionen:
 - Integrierte Simulation für Logic-CSV-Daten
 - CSV-basierter Datenvisualizer mit zwei Y-Achsen
 - Logic-Visualizer für bis zu 8 Kanäle
+- Sliding-Window-Steuerung direkt in Plot- und Logic-Graphen
 - Screenshot-Export aus Visualizer-Fenstern
 - Persistenz über `QSettings` und `config.ini`
 - Plattformübergreifende Packaging-Skripte für macOS und Windows
@@ -167,11 +168,15 @@ Das Hauptfenster enthält:
 Menüstruktur:
 
 - `File`
-  `Open Log…`, `Replay Sample`, `Stop Replay`, `Save…`, `Quit`
+  `Open Log…`, `Replay Sample`, `Stop Replay`, `Preferences...`, `Save…`, `Quit`
 - `Tools`
   Simulation für Text-, Temperatur- und Logic-Daten
 - `Visualize`
   Temperature Config/Show sowie Logic Config/Show
+
+Hinweis:
+
+- auf macOS können `Preferences...` und `Quit` systemtypisch im App-Menü erscheinen
 
 ## 7. Konfiguration und Persistenz
 
@@ -191,6 +196,7 @@ Menüstruktur:
 `config.ini` wird im App-Support-Verzeichnis erzeugt und speichert:
 
 - Versionswerte für App und General
+- globale App-Präferenzen
 - Überschreibung des Log-Pfads
 - JSON-Daten für Regel-Slots
 - Visualizer-Konfigurationen
@@ -223,6 +229,8 @@ Gespeichert werden unter anderem:
 - `filter_string`
 - `graph_type`
 - Maximalzahl an Samples
+- Default-Sliding-Window-Status
+- Default-Window-Size
 - Achsenbeschriftungen und Achsenbereiche
 - Feldname, Skalierung, Aktiv-/Plot-Status, Zielachse, Stil, Farbe, Einheit pro Feld
 
@@ -304,7 +312,7 @@ Der Parser toleriert mehrere Eingabeformen, zum Beispiel:
 Der Standard-Visualizer unterstützt:
 
 - fortlaufende Sample-Pufferung
-- optionales X-Achsen-Fenster
+- Sliding-Window-Steuerung im geöffneten Fenster
 - zwei Y-Achsen (`Y1`, `Y2`)
 - Linien- oder Step-Darstellung pro Feld
 - konfigurierbare Farbe und Linienstil
@@ -318,6 +326,7 @@ Der Logic-Visualizer ist für binäre oder schwellwertbasierte Kanäle optimiert
 - bis zu 8 Kanäle
 - vertikal getrennte Step-Traces
 - Kanalnamen auf der Y-Achse
+- Sliding-Window-Steuerung im geöffneten Fenster
 - Cursor-Linie bei Mausbewegung
 - Screenshot-Export nach PNG
 

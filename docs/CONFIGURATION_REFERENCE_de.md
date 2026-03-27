@@ -27,6 +27,12 @@ Aktuell relevante Schlüssel:
 - `exclude/slots_json`
 - `hl/slots_json`
 
+Nicht mehr führend in `QSettings`:
+
+- globale App-Präferenzen wie Visualizer-Presets oder Sprachvorgaben
+
+Diese werden jetzt in `config.ini` gespeichert.
+
 ## 3. Bedeutung der `QSettings`-Schlüssel
 
 ### Netzwerk
@@ -63,6 +69,7 @@ Diese Schlüssel enthalten JSON-Repräsentationen der Slot-Regeln und dienen der
 Die `config.ini` speichert vor allem:
 
 - App-/Versionsinformationen
+- globale Präferenzen
 - Pfadkonfiguration
 - Rule-Slots
 - Visualizer-Konfigurationen
@@ -71,6 +78,7 @@ Typische Abschnitte:
 
 - `[app]`
 - `[general]`
+- `[preferences]`
 - `[paths]`
 - `[rules]`
 - `[visualizer_1]` bis `[visualizer_5]`
@@ -107,7 +115,38 @@ Wenn kein Wert vorhanden ist, verwendet die App standardmäßig:
 
 `<config_dir>/logs`
 
-## 8. Abschnitt `[rules]`
+## 8. Abschnitt `[preferences]`
+
+Der Abschnitt `[preferences]` enthält globale App-Defaults.
+
+Aktuell relevante Schlüssel:
+
+- `language`
+- `autoscroll_default`
+- `timestamp_default`
+- `max_lines_default`
+- `visualizer_presets`
+- `plot_sliding_window_default`
+- `plot_window_size_default`
+- `logic_sliding_window_default`
+- `logic_window_size_default`
+
+Beispiel:
+
+```ini
+[preferences]
+language = de
+autoscroll_default = true
+timestamp_default = true
+max_lines_default = 20000
+visualizer_presets = 100,150,200,300
+plot_sliding_window_default = true
+plot_window_size_default = 200
+logic_sliding_window_default = true
+logic_window_size_default = 150
+```
+
+## 9. Abschnitt `[rules]`
 
 Der Abschnitt `[rules]` enthält:
 
@@ -135,7 +174,7 @@ Beispielstruktur:
 ]
 ```
 
-## 9. Visualizer-Abschnitte
+## 10. Visualizer-Abschnitte
 
 Die Visualizer-Konfigurationen werden in Abschnitten gespeichert:
 
@@ -152,6 +191,8 @@ Typische Schlüssel:
 - `filter_string`
 - `graph_type`
 - `max_samples`
+- `sliding_window_enabled`
+- `default_window_size`
 - `window_geometry`
 - `x_label`
 - `x_continuous`
@@ -180,7 +221,7 @@ Zusätzlich pro Feld:
 - `field_<n>_line_style`
 - `field_<n>_unit`
 
-## 10. Live-Logs
+## 11. Live-Logs
 
 Beim Start einer Listener-Session erzeugt die App standardmäßig eine Live-Logdatei im `logs_dir`.
 
@@ -192,7 +233,7 @@ udp_live_YYYYMMDD_HHMMSS.txt
 
 Beim Speichern einer Session wird bevorzugt diese Datei kopiert. Falls keine passende Live-Datei verfügbar ist, fällt die App auf den sichtbaren Textinhalt zurück.
 
-## 11. Screenshots
+## 12. Screenshots
 
 Visualizer-Screenshots werden standardmäßig unterhalb des Log-Verzeichnisses verwendet:
 
@@ -202,28 +243,32 @@ Visualizer-Screenshots werden standardmäßig unterhalb des Log-Verzeichnisses v
 
 Zusätzlich merken sich die Visualizer-Fenster den zuletzt genutzten Screenshot-Ordner in `QSettings`.
 
-## 12. Schreibstrategie
+## 13. Schreibstrategie
 
 Der Viewer verwendet derzeit folgende Strategie:
 
 - UI-State wird in `QSettings` gespeichert
+- globale Präferenzen werden in `config.ini` gespeichert
 - Rule-Slots werden zuerst in `QSettings` gespeichert
 - anschließend wird versucht, dieselben Slots auch in `config.ini` zu schreiben
 - wenn `config.ini` nicht schreibbar ist, bleibt `QSettings` der Fallback
 
 Diese Reihenfolge wurde bewusst gewählt, damit Filter-/Highlight-Regeln auch bei problematischen Dateipfaden erhalten bleiben.
 
-## 13. Praktische Auswirkungen
+## 14. Praktische Auswirkungen
 
 Wichtig für den Betrieb:
 
 - eine nicht schreibbare `config.ini` verhindert nicht mehr automatisch die Persistenz von Rule-Slots
+- globale Präferenzen wie Visualizer-Presets und App-Defaults liegen ebenfalls in `config.ini`
 - der Config-Pfad ist Teil des gemerkten Anwendungszustands
 - ein Wechsel des Speicherorts kann das sichtbare Konfigurationsverhalten verändern, wenn an einem anderen Ort eine andere `config.ini` liegt
 
-## 14. Relevante Quelldateien
+## 15. Relevante Quelldateien
 
 - [settings_store.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/settings_store.py)
+- [preferences.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/preferences.py)
+- [preferences_dialog.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/preferences_dialog.py)
 - [config_runtime.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/config_runtime.py)
 - [app_paths.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/app_paths.py)
 - [config_store.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/data_visualizer/config_store.py)

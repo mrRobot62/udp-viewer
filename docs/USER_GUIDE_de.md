@@ -26,6 +26,11 @@ Die Hauptoberfläche besteht im Wesentlichen aus:
 - Haupt-Logansicht
 - Menüleiste mit `File`, `Tools` und `Visualize`
 
+Wichtig zur Menüführung:
+
+- auf macOS können `Preferences...` und `Quit` systemtypisch im App-Menü erscheinen
+- auf Windows und Linux liegen diese Einträge typischerweise im `File`-Menü
+
 ## 3. Erster Start und typische Verbindung
 
 ### 3.1 Bind-IP und Port
@@ -210,6 +215,9 @@ Zusätzlich existieren Menüpunkte für:
 
 - `Replay Sample`
 - `Stop Replay`
+- `Preferences...`
+- `Save…`
+- `Quit`
 
 Praktischer Nutzen:
 
@@ -251,6 +259,34 @@ Typischer Arbeitsablauf:
 3. Visualizer-Fenster anzeigen
 4. passende CSV-Zeilen empfangen oder simulieren
 
+### 9.1 Sliding Window im Graph-Fenster
+
+Sowohl der Temperatur- als auch der Logic-Visualizer besitzen eine direkte Sliding-Window-Steuerung im Fenster selbst.
+
+Sichtbare Bedienelemente:
+
+- `Sliding Window`
+- Presets `100`, `150`, `200`, `300`
+- `Window Size`
+- `Reset`
+- `Auto Refresh`
+
+Bedeutung:
+
+- `Sliding Window` aktiv
+  zeigt immer nur die letzten `N` Samples
+- `Window Size`
+  bestimmt die aktuell sichtbare Fenstergröße
+- Presets
+  setzen die Fenstergröße schnell auf typische Werte
+- `Reset`
+  setzt die Laufzeiteinstellung auf den konfigurierten Default des jeweiligen Graphen zurück
+
+Wichtig:
+
+- Änderungen im geöffneten Graph-Fenster sind zunächst Laufzeit-Overrides
+- die persistente Default-Vorgabe kommt aus der Graph-Konfiguration bzw. aus den globalen Präferenzen
+
 Wichtig:
 
 - der Viewer definiert die CSV-Struktur des Sendesystems nicht
@@ -267,11 +303,27 @@ Die App merkt sich wichtige Nutzungsdaten, zum Beispiel:
 - `Max lines`
 - Rule-Slots für `Filter`, `Exclude` und `Highlight`
 - zuletzt gewählten Pfad zur `config.ini`
+- globale Präferenzen wie Sprache und Visualizer-Defaults
 
 Wenn keine verwendbare `config.ini` gefunden wird:
 
 - fragt die App nach einem Speicher- oder Ladeort
 - der gewählte Pfad wird anschließend gemerkt
+
+### 10.1 `Preferences...`
+
+Die App besitzt jetzt einen grundlegenden Präferenzdialog.
+
+Dort lassen sich aktuell unter anderem einstellen:
+
+- Sprache
+- Default für `Auto-Scroll`
+- Default für `Timestamp`
+- Default für `Max lines`
+- globale Visualizer-Presets
+- Default-Sliding-Window-Werte für Plot und Logic
+
+Diese Werte werden in `config.ini` persistiert.
 
 ## 11. Typische Arbeitsabläufe
 

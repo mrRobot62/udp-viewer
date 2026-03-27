@@ -44,6 +44,7 @@ Die aktuelle Codebasis enthält:
 - integrierte Simulation für Text-, Temperatur- und Logic-Traffic
 - CSV-basierte Datenvisualisierung
 - Logic-Kanal-Visualisierung
+- Sliding-Window-Steuerung direkt im Graph-Fenster
 - Packaging-Skripte für macOS und Windows
 
 ## Start aus dem Quellcode
