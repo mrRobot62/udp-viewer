@@ -7,6 +7,7 @@ Plattformübergreifender UDP Log Viewer für ESP32 und andere Embedded-Systeme, 
 Vollständige deutsche Dokumentation:
 
 - [docs/DOKUMENTATION_de.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/DOKUMENTATION_de.md)
+- [docs/USER_GUIDE_de.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/USER_GUIDE_de.md)
 
 Vollständige englische Dokumentation:
 
