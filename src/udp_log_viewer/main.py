@@ -76,6 +76,8 @@ from .rule_slots import (
 )
 from .settings_store import SettingsStore
 from .ui_state import UiState
+from .preferences import AppPreferences
+from .preferences_dialog import PreferencesDialog
 from .udp_listener import UdpListenerThread
 from .udp_log_utils import drain_queue
 from .data_visualizer.visualizer_manager import VisualizerManager
@@ -196,7 +198,12 @@ class MainWindow(QMainWindow):
             config_path=config_path,
         )
         self._settings_store = SettingsStore(self._settings, self._paths_cfg.config_path)
-        self._ui_state = UiState()
+        self._preferences = self._settings_store.load_preferences()
+        self._ui_state = UiState(
+            autoscroll=self._preferences.autoscroll_default,
+            timestamp_enabled=self._preferences.timestamp_default,
+            max_lines=self._preferences.max_lines_default,
+        )
 
         # UDP listener
         self._listener: Optional[UdpListenerThread] = None
@@ -294,6 +301,7 @@ class MainWindow(QMainWindow):
         self._visualizer_manager = VisualizerManager(
             config_path=self._paths_cfg.config_path,
             screenshot_dir=Path(self._paths_cfg.logs_dir) / "screenshots",
+            preferences=self._preferences,
         )
         self._visualizer_manager.load_configs()
 
@@ -392,6 +400,10 @@ class MainWindow(QMainWindow):
         self.act_stop_replay = QAction("Stop Replay", self)
         self.act_stop_replay.triggered.connect(self.on_stop_replay_clicked)
 
+        self.act_preferences = QAction("Preferences...", self)
+        self.act_preferences.setShortcut("Ctrl+,")
+        self.act_preferences.triggered.connect(self.on_preferences_clicked)
+
         self.act_save = QAction("Save…", self)
         self.act_save.setShortcut("Ctrl+S")
         self.act_save.triggered.connect(self.on_save_clicked)
@@ -403,6 +415,8 @@ class MainWindow(QMainWindow):
         file_menu.addAction(self.act_open_log)
         file_menu.addAction(self.act_replay_sample)
         file_menu.addAction(self.act_stop_replay)
+        file_menu.addSeparator()
+        file_menu.addAction(self.act_preferences)
         file_menu.addSeparator()
         file_menu.addAction(self.act_save)
         file_menu.addSeparator()
@@ -700,6 +714,27 @@ class MainWindow(QMainWindow):
 
         self._save_settings()
         self._update_connection_ui()
+
+    def on_preferences_clicked(self) -> None:
+        dialog = PreferencesDialog(self._preferences, self)
+        dialog.restore_button().clicked.connect(lambda: dialog.set_preferences(AppPreferences()))
+        dialog.apply_button().clicked.connect(
+            lambda: self._apply_preferences(dialog.result_preferences())
+        )
+        if dialog.exec_() != QDialog.Accepted:
+            return
+        self._apply_preferences(dialog.result_preferences())
+
+    def _apply_preferences(self, preferences: AppPreferences) -> None:
+        self._preferences = preferences
+        self._settings_store.save_preferences(self._preferences)
+        self._ui_state.autoscroll = self._preferences.autoscroll_default
+        self._ui_state.timestamp_enabled = self._preferences.timestamp_default
+        self._ui_state.max_lines = self._preferences.max_lines_default
+        self._save_settings()
+        self._apply_state_to_widgets()
+        self._visualizer_manager.set_preferences(self._preferences)
+        self.statusBar().showMessage("Preferences saved", 2000)
 
     # ---------------- Slot persistence ----------------
 

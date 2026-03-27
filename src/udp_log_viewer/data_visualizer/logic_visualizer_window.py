@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 import re
 
 from .visualizer_sample import VisualizerSample
+from ..preferences import DEFAULT_VISUALIZER_PRESETS
 
 try:
     from PyQt5.QtCore import Qt, QSettings
@@ -42,11 +43,15 @@ if TYPE_CHECKING:
 
 
 class LogicVisualizerWindow:
-    WINDOW_SIZE_PRESETS = (100, 300, 1000, 3000)
-
-    def __init__(self, config, screenshot_dir: str | Path | None = None) -> None:
+    def __init__(
+        self,
+        config,
+        screenshot_dir: str | Path | None = None,
+        window_size_presets: tuple[int, ...] | None = None,
+    ) -> None:
         self.config = config
         self.screenshot_dir = Path(screenshot_dir) if screenshot_dir is not None else None
+        self.window_size_presets = tuple(window_size_presets or DEFAULT_VISUALIZER_PRESETS)
         self.samples: list[VisualizerSample] = []
         self.auto_refresh_enabled = True
         self.freeze_sample_index: int | None = None
@@ -205,7 +210,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._window_size_spin.valueChanged.connect(self._on_window_size_changed)
 
             self._preset_buttons: list[QPushButton] = []
-            for preset in self._controller.WINDOW_SIZE_PRESETS:
+            for preset in self._controller.window_size_presets:
                 button = QPushButton(str(preset))
                 button.clicked.connect(lambda _checked=False, value=preset: self._set_window_preset(value))
                 self._preset_buttons.append(button)

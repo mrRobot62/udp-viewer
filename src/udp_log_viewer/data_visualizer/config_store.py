@@ -6,18 +6,24 @@ from pathlib import Path
 from .visualizer_axis_config import VisualizerAxisConfig
 from .visualizer_config import VisualizerConfig
 from .visualizer_field_config import VisualizerFieldConfig
+from ..preferences import AppPreferences
 
 
 class ConfigStore:
     DEFAULT_VISUALIZER_COUNT = 5
     SECTION_PREFIX = "visualizer_"
 
-    def __init__(self, config_path: str | Path | None = None) -> None:
+    def __init__(
+        self,
+        config_path: str | Path | None = None,
+        preferences: AppPreferences | None = None,
+    ) -> None:
         self._config_path = Path(config_path) if config_path is not None else None
+        self._preferences = preferences or AppPreferences()
 
     def load_visualizer_configs(self) -> list[VisualizerConfig]:
         configs = [VisualizerConfig() for _ in range(self.DEFAULT_VISUALIZER_COUNT)]
-        configs[0] = self._build_default_csv_temp_config()
+        configs[0] = self._build_default_csv_temp_config(self._preferences)
 
         if self._config_path is None or not self._config_path.exists():
             return configs
@@ -203,16 +209,21 @@ class ConfigStore:
             return default
 
     @staticmethod
-    def _build_default_csv_temp_config() -> VisualizerConfig:
+    def _build_default_csv_temp_config(preferences: AppPreferences | None = None) -> VisualizerConfig:
+        prefs = preferences or AppPreferences()
         return VisualizerConfig(
             enabled=True,
             title="CSV_TEMP Graph",
             filter_string="[CSV_TEMP]",
             graph_type="plot",
             max_samples=600,
-            sliding_window_enabled=True,
-            default_window_size=300,
-            x_axis=VisualizerAxisConfig(label="Samples", continuous=True, max_value=300),
+            sliding_window_enabled=prefs.plot_sliding_window_default,
+            default_window_size=prefs.plot_window_size_default,
+            x_axis=VisualizerAxisConfig(
+                label="Samples",
+                continuous=True,
+                max_value=float(prefs.plot_window_size_default),
+            ),
             y1_axis=VisualizerAxisConfig(label="Temperature", min_value=0.0, max_value=160.0),
             y2_axis=VisualizerAxisConfig(label="State", min_value=-0.1, max_value=3.1),
             fields=[
@@ -229,16 +240,21 @@ class ConfigStore:
         )
 
     @staticmethod
-    def _build_default_logic_config() -> VisualizerConfig:
+    def _build_default_logic_config(preferences: AppPreferences | None = None) -> VisualizerConfig:
+        prefs = preferences or AppPreferences()
         return VisualizerConfig(
             enabled=True,
             title="Logic Graph",
             filter_string="[CSV_LOGIC]",
             graph_type="logic",
             max_samples=600,
-            sliding_window_enabled=True,
-            default_window_size=300,
-            x_axis=VisualizerAxisConfig(label="Samples", continuous=True, max_value=300),
+            sliding_window_enabled=prefs.logic_sliding_window_default,
+            default_window_size=prefs.logic_window_size_default,
+            x_axis=VisualizerAxisConfig(
+                label="Samples",
+                continuous=True,
+                max_value=float(prefs.logic_window_size_default),
+            ),
             y1_axis=VisualizerAxisConfig(label="Logic", min_value=0.0, max_value=1.0),
             y2_axis=VisualizerAxisConfig(label="Y2", min_value=0.0, max_value=1.0),
             fields=[

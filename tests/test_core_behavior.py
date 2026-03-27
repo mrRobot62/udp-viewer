@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from udp_log_viewer import __display_version__, __version__
+from udp_log_viewer.preferences import AppPreferences
 from udp_log_viewer.data_visualizer.csv_log_parser import CsvLogParser
 from udp_log_viewer.data_visualizer.config_store import ConfigStore
 from udp_log_viewer.udp_log_utils import compile_patterns, match_exclude, match_include
@@ -51,3 +52,9 @@ def test_include_and_exclude_pattern_logic() -> None:
     assert match_include("[OVEN/INFO] core=23.20", include_patterns) is False
     assert match_exclude("[HOST/ERROR] timeout", exclude_patterns) is True
     assert match_exclude("[HOST/INFO] ready", exclude_patterns) is False
+
+
+def test_preferences_normalize_visualizer_presets() -> None:
+    prefs = AppPreferences(visualizer_presets="300,100,200,150")
+
+    assert prefs.visualizer_presets == (100, 150, 200, 300)

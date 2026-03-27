@@ -11,6 +11,7 @@ from .visualizer_config_dialog import VisualizerConfigDialog
 from .visualizer_window import VisualizerWindow
 from .logic_visualizer_window import LogicVisualizerWindow
 from .logic_visualizer_config_dialog import LogicVisualizerConfigDialog
+from ..preferences import AppPreferences
 
 class VisualizerManager:
     PLOT_SLOT_INDEX = 0
@@ -20,18 +21,25 @@ class VisualizerManager:
         self,
         config_path: str | Path | None = None,
         screenshot_dir: str | Path | None = None,
+        preferences: AppPreferences | None = None,
     ) -> None:
         self.parser = CsvLogParser()
-        self.config_store = ConfigStore(config_path=config_path)
+        self.preferences = preferences or AppPreferences()
+        self.config_store = ConfigStore(config_path=config_path, preferences=self.preferences)
         self.screenshot_dir = Path(screenshot_dir) if screenshot_dir is not None else None
         self.visualizers: list[VisualizerConfig] = []
         self.windows_by_index: dict[int, VisualizerWindow] = {}
         self.sample_counters_by_index: dict[int, int] = {}
 
     def load_configs(self) -> None:
+        self.config_store = ConfigStore(config_path=self.config_store._config_path, preferences=self.preferences)
         self.visualizers = self.config_store.load_visualizer_configs()
         self.windows_by_index.clear()
         self.sample_counters_by_index.clear()
+
+    def set_preferences(self, preferences: AppPreferences) -> None:
+        self.preferences = preferences
+        self.config_store = ConfigStore(config_path=self.config_store._config_path, preferences=self.preferences)
 
     def save_configs(self) -> None:
         self.config_store.save_visualizer_configs(self.visualizers)
@@ -101,11 +109,18 @@ class VisualizerManager:
         existing_window = self.windows_by_index.get(index)
         if existing_window is not None:
             return existing_window
-        #window = VisualizerWindow(config=config, screenshot_dir=self.screenshot_dir)
         if config.graph_type == "logic":
-            window = LogicVisualizerWindow(config, screenshot_dir=self.screenshot_dir)
+            window = LogicVisualizerWindow(
+                config,
+                screenshot_dir=self.screenshot_dir,
+                window_size_presets=self.preferences.visualizer_presets,
+            )
         else:
-            window = VisualizerWindow(config, screenshot_dir=self.screenshot_dir)
+            window = VisualizerWindow(
+                config,
+                screenshot_dir=self.screenshot_dir,
+                window_size_presets=self.preferences.visualizer_presets,
+            )
 
         self.windows_by_index[index] = window
         return window
@@ -120,7 +135,7 @@ class VisualizerManager:
         config = self.visualizers[self.LOGIC_SLOT_INDEX]
 
         if getattr(config, "graph_type", "plot") != "logic":
-            config = self.config_store._build_default_logic_config()
+            config = self.config_store._build_default_logic_config(self.preferences)
             self.visualizers[self.LOGIC_SLOT_INDEX] = config
 
         dlg = LogicVisualizerConfigDialog(config, parent)
@@ -148,7 +163,7 @@ class VisualizerManager:
         config = self.visualizers[self.LOGIC_SLOT_INDEX]
 
         if getattr(config, "graph_type", "plot") != "logic":
-            config = self.config_store._build_default_logic_config()
+            config = self.config_store._build_default_logic_config(self.preferences)
             self.visualizers[self.LOGIC_SLOT_INDEX] = config
             self.save_configs()
 
