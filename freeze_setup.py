@@ -71,9 +71,6 @@ build_exe_options = {
     "zip_include_packages": ["PyQt5", "udp_log_viewer"],
     "zip_exclude_packages": [],
     "include_msvcr": True if sys.platform.startswith("win") else False,
-    # Keep the freeze search path narrow so local machine-specific Homebrew
-    # libraries are not pulled into the macOS bundle on CI runners.
-    "path": [str(SRC_DIR)],
 }
 
 # --- macOS bundle options ---
