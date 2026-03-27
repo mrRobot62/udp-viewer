@@ -30,7 +30,7 @@
 #endif
 
 #ifndef AppIcon
-  #define AppIcon "packaging\windows\app.ico"
+  #define AppIcon "app.ico"
 #endif
 
 [Setup]
