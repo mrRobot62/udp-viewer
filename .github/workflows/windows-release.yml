@@ -1,0 +1,109 @@
+name: Windows Release Build
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: Existing release tag to attach the generated Setup.exe to
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows-installer:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress -y
+
+      - name: Build Setup.exe
+        shell: cmd
+        run: scripts\build_windows_installer.bat
+
+      - name: Collect installer metadata
+        id: package
+        shell: pwsh
+        run: |
+          $version = python -c "from udp_log_viewer import __version__; print(__version__)"
+          $installer = Get-ChildItem -Path dist -Filter 'UDPLogViewer-Setup-*.exe' |
+            Sort-Object LastWriteTime -Descending |
+            Select-Object -First 1
+
+          if (-not $installer) {
+            throw "No installer was produced in dist/."
+          }
+
+          $assetName = "UDPLogViewer-$version-Setup.exe"
+          $assetPath = Join-Path $installer.DirectoryName $assetName
+          Copy-Item $installer.FullName $assetPath -Force
+
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "asset_name=$assetName" >> $env:GITHUB_OUTPUT
+          "asset_path=$assetPath" >> $env:GITHUB_OUTPUT
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.package.outputs.asset_name }}
+          path: ${{ steps.package.outputs.asset_path }}
+          if-no-files-found: error
+
+      - name: Attach installer to release
+        if: ${{ github.event_name == 'release' || inputs.tag_name != '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.tag_name }}
+          ASSET_NAME: ${{ steps.package.outputs.asset_name }}
+          ASSET_PATH: ${{ steps.package.outputs.asset_path }}
+        shell: pwsh
+        run: |
+          $headers = @{
+            Authorization = "Bearer $env:GITHUB_TOKEN"
+            Accept = "application/vnd.github+json"
+            "X-GitHub-Api-Version" = "2022-11-28"
+          }
+
+          try {
+            $release = Invoke-RestMethod `
+              -Headers $headers `
+              -Uri "https://api.github.com/repos/$env:GITHUB_REPOSITORY/releases/tags/$env:TAG_NAME"
+          } catch {
+            Write-Host "No release found for tag $env:TAG_NAME. Skipping upload."
+            exit 0
+          }
+
+          $existing = @($release.assets) | Where-Object { $_.name -eq $env:ASSET_NAME }
+          foreach ($asset in $existing) {
+            Invoke-RestMethod `
+              -Method Delete `
+              -Headers $headers `
+              -Uri "https://api.github.com/repos/$env:GITHUB_REPOSITORY/releases/assets/$($asset.id)"
+          }
+
+          $uploadUrl = $release.upload_url -replace '\{\?name,label\}$', ''
+          $uploadHeaders = @{
+            Authorization = "Bearer $env:GITHUB_TOKEN"
+            Accept = "application/vnd.github+json"
+            "Content-Type" = "application/octet-stream"
+          }
+
+          Invoke-RestMethod `
+            -Method Post `
+            -Headers $uploadHeaders `
+            -InFile $env:ASSET_PATH `
+            -Uri "$uploadUrl?name=$env:ASSET_NAME" | Out-Null

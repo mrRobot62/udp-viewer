@@ -14,11 +14,11 @@
 #endif
 
 #ifndef AppURL
-  #define AppURL "https://github.com/<your-username>/udp-log-viewer"
+  #define AppURL "https://github.com/mrRobot62/udp-viewer"
 #endif
 
 #ifndef AppSupportURL
-  #define AppSupportURL "https://github.com/<your-username>/udp-log-viewer/issues"
+  #define AppSupportURL "https://github.com/mrRobot62/udp-viewer/issues"
 #endif
 
 #ifndef AppVersion
