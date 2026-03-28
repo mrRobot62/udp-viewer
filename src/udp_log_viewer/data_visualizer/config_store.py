@@ -52,6 +52,7 @@ class ConfigStore:
             parser.set(section, "enabled", str(bool(config.enabled)).lower())
             parser.set(section, "title", config.title)
             parser.set(section, "filter_string", config.filter_string)
+            parser.set(section, "show_legend", str(bool(config.show_legend)).lower())
             parser.set(section, "graph_type", getattr(config, "graph_type", "plot"))
             parser.set(section, "max_samples", str(config.max_samples))
             parser.set(section, "sliding_window_enabled", str(bool(config.sliding_window_enabled)).lower())
@@ -158,6 +159,7 @@ class ConfigStore:
             enabled=self._get_bool(parser, section, "enabled", default=base_config.enabled),
             title=parser.get(section, "title", fallback=base_config.title),
             filter_string=parser.get(section, "filter_string", fallback=base_config.filter_string),
+            show_legend=self._get_bool(parser, section, "show_legend", default=base_config.show_legend),
             graph_type=parser.get(section, "graph_type", fallback=getattr(base_config, "graph_type", "plot")),
             max_samples=max_samples,
             sliding_window_enabled=self._get_bool(
@@ -215,6 +217,7 @@ class ConfigStore:
             enabled=True,
             title="CSV_TEMP Graph",
             filter_string="[CSV_TEMP]",
+            show_legend=True,
             graph_type="plot",
             max_samples=600,
             sliding_window_enabled=prefs.plot_sliding_window_default,
@@ -246,6 +249,7 @@ class ConfigStore:
             enabled=True,
             title="Logic Graph",
             filter_string="[CSV_LOGIC]",
+            show_legend=False,
             graph_type="logic",
             max_samples=600,
             sliding_window_enabled=prefs.logic_sliding_window_default,

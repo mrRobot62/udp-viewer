@@ -170,6 +170,12 @@ class LogicVisualizerWindow:
 if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
 
     class _LogicVisualizerWindowWidget(QWidget):
+        _ROW_SPACING = 1.8
+        _ROW_LOW_LEVEL = 0.18
+        _ROW_HIGH_LEVEL = 0.82
+        _ROW_CENTER = 0.50
+        _ROW_BG_BOTTOM = 0.02
+        _ROW_BG_TOP = 0.98
         _SETTINGS_ORG = "LocalTools"
         _SETTINGS_APP = "UdpLogViewer"
         _SETTINGS_KEY = "logic_visualizer/screenshot_dir"
@@ -373,36 +379,65 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             plotted_count = 0
 
             for idx, field in enumerate(active_fields):
-                base = idx * 3.0
+                base = idx * self._ROW_SPACING
                 y_values = []
+                logic_states = []
                 has_any = False
+                low_level = base + self._ROW_LOW_LEVEL
+                high_level = base + self._ROW_HIGH_LEVEL
 
                 for sample in visible_samples:
                     raw = sample.values_by_name.get(field.field_name)
                     if raw is None:
                         y_values.append(None)
+                        logic_states.append(False)
                         continue
 
-                    logic_value = 1.0 if float(raw) >= 0.5 else 0.0
-                    y_values.append(base + logic_value)
+                    logic_high = float(raw) >= 0.5
+                    logic_states.append(logic_high)
+                    y_values.append(high_level if logic_high else low_level)
                     has_any = True
 
                 if not has_any:
                     continue
 
+                row_color = getattr(field, "color", None) or None
+
+                self._axes.axhspan(
+                    base + self._ROW_BG_BOTTOM,
+                    base + self._ROW_BG_TOP,
+                    color="#f5f5f5",
+                    alpha=0.65,
+                    zorder=0,
+                )
+
+                self._axes.fill_between(
+                    x_values,
+                    [low_level] * len(x_values),
+                    y_values,
+                    where=logic_states,
+                    step="post",
+                    color=row_color,
+                    alpha=0.22,
+                    linewidth=0.0,
+                    interpolate=True,
+                    zorder=2,
+                )
+
                 self._axes.step(
                     x_values,
                     y_values,
                     where="post",
-                    color=getattr(field, "color", None) or None,
+                    color=row_color,
                     linestyle="-",
-                    linewidth=1.8,
+                    linewidth=2.2,
                     label=field.field_name,
+                    zorder=3,
                 )
 
-                self._axes.axhline(base, color="#b8b8b8", linestyle=":", linewidth=0.9)
-                self._axes.axhline(base + 1.0, color="#b8b8b8", linestyle=":", linewidth=0.9)
-                self._axes.axhline(base + 2.0, color="#7a7a7a", linestyle="-", linewidth=1.2)
+                self._axes.axhline(low_level, color="#d0d0d0", linestyle=":", linewidth=0.8, zorder=1)
+                self._axes.axhline(high_level, color="#d0d0d0", linestyle=":", linewidth=0.8, zorder=1)
+                self._axes.axhline(base + self._ROW_SPACING, color="#8c8c8c", linestyle="-", linewidth=1.0, zorder=1)
                 plotted_count += 1
 
             self._apply_axis_settings(active_fields, len(visible_samples))
@@ -410,10 +445,8 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
                 f"Samples: {len(visible_samples)} visible / {len(self._controller.samples)} total"
             )
 
-            if plotted_count > 0:
+            if plotted_count > 0 and getattr(self._controller.config, "show_legend", True):
                 self._axes.legend(loc="upper right")
-
-            self._draw_logic_level_labels(active_fields)
 
             # --- X axis: timestamp labels ---
             visible_samples = self._get_visible_samples()
@@ -445,7 +478,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             yticks = []
             yticklabels = []
             for idx, field in enumerate(active_fields):
-                center = idx * 2.0 + 0.5
+                center = idx * self._ROW_SPACING + self._ROW_CENTER
                 yticks.append(center)
                 yticklabels.append(field.field_name)
 
@@ -454,8 +487,8 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
                 self._axes.set_yticklabels(yticklabels)
 
             if active_fields:
-                top = (len(active_fields) - 1) * 3.0 + 2.3
-                self._axes.set_ylim(-0.5, top)
+                top = (len(active_fields) - 1) * self._ROW_SPACING + (self._ROW_SPACING + 0.2)
+                self._axes.set_ylim(-0.1, top)
             else:
                 self._axes.set_ylim(-0.3, 1.3)
 
@@ -463,40 +496,6 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
                 self._axes.set_xlim(0, max(visible_count - 1, 1))
 
             self._axes.grid(True, axis="x")
-
-        def _draw_logic_level_labels(self, active_fields) -> None:
-            if not active_fields or transforms is None:
-                return
-
-            text_transform = transforms.blended_transform_factory(
-                self._axes.transAxes,
-                self._axes.transData,
-            )
-
-            for idx, _field in enumerate(active_fields):
-                base = idx * 3.0
-                self._axes.text(
-                    -0.035,
-                    base + 1.0,
-                    "1",
-                    transform=text_transform,
-                    ha="right",
-                    va="center",
-                    fontsize=9,
-                    color="#505050",
-                    clip_on=False,
-                )
-                self._axes.text(
-                    -0.035,
-                    base,
-                    "0",
-                    transform=text_transform,
-                    ha="right",
-                    va="center",
-                    fontsize=9,
-                    color="#505050",
-                    clip_on=False,
-                )
 
         def _get_visible_samples(self) -> list[VisualizerSample]:
             if self._controller.freeze_sample_index is not None:

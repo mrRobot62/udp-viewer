@@ -23,12 +23,14 @@ def test_config_store_persists_sliding_window_fields(tmp_path: Path) -> None:
     config = ConfigStore._build_default_csv_temp_config()
     config.sliding_window_enabled = False
     config.default_window_size = 123
+    config.show_legend = False
 
     store.save_visualizer_configs([config])
     loaded = store.load_visualizer_configs()[0]
 
     assert loaded.sliding_window_enabled is False
     assert loaded.default_window_size == 123
+    assert loaded.show_legend is False
 
 
 def test_config_store_loads_legacy_x_axis_window_as_fallback(tmp_path: Path) -> None:

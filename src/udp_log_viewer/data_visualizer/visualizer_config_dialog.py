@@ -30,6 +30,9 @@ class VisualizerConfigDialog(QDialog):
         self._enabled.setChecked(config.enabled)
         self._title = QLineEdit(config.title)
         self._filter = QLineEdit(config.filter_string)
+        self._filter.setMinimumWidth(420)
+        self._show_legend = QCheckBox("Show Legend")
+        self._show_legend.setChecked(config.show_legend)
         self._max_samples = QSpinBox()
         self._max_samples.setRange(50, 100000)
         self._max_samples.setValue(config.max_samples)
@@ -43,6 +46,7 @@ class VisualizerConfigDialog(QDialog):
         form.addRow(self._enabled)
         form.addRow("Title", self._title)
         form.addRow("Filter", self._filter)
+        form.addRow(self._show_legend)
         form.addRow("Max Samples", self._max_samples)
         form.addRow(self._sliding_window_enabled)
         form.addRow("Default Window Size", self._default_window_size)
@@ -134,6 +138,7 @@ class VisualizerConfigDialog(QDialog):
             enabled=self._enabled.isChecked(),
             title=self._title.text().strip(),
             filter_string=self._filter.text().strip(),
+            show_legend=self._show_legend.isChecked(),
             max_samples=int(self._max_samples.value()),
             sliding_window_enabled=self._sliding_window_enabled.isChecked(),
             default_window_size=int(self._default_window_size.value()),

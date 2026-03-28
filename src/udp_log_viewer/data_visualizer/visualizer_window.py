@@ -392,9 +392,9 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             total_count = len(self._controller.samples)
             self._status_label.setText(f"Samples: {visible_count} visible / {total_count} total")
 
-            if plotted_y1:
+            if plotted_y1 and getattr(self._controller.config, "show_legend", True):
                 self._axes_y1.legend(loc="upper left")
-            if plotted_y2:
+            if plotted_y2 and getattr(self._controller.config, "show_legend", True):
                 self._axes_y2.legend(loc="upper right")
 
             self._figure.subplots_adjust(bottom=0.24)
