@@ -3,10 +3,17 @@ setlocal ENABLEDELAYEDEXPANSION
 
 REM Build cx_Freeze EXE and create a single Setup.exe using Inno Setup
 REM Recommended path: scripts\build_windows_installer.bat
-REM Run from repo root.
+REM Safe to run from any working directory.
 
 set "APP_NAME=UDPLogViewer"
 set "ISS_FILE=packaging\windows\installer.iss"
+for %%i in ("%~dp0..") do set "REPO_ROOT=%%~fi"
+
+cd /d "%REPO_ROOT%"
+if errorlevel 1 (
+  echo [ERROR] Could not change to repo root: %REPO_ROOT%
+  exit /b 1
+)
 
 echo == UDPLogViewer Windows Installer Build ==
 echo Repo: %CD%

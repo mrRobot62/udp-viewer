@@ -3,9 +3,16 @@
 setlocal enabledelayedexpansion
 
 rem Build Windows EXE via cx_Freeze.
-rem Run inside an activated venv.
+rem Safe to run from any working directory.
 
 set APP_NAME=UDPLogViewer
+for %%i in ("%~dp0.") do set "REPO_ROOT=%%~fi"
+
+cd /d "%REPO_ROOT%"
+if errorlevel 1 (
+  echo [ERROR] Could not change to repo root: %REPO_ROOT%
+  exit /b 1
+)
 
 if "%1"=="clean" (
   echo Cleaning build/ and dist/...
