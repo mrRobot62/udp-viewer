@@ -214,13 +214,27 @@ Das Standard-Logverzeichnis ist `<app_support_dir>/logs`.
 
 ### 7.3 Visualizer-Konfigurationen
 
-`ConfigStore` speichert bis zu 5 Visualizer-Konfigurationen in Abschnitten:
+`ConfigStore` speichert bis zu 5 Plot- und 5 Logic-Konfigurationen in
+Abschnitten:
 
-- `visualizer_1`
-- `visualizer_2`
-- `visualizer_3`
-- `visualizer_4`
-- `visualizer_5`
+- `plot_visualizer_1`
+- `plot_visualizer_2`
+- `plot_visualizer_3`
+- `plot_visualizer_4`
+- `plot_visualizer_5`
+- `logic_visualizer_1`
+- `logic_visualizer_2`
+- `logic_visualizer_3`
+- `logic_visualizer_4`
+- `logic_visualizer_5`
+
+Zusätzlich gilt:
+
+- Plot- und Logic-Slots werden getrennt geladen und gespeichert
+- `SHOW` öffnet alle aktiven Slots des angeforderten Typs
+- inaktive Slots werden weder geöffnet noch geroutet
+- ältere `visualizer_1..5`-Abschnitte werden beim Laden auf das neue
+  Schema migriert
 
 Gespeichert werden unter anderem:
 

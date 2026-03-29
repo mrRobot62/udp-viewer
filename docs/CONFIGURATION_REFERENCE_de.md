@@ -81,7 +81,8 @@ Typische Abschnitte:
 - `[preferences]`
 - `[paths]`
 - `[rules]`
-- `[visualizer_1]` bis `[visualizer_5]`
+- `[plot_visualizer_1]` bis `[plot_visualizer_5]`
+- `[logic_visualizer_1]` bis `[logic_visualizer_5]`
 
 ## 5. Standardpfad der `config.ini`
 
@@ -178,11 +179,17 @@ Beispielstruktur:
 
 Die Visualizer-Konfigurationen werden in Abschnitten gespeichert:
 
-- `visualizer_1`
-- `visualizer_2`
-- `visualizer_3`
-- `visualizer_4`
-- `visualizer_5`
+- `plot_visualizer_1` bis `plot_visualizer_5`
+- `logic_visualizer_1` bis `logic_visualizer_5`
+
+Hinweise zum Schema:
+
+- Plot- und Logic-Slots sind getrennt persistiert
+- jeder Slot hat seine eigene Konfiguration
+- leere Slots können vollständig fehlen oder als deaktivierte Konfiguration
+  mit leeren Feldern vorliegen
+- ältere `visualizer_1..5`-Abschnitte werden beim Laden in das neue
+  Schema migriert
 
 Typische Schlüssel:
 
