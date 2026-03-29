@@ -58,10 +58,12 @@ from .listener_runtime import (
 )
 from .replay_simulation import (
     TextSimulationState,
-    build_temperature_replay_sample,
+    build_client_temperature_replay_sample,
+    build_host_temperature_replay_sample,
     build_text_replay_sample,
     drain_replay_batch,
-    next_logic_simulation_line,
+    next_client_logic_simulation_line,
+    next_host_logic_simulation_line,
     next_text_simulation_line,
 )
 from .rule_slots import (
@@ -302,6 +304,7 @@ class MainWindow(QMainWindow):
             config_path=self._paths_cfg.config_path,
             screenshot_dir=Path(self._paths_cfg.logs_dir) / "screenshots",
             preferences=self._preferences,
+            diagnostic_callback=self._on_visualizer_diagnostic,
         )
         self._visualizer_manager.load_configs()
 
@@ -1126,7 +1129,7 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("CSV_TEMP visualizer config saved", 3000)
 
     def on_visualizer_csv_temp_show_clicked(self) -> None:
-        self._visualizer_manager.show_window(self._visualizer_manager.PLOT_SLOT_INDEX)
+        self._visualizer_manager.show_windows("plot")
 
     def on_visualizer_logic_config_clicked(self) -> None:
         changed = self._visualizer_manager.configure_logic(parent=self)
@@ -1135,7 +1138,10 @@ class MainWindow(QMainWindow):
 
 
     def on_visualizer_logic_show_clicked(self) -> None:
-        self._visualizer_manager.show_logic_window()
+        self._visualizer_manager.show_windows("logic")
+
+    def _on_visualizer_diagnostic(self, message: str) -> None:
+        self.log.appendPlainText(message)
 
     def on_simulate_toggled(self, checked: bool) -> None:
         if checked:
@@ -1183,8 +1189,8 @@ class MainWindow(QMainWindow):
         self._sim_temperature_seq = 0
         self._sim_temperature_ntc_chamber = 21.9
         self._sim_temperature_ntc_hotspot = 21.5
-        #self._sim_temperature_ntc_chamber_tgt = 60.0
-        self._sim_temperature_ntc_chamber_tgt = 100.0
+        self._sim_temperature_ntc_chamber_tgt = 60.0
+        #self._sim_temperature_ntc_chamber_tgt = 100.0
         self._sim_temperature_heater = 0
         self._sim_temperature_max_hotspot = 150.0
         self._sim_temperature_min_hotspot_on = 2.0
@@ -1227,10 +1233,21 @@ class MainWindow(QMainWindow):
     def _on_sim_temperature_tick(self) -> None:
         if not self._sim_temperature_enabled or self._listener is None:
             return
-        line = self._sim_next_temperature_line()
+        line = self._sim_next_temperature_line(0)
         self._on_line_received(line)
 
-    def _sim_next_temperature_line(self) -> str:
+
+    def _is_in_range(self, value: float, target: float, lower_offset: float, upper_offset: float) -> bool:
+        return (target - lower_offset) <= value <= (target + upper_offset)
+    
+    def _is_lt_than(self, value: float, target: float, offset:float) -> bool:
+        return value < (target - offset)
+
+    def _is_gt_than(self, value: float, target: float, offset:float) -> bool:
+        return value > (target + offset)
+
+
+    def _sim_next_temperature_line(self, mode=0) -> str:
         self._sim_temperature_seq += 1
         # ------------------------------------------------------------------------------------------------------------------------------------------
         # This simulation profile creates a situation in which the chamber temperature (Chamber) rises continuously, but the hotspot NTC temperature (Core) rises faster. 
@@ -1266,12 +1283,13 @@ class MainWindow(QMainWindow):
         # self._sim_temperature_ntc_hotspot = max(self._sim_temperature_max_hotspot, min(self._sim_temperature_max_hotspot, self._sim_temperature_ntc_hotspot))
 
         # system is running, but chamber not in temp range and heater is off? If yes heater = on
-        if (
-            self._sim_temperature_ntc_chamber
-            < (self._sim_temperature_ntc_chamber_tgt - self._sim_temperature_chamber_lower_offset)
-            and not self._sim_temperature_heater
-        ):
-            self._sim_temperature_heater = 1  # turn on heater if chamber is below target minus x degrees
+        # if (
+        #     self._sim_temperature_ntc_chamber
+        #     < (self._sim_temperature_ntc_chamber_tgt - self._sim_temperature_chamber_lower_offset)
+        #     and not self._sim_temperature_heater
+        # ):
+        #     self._sim_temperature_heater = 1  # turn on heater if chamber is below target minus x degrees
+        
 
         # is chamber in temp range? If yes heater = off
         if (
@@ -1290,7 +1308,7 @@ class MainWindow(QMainWindow):
             self._sim_temperature_heater = 0  # turn off heater if hotspot exceeds target
 
         return (
-            f";[CSV_TEMP];"
+            f";[CSV_CLIENT_TEMP];"
             #f"{" ON" if self._sim_temperature_heater else "OFF"};"
             f"0;0;"
             f"{int(self._sim_temperature_ntc_hotspot * self._sim_temperature_multiplier_degrees):03d};" 
@@ -1305,7 +1323,7 @@ class MainWindow(QMainWindow):
 
 
     def _on_sim_logic_tick(self) -> None:
-        self._ingest_line(next_logic_simulation_line(self._sim_logic_state))
+        self._ingest_line(next_client_logic_simulation_line(self._sim_logic_state))
 
 
     

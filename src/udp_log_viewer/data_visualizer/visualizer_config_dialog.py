@@ -2,13 +2,16 @@ from __future__ import annotations
 
 from PyQt5.QtWidgets import (
     QCheckBox, QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox,
-    QFormLayout, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
+    QFormLayout, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton,
     QSpinBox, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
 )
 
+from .config_store import ConfigStore
+from .slot_copy_dialog import SlotCopyDialog
 from .visualizer_axis_config import VisualizerAxisConfig
 from .visualizer_config import VisualizerConfig
 from .visualizer_field_config import VisualizerFieldConfig
+from .visualizer_slot import SLOT_COUNT
 
 
 class VisualizerConfigDialog(QDialog):
@@ -18,55 +21,82 @@ class VisualizerConfigDialog(QDialog):
     COLOR_OPTIONS = ("black", "gray", "red", "blue", "green", "orange", "purple")
     LINESTYLE_OPTIONS = ("solid", "dashed", "dotted", "dashdot")
 
-    def __init__(self, config: VisualizerConfig, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        configs: list[VisualizerConfig],
+        current_slot: int = 0,
+        parent: QWidget | None = None,
+    ) -> None:
         super().__init__(parent)
-        self._config = config
+        self._configs = [ConfigStore.clone_config(config) for config in configs[:SLOT_COUNT]]
+        while len(self._configs) < SLOT_COUNT:
+            self._configs.append(VisualizerConfig(graph_type="plot"))
+        self._current_slot = max(0, min(current_slot, SLOT_COUNT - 1))
+        self._switch_guard = False
         self.setWindowTitle("CSV_TEMP Visualizer Config")
         self.setModal(True)
         self.resize(1260, 720)
 
         root = QVBoxLayout(self)
-        self._enabled = QCheckBox("Enabled")
-        self._enabled.setChecked(config.enabled)
-        self._title = QLineEdit(config.title)
-        self._filter = QLineEdit(config.filter_string)
+        self._slot_spin = QSpinBox()
+        self._slot_spin.setRange(1, SLOT_COUNT)
+        self._slot_spin.setValue(self._current_slot + 1)
+        self._slot_spin.valueChanged.connect(self._on_slot_changed)
+        self._copy_button = QPushButton("COPY")
+        self._copy_button.clicked.connect(self._on_copy)
+        self._clear_button = QPushButton("CLEAR")
+        self._clear_button.clicked.connect(self._on_clear)
+
+        self._enabled = QCheckBox("Slot Active")
+        self._title = QLineEdit()
+        self._filter = QLineEdit()
         self._filter.setMinimumWidth(420)
         self._show_legend = QCheckBox("Show Legend")
-        self._show_legend.setChecked(config.show_legend)
         self._max_samples = QSpinBox()
         self._max_samples.setRange(50, 100000)
-        self._max_samples.setValue(config.max_samples)
         self._sliding_window_enabled = QCheckBox("Sliding Window Enabled by Default")
-        self._sliding_window_enabled.setChecked(config.sliding_window_enabled)
         self._default_window_size = QSpinBox()
         self._default_window_size.setRange(10, 100000)
-        self._default_window_size.setValue(config.default_window_size)
 
-        form = QFormLayout()
-        form.addRow(self._enabled)
-        form.addRow("Title", self._title)
-        form.addRow("Filter", self._filter)
-        form.addRow(self._show_legend)
-        form.addRow("Max Samples", self._max_samples)
-        form.addRow(self._sliding_window_enabled)
-        form.addRow("Default Window Size", self._default_window_size)
-        root.addLayout(form)
+        slot_row = QHBoxLayout()
+        slot_row.addWidget(QLabel("Slot"))
+        slot_row.addWidget(self._slot_spin)
+        slot_row.addWidget(self._copy_button)
+        slot_row.addWidget(self._clear_button)
+        slot_row.addWidget(self._enabled)
+        slot_row.addStretch(1)
+        root.addLayout(slot_row)
+
+        identity_row = QHBoxLayout()
+        identity_row.addWidget(QLabel("Title"))
+        identity_row.addWidget(self._title, 1)
+        identity_row.addWidget(QLabel("Filter"))
+        identity_row.addWidget(self._filter, 1)
+        root.addLayout(identity_row)
+
+        options_row = QHBoxLayout()
+        options_row.addWidget(self._show_legend)
+        options_row.addWidget(QLabel("Max Samples"))
+        options_row.addWidget(self._max_samples)
+        options_row.addWidget(self._sliding_window_enabled)
+        options_row.addWidget(QLabel("Default Window Size"))
+        options_row.addWidget(self._default_window_size)
+        options_row.addStretch(1)
+        root.addLayout(options_row)
 
         axes_layout = QGridLayout()
 
-        self._x_label = QLineEdit(config.x_axis.label)
+        self._x_label = QLineEdit()
 
-        self._y1_label = QLineEdit(config.y1_axis.label)
+        self._y1_label = QLineEdit()
         self._y1_log = QCheckBox("Y1 Logarithmic")
-        self._y1_log.setChecked(config.y1_axis.logarithmic)
-        self._y1_min = self._build_float_spin(config.y1_axis.min_value)
-        self._y1_max = self._build_float_spin(config.y1_axis.max_value)
+        self._y1_min = self._build_float_spin(None)
+        self._y1_max = self._build_float_spin(None)
 
-        self._y2_label = QLineEdit(config.y2_axis.label)
+        self._y2_label = QLineEdit()
         self._y2_log = QCheckBox("Y2 Logarithmic")
-        self._y2_log.setChecked(config.y2_axis.logarithmic)
-        self._y2_min = self._build_float_spin(config.y2_axis.min_value)
-        self._y2_max = self._build_float_spin(config.y2_axis.max_value)
+        self._y2_min = self._build_float_spin(None)
+        self._y2_max = self._build_float_spin(None)
 
         axes_layout.addWidget(QLabel("X Label"), 0, 0)
         axes_layout.addWidget(self._x_label, 0, 1)
@@ -96,8 +126,6 @@ class VisualizerConfigDialog(QDialog):
         self._table.setSelectionBehavior(self._table.SelectRows)
         self._table.setSelectionMode(self._table.SingleSelection)
         self._table.horizontalHeader().setStretchLastSection(True)
-        for field in config.fields:
-            self._append_row(field)
         root.addWidget(self._table, 1)
 
         buttons_row = QHBoxLayout()
@@ -113,7 +141,40 @@ class VisualizerConfigDialog(QDialog):
         dlg_buttons.rejected.connect(self.reject)
         root.addWidget(dlg_buttons)
 
-    def result_config(self) -> VisualizerConfig:
+        self._load_slot_into_form(self._current_slot)
+
+    def result_configs(self) -> list[VisualizerConfig]:
+        self._configs[self._current_slot] = self._read_form_config()
+        return [ConfigStore.clone_config(config) for config in self._configs]
+
+    def current_slot(self) -> int:
+        return self._current_slot
+
+    def _load_slot_into_form(self, slot_index: int) -> None:
+        config = ConfigStore.clone_config(self._configs[slot_index])
+        self._switch_guard = True
+        self._enabled.setChecked(config.enabled)
+        self._title.setText(config.title)
+        self._filter.setText(config.filter_string)
+        self._show_legend.setChecked(config.show_legend)
+        self._max_samples.setValue(config.max_samples)
+        self._sliding_window_enabled.setChecked(config.sliding_window_enabled)
+        self._default_window_size.setValue(config.default_window_size)
+        self._x_label.setText(config.x_axis.label)
+        self._y1_label.setText(config.y1_axis.label)
+        self._y1_log.setChecked(config.y1_axis.logarithmic)
+        self._y1_min.setValue(config.y1_axis.min_value if config.y1_axis.min_value is not None else -99999.0)
+        self._y1_max.setValue(config.y1_axis.max_value if config.y1_axis.max_value is not None else -99999.0)
+        self._y2_label.setText(config.y2_axis.label)
+        self._y2_log.setChecked(config.y2_axis.logarithmic)
+        self._y2_min.setValue(config.y2_axis.min_value if config.y2_axis.min_value is not None else -99999.0)
+        self._y2_max.setValue(config.y2_axis.max_value if config.y2_axis.max_value is not None else -99999.0)
+        self._table.setRowCount(0)
+        for field in config.fields:
+            self._append_row(field)
+        self._switch_guard = False
+
+    def _read_form_config(self) -> VisualizerConfig:
         fields = []
         for row in range(self._table.rowCount()):
             field_name = self._table.item(row, 0).text().strip() if self._table.item(row, 0) else ""
@@ -142,12 +203,13 @@ class VisualizerConfigDialog(QDialog):
             max_samples=int(self._max_samples.value()),
             sliding_window_enabled=self._sliding_window_enabled.isChecked(),
             default_window_size=int(self._default_window_size.value()),
-            window_geometry=self._config.window_geometry,
+            window_geometry=self._configs[self._current_slot].window_geometry,
+            graph_type="plot",
             x_axis=VisualizerAxisConfig(
                 label=self._x_label.text().strip(),
-                continuous=self._config.x_axis.continuous,
-                min_value=self._config.x_axis.min_value,
-                max_value=self._config.x_axis.max_value,
+                continuous=self._configs[self._current_slot].x_axis.continuous,
+                min_value=self._configs[self._current_slot].x_axis.min_value,
+                max_value=self._configs[self._current_slot].x_axis.max_value,
             ),
             y1_axis=VisualizerAxisConfig(
                 label=self._y1_label.text().strip(),
@@ -163,6 +225,35 @@ class VisualizerConfigDialog(QDialog):
             ),
             fields=fields,
         )
+
+    def _has_unsaved_changes(self) -> bool:
+        return self._read_form_config() != self._configs[self._current_slot]
+
+    def _confirm_discard_changes(self) -> bool:
+        if not self._has_unsaved_changes():
+            return True
+        result = QMessageBox.question(
+            self,
+            "Discard Changes?",
+            "Unsaved changes in the current slot will be discarded. Continue?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        return result == QMessageBox.Yes
+
+    def _on_slot_changed(self, value: int) -> None:
+        if self._switch_guard:
+            return
+        next_slot = value - 1
+        if next_slot == self._current_slot:
+            return
+        if not self._confirm_discard_changes():
+            self._switch_guard = True
+            self._slot_spin.setValue(self._current_slot + 1)
+            self._switch_guard = False
+            return
+        self._current_slot = next_slot
+        self._load_slot_into_form(next_slot)
 
     def _append_row(self, field: VisualizerFieldConfig) -> None:
         row = self._table.rowCount()
@@ -202,6 +293,21 @@ class VisualizerConfigDialog(QDialog):
 
     def _on_add(self) -> None:
         self._append_row(VisualizerFieldConfig("new_field", True, True, 10, False, "Y1", "Line", "gray", "solid", ""))
+
+    def _on_copy(self) -> None:
+        self._configs[self._current_slot] = self._read_form_config()
+        dialog = SlotCopyDialog(self._current_slot, parent=self)
+        if dialog.exec_() != dialog.Accepted:
+            return
+        source_slot = dialog.source_slot()
+        target_slot = dialog.target_slot()
+        self._configs[target_slot] = ConfigStore.clone_config(self._configs[source_slot])
+        if target_slot == self._current_slot:
+            self._load_slot_into_form(self._current_slot)
+
+    def _on_clear(self) -> None:
+        self._configs[self._current_slot] = VisualizerConfig(graph_type="plot")
+        self._load_slot_into_form(self._current_slot)
 
     def _on_delete(self) -> None:
         row = self._table.currentRow()

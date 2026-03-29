@@ -1,17 +1,23 @@
 from __future__ import annotations
 
 import configparser
+from copy import deepcopy
 from pathlib import Path
 
 from .visualizer_axis_config import VisualizerAxisConfig
 from .visualizer_config import VisualizerConfig
 from .visualizer_field_config import VisualizerFieldConfig
+from .visualizer_slot import SLOT_COUNT, VisualizerGraphType
 from ..preferences import AppPreferences
 
 
 class ConfigStore:
-    DEFAULT_VISUALIZER_COUNT = 5
-    SECTION_PREFIX = "visualizer_"
+    DEFAULT_VISUALIZER_COUNT = SLOT_COUNT
+    LEGACY_SECTION_PREFIX = "visualizer_"
+    SECTION_PREFIXES: dict[VisualizerGraphType, str] = {
+        "plot": "plot_visualizer_",
+        "logic": "logic_visualizer_",
+    }
 
     def __init__(
         self,
@@ -21,76 +27,143 @@ class ConfigStore:
         self._config_path = Path(config_path) if config_path is not None else None
         self._preferences = preferences or AppPreferences()
 
-    def load_visualizer_configs(self) -> list[VisualizerConfig]:
-        configs = [VisualizerConfig() for _ in range(self.DEFAULT_VISUALIZER_COUNT)]
-        configs[0] = self._build_default_csv_temp_config(self._preferences)
-
-        if self._config_path is None or not self._config_path.exists():
+    def load_slot_configs(self) -> dict[VisualizerGraphType, list[VisualizerConfig]]:
+        configs = self._build_empty_slot_config_map()
+        parser = self._read_parser()
+        if parser is None:
             return configs
 
-        parser = configparser.ConfigParser()
-        parser.read(self._config_path, encoding="utf-8")
+        has_new_schema = False
+        for graph_type, prefix in self.SECTION_PREFIXES.items():
+            defaults = self._default_config_for_type(graph_type)
+            for index in range(self.DEFAULT_VISUALIZER_COUNT):
+                section = f"{prefix}{index + 1}"
+                if not parser.has_section(section):
+                    continue
+                has_new_schema = True
+                configs[graph_type][index] = self._load_single_config(parser, section, defaults)
 
-        for index in range(self.DEFAULT_VISUALIZER_COUNT):
-            section = f"{self.SECTION_PREFIX}{index + 1}"
-            if not parser.has_section(section):
-                continue
-            configs[index] = self._load_single_config(parser, section, configs[index])
+        if has_new_schema:
+            return configs
 
-        return configs
+        return self._load_legacy_slot_configs(parser)
 
-    def save_visualizer_configs(self, configs: list[VisualizerConfig]) -> None:
+    def save_slot_configs(self, configs_by_type: dict[VisualizerGraphType, list[VisualizerConfig]]) -> None:
         if self._config_path is None:
             return
 
-        parser = configparser.ConfigParser()
+        parser = self._read_parser() or configparser.ConfigParser()
+        self._remove_owned_sections(parser)
 
-        for index, config in enumerate(configs[: self.DEFAULT_VISUALIZER_COUNT]):
-            section = f"{self.SECTION_PREFIX}{index + 1}"
-            parser.add_section(section)
+        for graph_type, prefix in self.SECTION_PREFIXES.items():
+            slot_configs = list(configs_by_type.get(graph_type, []))
+            for index, config in enumerate(slot_configs[: self.DEFAULT_VISUALIZER_COUNT]):
+                if self._is_empty_config(config):
+                    continue
+                section = f"{prefix}{index + 1}"
+                self._save_single_config(parser, section, config, graph_type=graph_type)
 
-            parser.set(section, "enabled", str(bool(config.enabled)).lower())
-            parser.set(section, "title", config.title)
-            parser.set(section, "filter_string", config.filter_string)
-            parser.set(section, "show_legend", str(bool(config.show_legend)).lower())
-            parser.set(section, "graph_type", getattr(config, "graph_type", "plot"))
-            parser.set(section, "max_samples", str(config.max_samples))
-            parser.set(section, "sliding_window_enabled", str(bool(config.sliding_window_enabled)).lower())
-            parser.set(section, "default_window_size", str(config.default_window_size))
-            parser.set(section, "window_geometry", config.window_geometry or "")
+        self._write_parser(parser)
 
-            parser.set(section, "x_label", config.x_axis.label)
-            parser.set(section, "x_continuous", str(bool(config.x_axis.continuous)).lower())
-            parser.set(section, "x_min", "" if config.x_axis.min_value is None else str(config.x_axis.min_value))
-            parser.set(section, "x_max", "" if config.x_axis.max_value is None else str(config.x_axis.max_value))
+    def load_visualizer_configs(self) -> list[VisualizerConfig]:
+        return self.load_slot_configs()["plot"]
 
-            parser.set(section, "y1_label", config.y1_axis.label)
-            parser.set(section, "y1_logarithmic", str(bool(config.y1_axis.logarithmic)).lower())
-            parser.set(section, "y1_min", "" if config.y1_axis.min_value is None else str(config.y1_axis.min_value))
-            parser.set(section, "y1_max", "" if config.y1_axis.max_value is None else str(config.y1_axis.max_value))
+    def save_visualizer_configs(self, configs: list[VisualizerConfig]) -> None:
+        slot_configs = self.load_slot_configs()
+        slot_configs["plot"] = list(configs[: self.DEFAULT_VISUALIZER_COUNT]) + [
+            self._build_empty_config("plot")
+            for _ in range(max(0, self.DEFAULT_VISUALIZER_COUNT - len(configs)))
+        ]
+        self.save_slot_configs(slot_configs)
 
-            parser.set(section, "y2_label", config.y2_axis.label)
-            parser.set(section, "y2_logarithmic", str(bool(config.y2_axis.logarithmic)).lower())
-            parser.set(section, "y2_min", "" if config.y2_axis.min_value is None else str(config.y2_axis.min_value))
-            parser.set(section, "y2_max", "" if config.y2_axis.max_value is None else str(config.y2_axis.max_value))
+    def _build_empty_slot_config_map(self) -> dict[VisualizerGraphType, list[VisualizerConfig]]:
+        return {
+            "plot": [self._build_empty_config("plot") for _ in range(self.DEFAULT_VISUALIZER_COUNT)],
+            "logic": [self._build_empty_config("logic") for _ in range(self.DEFAULT_VISUALIZER_COUNT)],
+        }
 
-            parser.set(section, "field_count", str(len(config.fields)))
-            for field_index, field in enumerate(config.fields):
-                prefix = f"field_{field_index}_"
-                parser.set(section, f"{prefix}name", field.field_name)
-                parser.set(section, f"{prefix}active", str(bool(field.active)).lower())
-                parser.set(section, f"{prefix}numeric", str(bool(field.numeric)).lower())
-                parser.set(section, f"{prefix}scale", str(field.scale))
-                parser.set(section, f"{prefix}plot", str(bool(field.plot)).lower())
-                parser.set(section, f"{prefix}axis", field.axis)
-                parser.set(section, f"{prefix}render_style", field.render_style)
-                parser.set(section, f"{prefix}color", field.color)
-                parser.set(section, f"{prefix}line_style", field.line_style)
-                parser.set(section, f"{prefix}unit", field.unit)
+    def _load_legacy_slot_configs(
+        self,
+        parser: configparser.ConfigParser,
+    ) -> dict[VisualizerGraphType, list[VisualizerConfig]]:
+        configs = self._build_empty_slot_config_map()
+        next_index = {"plot": 0, "logic": 0}
 
-        self._config_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(self._config_path, "w", encoding="utf-8", newline="\n") as handle:
-            parser.write(handle)
+        for index in range(self.DEFAULT_VISUALIZER_COUNT):
+            section = f"{self.LEGACY_SECTION_PREFIX}{index + 1}"
+            if not parser.has_section(section):
+                continue
+
+            graph_type = parser.get(section, "graph_type", fallback="plot").strip().lower()
+            if graph_type not in self.SECTION_PREFIXES:
+                graph_type = "plot"
+            typed_graph_type: VisualizerGraphType = graph_type  # type: ignore[assignment]
+            target_index = next_index[typed_graph_type]
+            if target_index >= self.DEFAULT_VISUALIZER_COUNT:
+                continue
+
+            base = self._default_config_for_type(typed_graph_type)
+            configs[typed_graph_type][target_index] = self._load_single_config(parser, section, base)
+            next_index[typed_graph_type] += 1
+
+        return configs
+
+    def _remove_owned_sections(self, parser: configparser.ConfigParser) -> None:
+        for section in list(parser.sections()):
+            if section.startswith(self.LEGACY_SECTION_PREFIX):
+                parser.remove_section(section)
+                continue
+            if any(section.startswith(prefix) for prefix in self.SECTION_PREFIXES.values()):
+                parser.remove_section(section)
+
+    def _save_single_config(
+        self,
+        parser: configparser.ConfigParser,
+        section: str,
+        config: VisualizerConfig,
+        *,
+        graph_type: VisualizerGraphType,
+    ) -> None:
+        parser.add_section(section)
+
+        parser.set(section, "enabled", str(bool(config.enabled)).lower())
+        parser.set(section, "title", config.title)
+        parser.set(section, "filter_string", config.filter_string)
+        parser.set(section, "show_legend", str(bool(config.show_legend)).lower())
+        parser.set(section, "graph_type", graph_type)
+        parser.set(section, "max_samples", str(config.max_samples))
+        parser.set(section, "sliding_window_enabled", str(bool(config.sliding_window_enabled)).lower())
+        parser.set(section, "default_window_size", str(config.default_window_size))
+        parser.set(section, "window_geometry", config.window_geometry or "")
+
+        parser.set(section, "x_label", config.x_axis.label)
+        parser.set(section, "x_continuous", str(bool(config.x_axis.continuous)).lower())
+        parser.set(section, "x_min", "" if config.x_axis.min_value is None else str(config.x_axis.min_value))
+        parser.set(section, "x_max", "" if config.x_axis.max_value is None else str(config.x_axis.max_value))
+
+        parser.set(section, "y1_label", config.y1_axis.label)
+        parser.set(section, "y1_logarithmic", str(bool(config.y1_axis.logarithmic)).lower())
+        parser.set(section, "y1_min", "" if config.y1_axis.min_value is None else str(config.y1_axis.min_value))
+        parser.set(section, "y1_max", "" if config.y1_axis.max_value is None else str(config.y1_axis.max_value))
+
+        parser.set(section, "y2_label", config.y2_axis.label)
+        parser.set(section, "y2_logarithmic", str(bool(config.y2_axis.logarithmic)).lower())
+        parser.set(section, "y2_min", "" if config.y2_axis.min_value is None else str(config.y2_axis.min_value))
+        parser.set(section, "y2_max", "" if config.y2_axis.max_value is None else str(config.y2_axis.max_value))
+
+        parser.set(section, "field_count", str(len(config.fields)))
+        for field_index, field in enumerate(config.fields):
+            prefix = f"field_{field_index}_"
+            parser.set(section, f"{prefix}name", field.field_name)
+            parser.set(section, f"{prefix}active", str(bool(field.active)).lower())
+            parser.set(section, f"{prefix}numeric", str(bool(field.numeric)).lower())
+            parser.set(section, f"{prefix}scale", str(field.scale))
+            parser.set(section, f"{prefix}plot", str(bool(field.plot)).lower())
+            parser.set(section, f"{prefix}axis", field.axis)
+            parser.set(section, f"{prefix}render_style", field.render_style)
+            parser.set(section, f"{prefix}color", field.color)
+            parser.set(section, f"{prefix}line_style", field.line_style)
+            parser.set(section, f"{prefix}unit", field.unit)
 
     def _load_single_config(
         self,
@@ -181,6 +254,43 @@ class ConfigStore:
             fields=fields or list(base_config.fields),
         )
 
+    def _default_config_for_type(self, graph_type: VisualizerGraphType) -> VisualizerConfig:
+        if graph_type == "logic":
+            return self._build_default_logic_config(self._preferences)
+        return self._build_default_csv_temp_config(self._preferences)
+
+    @staticmethod
+    def _build_empty_config(graph_type: VisualizerGraphType) -> VisualizerConfig:
+        return VisualizerConfig(enabled=False, graph_type=graph_type)
+
+    @staticmethod
+    def _is_empty_config(config: VisualizerConfig) -> bool:
+        return (
+            not config.enabled
+            and not config.title
+            and not config.filter_string
+            and not config.window_geometry
+            and not config.fields
+        )
+
+    def _read_parser(self) -> configparser.ConfigParser | None:
+        if self._config_path is None or not self._config_path.exists():
+            return None
+        parser = configparser.ConfigParser()
+        parser.read(self._config_path, encoding="utf-8")
+        return parser
+
+    def _write_parser(self, parser: configparser.ConfigParser) -> None:
+        if self._config_path is None:
+            return
+        self._config_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(self._config_path, "w", encoding="utf-8", newline="\n") as handle:
+            parser.write(handle)
+
+    @staticmethod
+    def clone_config(config: VisualizerConfig) -> VisualizerConfig:
+        return deepcopy(config)
+
     @staticmethod
     def _get_bool(parser: configparser.ConfigParser, section: str, key: str, default: bool) -> bool:
         try:
@@ -215,8 +325,8 @@ class ConfigStore:
         prefs = preferences or AppPreferences()
         return VisualizerConfig(
             enabled=True,
-            title="CSV_TEMP Graph",
-            filter_string="[CSV_TEMP]",
+            title="CSV_CLIENT_TEMP Graph",
+            filter_string="[CSV_CLIENT_TEMP]",
             show_legend=True,
             graph_type="plot",
             max_samples=600,
@@ -248,7 +358,7 @@ class ConfigStore:
         return VisualizerConfig(
             enabled=True,
             title="Logic Graph",
-            filter_string="[CSV_LOGIC]",
+            filter_string="[CSV_CLIENT_LOGIC]",
             show_legend=False,
             graph_type="logic",
             max_samples=600,

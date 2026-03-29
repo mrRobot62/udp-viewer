@@ -8,6 +8,9 @@
             "module": "udp_log_viewer.main",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            },
             "justMyCode": true
         }
     ]
