@@ -112,6 +112,11 @@ class LogicVisualizerWindow:
             widget.raise_()
             widget.activateWindow()
 
+    def set_initial_position(self, *, slot_index: int, group_offset: int = 0) -> None:
+        widget = self._ensure_widget()
+        if widget is not None and hasattr(widget, "set_initial_position"):
+            widget.set_initial_position(slot_index=slot_index, group_offset=group_offset)
+
     def close(self) -> None:
         if self._widget is not None:
             self._widget.close()
@@ -179,10 +184,15 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
         _SETTINGS_ORG = "LocalTools"
         _SETTINGS_APP = "UdpLogViewer"
         _SETTINGS_KEY = "logic_visualizer/screenshot_dir"
+        _BASE_X = 180
+        _BASE_Y = 160
+        _OFFSET_X = 36
+        _OFFSET_Y = 28
 
         def __init__(self, controller: LogicVisualizerWindow) -> None:
             super().__init__()
             self._controller = controller
+            self._initial_position_applied = False
 
             self.setWindowTitle(controller.config.title or "Logic Visualizer")
             self.resize(1100, 620)
@@ -496,6 +506,16 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
                 self._axes.set_xlim(0, max(visible_count - 1, 1))
 
             self._axes.grid(True, axis="x")
+
+        def set_initial_position(self, *, slot_index: int, group_offset: int = 0) -> None:
+            if self._initial_position_applied:
+                return
+            offset_index = slot_index + max(0, group_offset) * 2
+            self.move(
+                self._BASE_X + offset_index * self._OFFSET_X,
+                self._BASE_Y + offset_index * self._OFFSET_Y,
+            )
+            self._initial_position_applied = True
 
         def _get_visible_samples(self) -> list[VisualizerSample]:
             if self._controller.freeze_sample_index is not None:

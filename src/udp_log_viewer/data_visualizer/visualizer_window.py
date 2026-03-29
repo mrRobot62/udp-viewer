@@ -114,6 +114,11 @@ class VisualizerWindow:
             widget.raise_()
             widget.activateWindow()
 
+    def set_initial_position(self, *, slot_index: int, group_offset: int = 0) -> None:
+        widget = self._ensure_widget()
+        if widget is not None and hasattr(widget, "set_initial_position"):
+            widget.set_initial_position(slot_index=slot_index, group_offset=group_offset)
+
     def close(self) -> None:
         if self._widget is not None:
             self._widget.close()
@@ -178,10 +183,15 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
         _SETTINGS_ORG = "LocalTools"
         _SETTINGS_APP = "UdpLogViewer"
         _SETTINGS_KEY = "visualizer/screenshot_dir"
+        _BASE_X = 120
+        _BASE_Y = 120
+        _OFFSET_X = 36
+        _OFFSET_Y = 28
 
         def __init__(self, controller: VisualizerWindow) -> None:
             super().__init__()
             self._controller = controller
+            self._initial_position_applied = False
 
             self.setWindowTitle(controller.config.title or "Data Visualizer")
             self.resize(980, 560)
@@ -417,10 +427,15 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             x_axis = self._controller.config.x_axis
             y1_axis = self._controller.config.y1_axis
             y2_axis = self._controller.config.y2_axis
+            y2_binary_step = _uses_binary_step_axis(self._controller.config.fields, axis="Y2")
 
             self._axes_y1.set_xlabel("Time")
             self._axes_y1.set_ylabel(y1_axis.label or "Y1")
             self._axes_y2.set_ylabel(y2_axis.label or "Y2")
+            self._axes_y1.yaxis.set_label_position("left")
+            self._axes_y1.yaxis.tick_left()
+            self._axes_y2.yaxis.set_label_position("right")
+            self._axes_y2.yaxis.tick_right()
 
             # Only primary axis shows x labels
             self._axes_y2.tick_params(axis="x", which="both", bottom=False, top=False, labelbottom=False)
@@ -432,7 +447,11 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
 
             if y1_axis.min_value is not None or y1_axis.max_value is not None:
                 self._axes_y1.set_ylim(bottom=y1_axis.min_value, top=y1_axis.max_value)
-            if y2_axis.min_value is not None or y2_axis.max_value is not None:
+            if y2_binary_step:
+                self._axes_y2.set_ylim(bottom=-0.1, top=1.15)
+                self._axes_y2.set_yticks([0.0, 1.0])
+                self._axes_y2.set_yticklabels(["0", "1"])
+            elif y2_axis.min_value is not None or y2_axis.max_value is not None:
                 self._axes_y2.set_ylim(bottom=y2_axis.min_value, top=y2_axis.max_value)
 
             if visible_samples:
@@ -455,6 +474,16 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
                 self._axes_y1.tick_params(axis="x", labelbottom=True)
 
             self._axes_y1.grid(True)
+
+        def set_initial_position(self, *, slot_index: int, group_offset: int = 0) -> None:
+            if self._initial_position_applied:
+                return
+            offset_index = slot_index + max(0, group_offset) * 2
+            self.move(
+                self._BASE_X + offset_index * self._OFFSET_X,
+                self._BASE_Y + offset_index * self._OFFSET_Y,
+            )
+            self._initial_position_applied = True
 
         @staticmethod
         def _build_tick_positions(count: int) -> list[int]:
@@ -531,3 +560,16 @@ def _to_matplotlib_linestyle(value: str | None) -> str:
         "dashdot": "-.",
     }
     return mapping.get(normalized, "-")
+
+
+def _uses_binary_step_axis(fields, *, axis: str) -> bool:
+    for field in fields:
+        if not getattr(field, "active", False):
+            continue
+        if not getattr(field, "plot", False):
+            continue
+        if getattr(field, "axis", "Y1") != axis:
+            continue
+        if getattr(field, "render_style", "Line") == "Step":
+            return True
+    return False

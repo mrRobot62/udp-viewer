@@ -224,6 +224,11 @@ class VisualizerManager:
                 window_size_presets=self.preferences.visualizer_presets,
             )
 
+        if hasattr(window, "set_initial_position"):
+            window.set_initial_position(
+                slot_index=slot_id.slot_index,
+                group_offset=1 if slot_id.graph_type == "logic" else 0,
+            )
         self.windows_by_slot[slot_id] = window
         return window
 

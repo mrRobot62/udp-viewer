@@ -15,11 +15,15 @@ def drain_replay_batch(lines: Deque[str], lines_per_tick: int) -> List[str]:
     return batch
 
 
-def build_temperature_replay_sample() -> List[str]:
+def build_client_temperature_replay_sample() -> List[str]:
     return [
-        "[CSV_TEMP];14047;2633;228;14220;2666;221;0;0;1",
+        "[CSV_CLIENT_TEMP];14047;2633;228;14220;2666;221;0;0;1",
     ]
 
+def build_host_temperature_replay_sample() -> List[str]:
+    return [
+        "[CSV_HOST_TEMP];251;252;450;400;500;0",
+    ]
 
 def build_text_replay_sample() -> List[str]:
     return [
@@ -92,9 +96,16 @@ def next_text_simulation_line(state: TextSimulationState) -> str:
     return "[HOST/ERROR] UART timeout while polling STATUS"
 
 
-def next_logic_simulation_line(state: list[int]) -> str:
+def next_client_logic_simulation_line(state: list[int]) -> str:
     for index in range(len(state)):
         if random.random() < 0.2:
             state[index] ^= 1
     values = ";".join(str(value) for value in state)
-    return f"[CSV_LOGIC];{values}"
+    return f"[CSV_CLIENT_LOGIC];{values}"
+
+def next_host_logic_simulation_line(state: list[int]) -> str:
+    for index in range(len(state)):
+        if random.random() < 0.2:
+            state[index] ^= 1
+    values = ";".join(str(value) for value in state)
+    return f"[CSV_HOST_LOGIC];{values}"
