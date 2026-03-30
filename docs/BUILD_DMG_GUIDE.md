@@ -10,20 +10,44 @@ It is intended to be re-used regularly (release builds and test builds).
 ### macOS
 - Python 3.12 (recommended, matches current project)
 - A project virtual environment (venv)
+- Xcode Command Line Tools available
+
+Recommended working directory:
+
+```bash
+cd /Users/bernhardklein/workspace/python/udp-viewer
+```
 
 ### Python packages (inside your venv)
-Install/update the packaging tools:
+Activate the project environment first:
+
+```bash
+source .venv/bin/activate
+```
+
+Install/update the packaging tools and the project itself:
 
 ```bash
 python -m pip install -U pip
 python -m pip install -U cx_Freeze dmgbuild
+python -m pip install -e .[dev]
 ```
 
 Quick check:
 
 ```bash
-python -m pip list | grep -E "cx_Freeze|dmgbuild"
+python -m pip show cx_Freeze
+python -m pip show dmgbuild
+python -c "import udp_log_viewer; print('package-ok')"
 ```
+
+Important:
+
+- `./build_dmg.sh` uses the currently active Python interpreter
+- if `cx_Freeze` is missing in that interpreter, the build stops with
+  `ModuleNotFoundError: No module named 'cx_Freeze'`
+- for this repository, installing only into `base` or another venv is
+  not sufficient
 
 ---
 
@@ -43,14 +67,17 @@ This guide assumes:
 
 ## 3) Versioning (PEP 440)
 
-Set `APP_VERSION` and the packaging version to a valid semantic version, e.g.:
+Set the package version to a valid semantic version, e.g.:
 
 - ✅ `0.14.0`
 - ❌ `0.14-step10.3-bdist_dmg`  (invalid for packaging tools)
 
-Where to set it:
-- `src/udp_log_viewer/main.py` → `APP_VERSION = "0.14.0"`
-- `freeze_setup.py` → `version="0.14.0"`
+Current source of truth:
+
+- `src/udp_log_viewer/__init__.py` → `__version__`
+- `pyproject.toml` → `version`
+
+`freeze_setup.py` reads the package version from `udp_log_viewer`.
 
 ---
 
@@ -86,6 +113,26 @@ Expected outputs (typical):
 - `build/UDPLogViewer.app`
 - `build/UDPLogViewer.dmg`
 - sometimes also `dist/UDPLogViewer.dmg` (depends on cx_Freeze version / settings)
+
+### Recommended terminal workflow
+
+If you want to build a DMG directly from Terminal, this is the expected
+sequence:
+
+```bash
+cd /Users/bernhardklein/workspace/python/udp-viewer
+source .venv/bin/activate
+python -m pip install -U pip
+python -m pip install -U cx_Freeze dmgbuild
+python -m pip install -e .[dev]
+./build_dmg.sh
+```
+
+Equivalent direct command:
+
+```bash
+python freeze_setup.py bdist_dmg
+```
 
 ---
 

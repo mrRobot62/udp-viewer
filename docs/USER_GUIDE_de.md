@@ -255,9 +255,53 @@ Aktuell relevant:
 Typischer Arbeitsablauf:
 
 1. Visualizer-Konfiguration öffnen
-2. `filter_string` und Felder passend zur eingehenden CSV-Struktur definieren
-3. Visualizer-Fenster anzeigen
-4. passende CSV-Zeilen empfangen oder simulieren
+2. gewünschten Slot `1..5` auswählen
+3. `Slot Active` setzen sowie `filter_string` und Felder passend zur eingehenden CSV-Struktur definieren
+4. Konfiguration speichern
+5. Visualizer-Fenster anzeigen
+6. passende CSV-Zeilen empfangen oder simulieren
+
+### 9.0 Slots für Plot und Logic
+
+Sowohl für Plot als auch für Logic existieren jeweils bis zu 5
+unabhängige Slots.
+
+Jeder Slot besitzt eine eigene:
+
+- Konfiguration
+- Persistenz in der `config.ini`
+- Fensterinstanz
+- Sample-Historie bzw. Buffer
+
+Im Konfigurationsfenster stehen dafür zusätzliche Bedienelemente bereit:
+
+- `Slot`
+- `Slot Active`
+- `COPY`
+- `CLEAR`
+
+Bedeutung:
+
+- `Slot`
+  wählt den zu bearbeitenden Visualizer-Slot
+- `Slot Active`
+  bestimmt, ob dieser Slot bei `SHOW` geöffnet wird und Daten
+  verarbeitet
+- `COPY`
+  kopiert eine Slot-Konfiguration auf einen anderen Slot desselben Typs
+- `CLEAR`
+  leert den aktuellen Slot vollständig
+
+Beim Wechsel des Slots mit ungespeicherten Änderungen fragt die App, ob
+diese verworfen werden sollen.
+
+Wichtig:
+
+- `SHOW` öffnet alle aktiven Slots des gewählten Typs
+- inaktive Slots öffnen kein Fenster und sammeln keine Samples
+- leere Slots erscheinen als leere Konfigurationsseite
+- eine eingehende CSV-Zeile muss sowohl zum `filter_string` als auch zur
+  Feldanzahl des jeweiligen Slots passen
 
 ### 9.1 Sliding Window im Graph-Fenster
 
@@ -291,6 +335,8 @@ Wichtig:
 
 - der Viewer definiert die CSV-Struktur des Sendesystems nicht
 - er kann Daten nur dann visualisieren, wenn Filter-Token, Feldanzahl und Feldbedeutung zur Visualizer-Konfiguration passen
+- für Plot-Fenster muss `matplotlib` in der aktiven Python-Umgebung
+  installiert sein
 
 ## 10. Persistenz aus Anwendersicht
 

@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 import re
 
+from .visualizer_axis_config import VisualizerAxisConfig
 from .visualizer_config import VisualizerConfig
 from .visualizer_sample import VisualizerSample
 from ..preferences import DEFAULT_VISUALIZER_PRESETS
@@ -33,10 +34,12 @@ except Exception:  # pragma: no cover - fallback for non-Qt test environments
 try:
     from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
     from matplotlib.figure import Figure
+    from matplotlib.ticker import MultipleLocator
     _MATPLOTLIB_AVAILABLE = True
 except Exception:  # pragma: no cover - fallback for non-GUI test environments
     FigureCanvas = None
     Figure = None
+    MultipleLocator = None
     _MATPLOTLIB_AVAILABLE = False
 
 if TYPE_CHECKING:
@@ -114,6 +117,11 @@ class VisualizerWindow:
             widget.raise_()
             widget.activateWindow()
 
+    def set_initial_position(self, *, slot_index: int, group_offset: int = 0) -> None:
+        widget = self._ensure_widget()
+        if widget is not None and hasattr(widget, "set_initial_position"):
+            widget.set_initial_position(slot_index=slot_index, group_offset=group_offset)
+
     def close(self) -> None:
         if self._widget is not None:
             self._widget.close()
@@ -178,10 +186,15 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
         _SETTINGS_ORG = "LocalTools"
         _SETTINGS_APP = "UdpLogViewer"
         _SETTINGS_KEY = "visualizer/screenshot_dir"
+        _BASE_X = 120
+        _BASE_Y = 120
+        _OFFSET_X = 36
+        _OFFSET_Y = 28
 
         def __init__(self, controller: VisualizerWindow) -> None:
             super().__init__()
             self._controller = controller
+            self._initial_position_applied = False
 
             self.setWindowTitle(controller.config.title or "Data Visualizer")
             self.resize(980, 560)
@@ -191,6 +204,10 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
             self._axes_y1: Axes = self._figure.add_subplot(111)
             self._axes_y2: Axes = self._axes_y1.twinx()
+            self._annotation = None
+            self._series_metadata: list[dict[str, object]] = []
+            self._canvas.mpl_connect("motion_notify_event", self._on_mouse_move)
+            self._canvas.mpl_connect("axes_leave_event", self._on_mouse_leave)
 
             self._auto_refresh_checkbox = QCheckBox("Auto Refresh")
             self._auto_refresh_checkbox.setChecked(True)
@@ -347,8 +364,10 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
 
         def _render_plot(self) -> None:
             self.setWindowTitle(self._controller.config.title or "Data Visualizer")
+            self._annotation = None
             self._axes_y1.clear()
             self._axes_y2.clear()
+            self._series_metadata = []
 
             samples = self._get_visible_samples()
             plotted_y1 = False
@@ -377,9 +396,25 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
                 }
 
                 if getattr(field, "render_style", "Line") == "Step":
-                    target_axis.step(x_values, y_values, where="post", **plot_kwargs)
+                    line = target_axis.step(x_values, y_values, where="post", **plot_kwargs)[0]
                 else:
-                    target_axis.plot(x_values, y_values, **plot_kwargs)
+                    line = target_axis.plot(x_values, y_values, **plot_kwargs)[0]
+
+                numeric_values = [float(value) for value in y_values if value is not None]
+                if numeric_values:
+                    self._series_metadata.append(
+                        {
+                            "axis": target_axis,
+                            "field_name": field.field_name,
+                            "unit": field.unit,
+                            "color": line.get_color(),
+                            "x_values": list(x_values),
+                            "y_values": list(y_values),
+                            "latest": numeric_values[-1],
+                            "max": max(numeric_values),
+                            "latest_index": max(i for i, value in enumerate(y_values) if value is not None),
+                        }
+                    )
 
                 if field.axis == "Y2":
                     plotted_y2 = True
@@ -392,6 +427,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             total_count = len(self._controller.samples)
             self._status_label.setText(f"Samples: {visible_count} visible / {total_count} total")
 
+            self._draw_end_labels()
             if plotted_y1 and getattr(self._controller.config, "show_legend", True):
                 self._axes_y1.legend(loc="upper left")
             if plotted_y2 and getattr(self._controller.config, "show_legend", True):
@@ -417,10 +453,13 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             x_axis = self._controller.config.x_axis
             y1_axis = self._controller.config.y1_axis
             y2_axis = self._controller.config.y2_axis
+            y2_binary_step = _uses_binary_step_axis(self._controller.config.fields, axis="Y2")
 
             self._axes_y1.set_xlabel("Time")
             self._axes_y1.set_ylabel(y1_axis.label or "Y1")
             self._axes_y2.set_ylabel(y2_axis.label or "Y2")
+            self._apply_axis_visual_identity(self._axes_y1, label_color="#202020", spine_side="left")
+            self._apply_axis_visual_identity(self._axes_y2, label_color="#8a2b2b", spine_side="right")
 
             # Only primary axis shows x labels
             self._axes_y2.tick_params(axis="x", which="both", bottom=False, top=False, labelbottom=False)
@@ -432,8 +471,14 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
 
             if y1_axis.min_value is not None or y1_axis.max_value is not None:
                 self._axes_y1.set_ylim(bottom=y1_axis.min_value, top=y1_axis.max_value)
-            if y2_axis.min_value is not None or y2_axis.max_value is not None:
+            self._apply_tick_config(self._axes_y1, y1_axis)
+            if y2_binary_step:
+                self._axes_y2.set_ylim(bottom=-0.1, top=1.15)
+                self._axes_y2.set_yticks([0.0, 1.0])
+                self._axes_y2.set_yticklabels(["0", "1"])
+            elif y2_axis.min_value is not None or y2_axis.max_value is not None:
                 self._axes_y2.set_ylim(bottom=y2_axis.min_value, top=y2_axis.max_value)
+                self._apply_tick_config(self._axes_y2, y2_axis)
 
             if visible_samples:
                 self._axes_y1.set_xlim(left=0, right=max(len(visible_samples) - 1, 1))
@@ -455,6 +500,176 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
                 self._axes_y1.tick_params(axis="x", labelbottom=True)
 
             self._axes_y1.grid(True)
+            self._axes_y1.grid(True, which="minor", alpha=0.25)
+            self._axes_y2.grid(False)
+
+        def _apply_tick_config(self, axis: Axes, axis_config: VisualizerAxisConfig) -> None:
+            if MultipleLocator is None or axis_config.logarithmic:
+                return
+            major_step = self._normalized_major_tick_step(axis_config)
+            if major_step is not None:
+                axis.yaxis.set_major_locator(MultipleLocator(major_step))
+            if self._is_temperature_axis(axis_config):
+                axis.yaxis.set_minor_locator(MultipleLocator(5.0))
+
+        @staticmethod
+        def _is_temperature_axis(axis_config: VisualizerAxisConfig) -> bool:
+            label = (axis_config.label or "").strip().lower()
+            return "temp" in label or "temperature" in label
+
+        @staticmethod
+        def _normalized_major_tick_step(axis_config: VisualizerAxisConfig) -> float | None:
+            step = axis_config.major_tick_step
+            if step is None or step <= 0:
+                return None
+            max_value = axis_config.max_value
+            upper_bound = max(1.0, (max_value / 5.0) if max_value is not None and max_value > 0 else step)
+            return min(max(1.0, step), upper_bound)
+
+        def _draw_end_labels(self) -> None:
+            if not self._series_metadata:
+                return
+            for meta in self._series_metadata:
+                axis = meta["axis"]
+                latest_value = meta["latest"]
+                latest_index = meta["latest_index"]
+                color = meta["color"]
+                axis.annotate(
+                    _format_plot_value(latest_value),
+                    xy=(latest_index, latest_value),
+                    xytext=(8, 0),
+                    textcoords="offset points",
+                    ha="left",
+                    va="center",
+                    color=color,
+                    fontsize=9,
+                    bbox={
+                        "boxstyle": "round,pad=0.2",
+                        "facecolor": "white",
+                        "edgecolor": color,
+                        "alpha": 0.88,
+                    },
+                    annotation_clip=False,
+                )
+
+        def _apply_axis_visual_identity(self, axis: Axes, *, label_color: str, spine_side: str) -> None:
+            axis.yaxis.set_label_position(spine_side)
+            if spine_side == "left":
+                axis.yaxis.tick_left()
+            else:
+                axis.yaxis.tick_right()
+            axis.tick_params(axis="y", colors=label_color)
+            axis.yaxis.label.set_color(label_color)
+            axis.spines[spine_side].set_color(label_color)
+
+        def _on_mouse_move(self, event) -> None:
+            if event.inaxes not in (self._axes_y1, self._axes_y2):
+                self._hide_annotation()
+                return
+            if event.xdata is None or event.ydata is None:
+                self._hide_annotation()
+                return
+
+            match = self._find_hover_match(event)
+            if match is None:
+                self._hide_annotation()
+                return
+
+            axis = match["axis"]
+            x_value = match["x"]
+            y_value = match["y"]
+            color = match["color"]
+            tooltip = (
+                f"{match['field_name']}: {_format_plot_value(y_value, match['unit'])} | "
+                f"Latest: {_format_plot_value(match['latest'], match['unit'])} | "
+                f"Max: {_format_plot_value(match['max'], match['unit'])}"
+            )
+            if self._annotation is None:
+                self._annotation = axis.annotate(
+                    tooltip,
+                    xy=(x_value, y_value),
+                    xytext=(14, 14),
+                    textcoords="offset points",
+                    bbox={"boxstyle": "round,pad=0.25", "facecolor": "#fffff0", "edgecolor": color, "alpha": 0.95},
+                    color="#202020",
+                    fontsize=9,
+                    annotation_clip=False,
+                )
+            else:
+                if self._annotation.axes is not axis:
+                    self._annotation.set_visible(False)
+                    self._annotation = axis.annotate(
+                        tooltip,
+                        xy=(x_value, y_value),
+                        xytext=(14, 14),
+                        textcoords="offset points",
+                        bbox={"boxstyle": "round,pad=0.25", "facecolor": "#fffff0", "edgecolor": color, "alpha": 0.95},
+                        color="#202020",
+                        fontsize=9,
+                        annotation_clip=False,
+                    )
+                else:
+                    self._annotation.xy = (x_value, y_value)
+                    self._annotation.set_text(tooltip)
+                    self._annotation.set_visible(True)
+                    if self._annotation.get_bbox_patch() is not None:
+                        self._annotation.get_bbox_patch().set_edgecolor(color)
+            self._canvas.draw_idle()
+
+        def _on_mouse_leave(self, event) -> None:
+            self._hide_annotation()
+
+        def _hide_annotation(self) -> None:
+            if self._annotation is None:
+                return
+            self._annotation.set_visible(False)
+            self._canvas.draw_idle()
+
+        def _find_hover_match(self, event) -> dict[str, object] | None:
+            best_match = None
+            best_distance = None
+            hover_threshold_px = 18.0
+            for meta in self._series_metadata:
+                x_values = meta["x_values"]
+                y_values = meta["y_values"]
+                if not x_values:
+                    continue
+                axis = meta["axis"]
+                nearest_index = None
+                nearest_distance = None
+                for idx, (x_value, y_value) in enumerate(zip(x_values, y_values)):
+                    if y_value is None:
+                        continue
+                    screen_x, screen_y = axis.transData.transform((float(x_value), float(y_value)))
+                    distance = ((float(screen_x) - float(event.x)) ** 2 + (float(screen_y) - float(event.y)) ** 2) ** 0.5
+                    if nearest_distance is None or distance < nearest_distance:
+                        nearest_distance = distance
+                        nearest_index = idx
+                if nearest_index is None or nearest_distance is None:
+                    continue
+                if nearest_distance > hover_threshold_px:
+                    continue
+                y_value = y_values[nearest_index]
+                if y_value is None:
+                    continue
+                if best_distance is None or nearest_distance < best_distance:
+                    best_distance = nearest_distance
+                    best_match = {
+                        **meta,
+                        "x": x_values[nearest_index],
+                        "y": float(y_value),
+                    }
+            return best_match
+
+        def set_initial_position(self, *, slot_index: int, group_offset: int = 0) -> None:
+            if self._initial_position_applied:
+                return
+            offset_index = slot_index + max(0, group_offset) * 2
+            self.move(
+                self._BASE_X + offset_index * self._OFFSET_X,
+                self._BASE_Y + offset_index * self._OFFSET_Y,
+            )
+            self._initial_position_applied = True
 
         @staticmethod
         def _build_tick_positions(count: int) -> list[int]:
@@ -531,3 +746,25 @@ def _to_matplotlib_linestyle(value: str | None) -> str:
         "dashdot": "-.",
     }
     return mapping.get(normalized, "-")
+
+
+def _format_plot_value(value: float | int | None, unit: str = "") -> str:
+    if value is None:
+        return "-"
+    formatted = f"{float(value):.3f}".rstrip("0").rstrip(".")
+    if unit:
+        return f"{formatted} {unit}"
+    return formatted
+
+
+def _uses_binary_step_axis(fields, *, axis: str) -> bool:
+    for field in fields:
+        if not getattr(field, "active", False):
+            continue
+        if not getattr(field, "plot", False):
+            continue
+        if getattr(field, "axis", "Y1") != axis:
+            continue
+        if getattr(field, "render_style", "Line") == "Step":
+            return True
+    return False

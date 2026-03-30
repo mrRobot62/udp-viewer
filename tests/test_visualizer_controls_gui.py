@@ -23,9 +23,9 @@ def main() -> int:
     manager.show_window(0)
 
     samples = [
-        "[CSV_TEMP];0;0;1207;0;0;517;1;1;2",
-        "[CSV_TEMP];0;0;1213;0;0;518;1;1;2",
-        "[CSV_TEMP];0;0;1218;0;0;521;1;1;2",
+        "[CSV_CLIENT_PLOT];0;0;1207;0;0;517;1;1;2",
+        "[CSV_CLIENT_PLOT];0;0;1213;0;0;518;1;1;2",
+        "[CSV_CLIENT_PLOT];0;0;1218;0;0;521;1;1;2",
     ]
 
     def feed() -> None:

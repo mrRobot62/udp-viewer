@@ -7,6 +7,41 @@ The format is based on Keep a Changelog and follows semantic versioning
 principles where applicable.
 
 ------------------------------------------------------------------------
+## 0.15.2 -- 2026-03-29
+### Improved
+
+-   Expanded plot and logic visualizers to support up to 5 independent
+    slots each
+-   Reworked the plot and logic configuration dialogs with dedicated
+    slot controls, clearer layout, and direct slot-to-slot copy support
+-   Changed `SHOW` behavior so all active slots of the selected
+    visualizer type are opened at once
+-   Added runtime diagnostics for skipped or unavailable visualizer
+    slots in the main log view
+
+### Added
+
+-   Per-slot persistence for plot and logic visualizers in `config.ini`
+-   `COPY` and `CLEAR` actions in both visualizer configuration dialogs
+-   Automatic migration from legacy `visualizer_1..5` sections to the
+    new plot/logic slot schema
+
+### Fixed
+
+-   Prevented inactive visualizer slots from opening windows or
+    buffering samples
+-   Clarified Visual Studio Code debug setup for the repository `src`
+    layout
+
+### Technical
+
+-   Bumped application and package version metadata to `0.15.2`
+-   Added `matplotlib` as an explicit runtime dependency for plot
+    windows
+-   Expanded automated coverage for slot persistence, migration,
+    multi-slot routing, and window handling
+
+------------------------------------------------------------------------
 ## 0.15.1 -- 2026-03-27
 ### Improved
 

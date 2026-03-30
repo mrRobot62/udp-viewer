@@ -7,7 +7,7 @@ from udp_log_viewer.replay_simulation import (
     build_temperature_replay_sample,
     build_text_replay_sample,
     drain_replay_batch,
-    next_logic_simulation_line,
+    next_client_logic_simulation_line,
     next_text_simulation_line,
 )
 from udp_log_viewer.rule_slots import (
@@ -57,7 +57,7 @@ def test_replay_samples_are_non_empty() -> None:
 
 def test_simulation_helpers_emit_expected_prefixes() -> None:
     text_line = next_text_simulation_line(TextSimulationState())
-    logic_line = next_logic_simulation_line([0] * 8)
+    logic_line = next_client_logic_simulation_line([0] * 8)
 
     assert text_line.startswith("[")
-    assert logic_line.startswith("[CSV_LOGIC];")
+    assert logic_line.startswith("[CSV_CLIENT_LOGIC];")
