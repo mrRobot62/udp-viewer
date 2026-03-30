@@ -14,17 +14,17 @@ def main() -> None:
 
     lines = [
         # Variant A: strict CSV
-        "20260323-22:32:19.277;[CSV_TEMP];0;0;1207;0;0;517;1;1;2",
+        "20260323-22:32:19.277;[CSV_CLIENT_PLOT];0;0;1207;0;0;517;1;1;2",
         # Variant B: spaces around delimiter
-        "20260323-22:32:19.403 ; [CSV_TEMP] ; 0 ; 0 ; 1213 ; 0 ; 0 ; 518 ; 1 ; 1 ; 2",
+        "20260323-22:32:19.403 ; [CSV_CLIENT_PLOT] ; 0 ; 0 ; 1213 ; 0 ; 0 ; 518 ; 1 ; 1 ; 2",
         # Variant C: timestamp and filter in first field
-        "20260323-22:32:19.528 [CSV_TEMP];0;0;1218;0;0;521;1;1;2",
+        "20260323-22:32:19.528 [CSV_CLIENT_PLOT];0;0;1218;0;0;521;1;1;2",
         # Variant D: no timestamp field
-        "[CSV_TEMP];0;0;1231;0;0;523;1;1;2",
+        "[CSV_CLIENT_PLOT];0;0;1231;0;0;523;1;1;2",
         # Negative case: wrong filter
         "20260323-22:32:19.652;[CSV_OTHER];0;0;1235;0;0;524;1;1;2",
         # Negative case: wrong field count
-        "20260323-22:32:19.777;[CSV_TEMP];0;0;1240;0;0;527;1;1",
+        "20260323-22:32:19.777;[CSV_CLIENT_PLOT];0;0;1240;0;0;527;1;1",
     ]
 
     for line in lines:

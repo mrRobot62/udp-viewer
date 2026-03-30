@@ -92,11 +92,15 @@ class VisualizerConfigDialog(QDialog):
         self._y1_log = QCheckBox("Y1 Logarithmic")
         self._y1_min = self._build_float_spin(None)
         self._y1_max = self._build_float_spin(None)
+        self._y1_major_tick_step = self._build_float_spin(None)
+        self._y1_max.valueChanged.connect(self._sync_tick_step_ranges)
 
         self._y2_label = QLineEdit()
         self._y2_log = QCheckBox("Y2 Logarithmic")
         self._y2_min = self._build_float_spin(None)
         self._y2_max = self._build_float_spin(None)
+        self._y2_major_tick_step = self._build_float_spin(None)
+        self._y2_max.valueChanged.connect(self._sync_tick_step_ranges)
 
         axes_layout.addWidget(QLabel("X Label"), 0, 0)
         axes_layout.addWidget(self._x_label, 0, 1)
@@ -107,6 +111,8 @@ class VisualizerConfigDialog(QDialog):
         axes_layout.addWidget(self._y1_min, 2, 1)
         axes_layout.addWidget(QLabel("Y1 Max"), 2, 2)
         axes_layout.addWidget(self._y1_max, 2, 3)
+        axes_layout.addWidget(QLabel("Y1 Tick Step"), 2, 4)
+        axes_layout.addWidget(self._y1_major_tick_step, 2, 5)
 
         axes_layout.addWidget(QLabel("Y2 Label"), 3, 0)
         axes_layout.addWidget(self._y2_label, 3, 1)
@@ -115,6 +121,8 @@ class VisualizerConfigDialog(QDialog):
         axes_layout.addWidget(self._y2_min, 4, 1)
         axes_layout.addWidget(QLabel("Y2 Max"), 4, 2)
         axes_layout.addWidget(self._y2_max, 4, 3)
+        axes_layout.addWidget(QLabel("Y2 Tick Step"), 4, 4)
+        axes_layout.addWidget(self._y2_major_tick_step, 4, 5)
 
         root.addLayout(axes_layout)
 
@@ -163,12 +171,19 @@ class VisualizerConfigDialog(QDialog):
         self._x_label.setText(config.x_axis.label)
         self._y1_label.setText(config.y1_axis.label)
         self._y1_log.setChecked(config.y1_axis.logarithmic)
-        self._y1_min.setValue(config.y1_axis.min_value if config.y1_axis.min_value is not None else -99999.0)
-        self._y1_max.setValue(config.y1_axis.max_value if config.y1_axis.max_value is not None else -99999.0)
+        self._y1_min.setValue(config.y1_axis.min_value if config.y1_axis.min_value is not None else 0)
+        self._y1_max.setValue(config.y1_axis.max_value if config.y1_axis.max_value is not None else 0)
+        self._y1_major_tick_step.setValue(
+            config.y1_axis.major_tick_step if config.y1_axis.major_tick_step is not None else 10
+        )
         self._y2_label.setText(config.y2_axis.label)
         self._y2_log.setChecked(config.y2_axis.logarithmic)
-        self._y2_min.setValue(config.y2_axis.min_value if config.y2_axis.min_value is not None else -99999.0)
-        self._y2_max.setValue(config.y2_axis.max_value if config.y2_axis.max_value is not None else -99999.0)
+        self._y2_min.setValue(config.y2_axis.min_value if config.y2_axis.min_value is not None else 0)
+        self._y2_max.setValue(config.y2_axis.max_value if config.y2_axis.max_value is not None else 0)
+        self._y2_major_tick_step.setValue(
+            config.y2_axis.major_tick_step if config.y2_axis.major_tick_step is not None else 10
+        )
+        self._sync_tick_step_ranges()
         self._table.setRowCount(0)
         for field in config.fields:
             self._append_row(field)
@@ -216,12 +231,14 @@ class VisualizerConfigDialog(QDialog):
                 logarithmic=self._y1_log.isChecked(),
                 min_value=self._spin_value_or_none(self._y1_min),
                 max_value=self._spin_value_or_none(self._y1_max),
+                major_tick_step=self._positive_spin_value_or_none(self._y1_major_tick_step),
             ),
             y2_axis=VisualizerAxisConfig(
                 label=self._y2_label.text().strip(),
                 logarithmic=self._y2_log.isChecked(),
                 min_value=self._spin_value_or_none(self._y2_min),
                 max_value=self._spin_value_or_none(self._y2_max),
+                major_tick_step=self._positive_spin_value_or_none(self._y2_major_tick_step),
             ),
             fields=fields,
         )
@@ -277,15 +294,37 @@ class VisualizerConfigDialog(QDialog):
 
     def _build_float_spin(self, value: float | None) -> QDoubleSpinBox:
         spin = QDoubleSpinBox()
-        spin.setRange(-99999.0, 99999.0)
+        spin.setRange(0, 99999.0)
         spin.setDecimals(2)
         spin.setSpecialValueText("")
-        spin.setValue(value if value is not None else -99999.0)
+        spin.setValue(value if value is not None else 0)
         return spin
 
     @staticmethod
     def _spin_value_or_none(spin: QDoubleSpinBox) -> float | None:
-        return None if spin.value() <= -99999.0 else float(spin.value())
+        return None if spin.value() <= 0 else float(spin.value())
+
+    @staticmethod
+    def _positive_spin_value_or_none(spin: QDoubleSpinBox) -> float | None:
+        value = VisualizerConfigDialog._spin_value_or_none(spin)
+        if value is None or value <= 0:
+            return None
+        return value
+
+    def _sync_tick_step_ranges(self) -> None:
+        self._sync_single_tick_step_range(self._y1_max, self._y1_major_tick_step)
+        self._sync_single_tick_step_range(self._y2_max, self._y2_major_tick_step)
+
+    @staticmethod
+    def _sync_single_tick_step_range(max_spin: QDoubleSpinBox, step_spin: QDoubleSpinBox) -> None:
+        max_value = VisualizerConfigDialog._spin_value_or_none(max_spin)
+        max_step = max(1.0, (max_value / 5.0) if max_value is not None and max_value > 0 else 100.0)
+        step_spin.blockSignals(True)
+        step_spin.setRange(-99999.0, max_step)
+        current_value = step_spin.value()
+        if current_value != -99999.0:
+            step_spin.setValue(min(max(1.0, current_value), max_step))
+        step_spin.blockSignals(False)
 
     def _combo_text(self, row: int, col: int) -> str:
         combo = self._table.cellWidget(row, col)

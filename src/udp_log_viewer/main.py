@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import datetime as _dt
 import os
-import random
 import socket
 import sys
 from collections import deque
@@ -57,13 +56,14 @@ from .listener_runtime import (
     stop_listener_thread,
 )
 from .replay_simulation import (
+    TemperaturePlotSimulationState,
     TextSimulationState,
-    build_client_temperature_replay_sample,
-    build_host_temperature_replay_sample,
+    build_temperature_replay_sample,
     build_text_replay_sample,
+    create_temperature_plot_simulation_state,
     drain_replay_batch,
     next_client_logic_simulation_line,
-    next_host_logic_simulation_line,
+    next_temperature_plot_simulation_lines,
     next_text_simulation_line,
 )
 from .rule_slots import (
@@ -234,10 +234,7 @@ class MainWindow(QMainWindow):
         self._sim_temperature_timer = QTimer(self)
         self._sim_temperature_timer.setInterval(250)  # ms
         self._sim_temperature_timer.timeout.connect(self._on_sim_temperature_tick)
-        self._sim_temperature_seq = 0
-        self._sim_temperature_running=False
-        self._sim_temperature_heater = 0
-        # self._sim_temperature_mask = 0x0000
+        self._sim_temperature_state: TemperaturePlotSimulationState = create_temperature_plot_simulation_state()
 
         self._sim_logic_enabled = False
         self._sim_logic_timer = QTimer(self)
@@ -1186,24 +1183,9 @@ class MainWindow(QMainWindow):
         if self._sim_temperature_timer.isActive():
             return
         self._sim_temperature_enabled = True
-        self._sim_temperature_seq = 0
-        self._sim_temperature_ntc_chamber = 21.9
-        self._sim_temperature_ntc_hotspot = 21.5
-        self._sim_temperature_ntc_chamber_tgt = 60.0
-        #self._sim_temperature_ntc_chamber_tgt = 100.0
-        self._sim_temperature_heater = 0
-        self._sim_temperature_max_hotspot = 150.0
-        self._sim_temperature_min_hotspot_on = 2.0
-        self._sim_temperature_max_hotspot_on = 5.0
-        self._sim_temperature_chamber_lower_offset = 3.0    # target = 45, min target = 45-5 = 40
-        self._sim_temperature_chamber_upper_offset = 5.0    # target = 45, max target = 45+5 = 50
-        self._sim_temperature_chamber_increase_deg = 0.3
-        self._sim_temperature_hotspot_increase_deg = 0.9
-        self._sim_temperature_multiplier_degrees = 10
-        self._sim_temperature_heater = 0
-        self._sim_temperature_mask = 0x0000
+        self._sim_temperature_state = create_temperature_plot_simulation_state()
         self._sim_temperature_timer.start()
-        self.statusBar().showMessage("Simulation (TEMP): ON (default profile)", 2500)
+        self.statusBar().showMessage("Simulation (PLOT): ON (default profile)", 2500)
 
 
     def _stop_simulation(self) -> None:
@@ -1216,7 +1198,7 @@ class MainWindow(QMainWindow):
         self._sim_temperature_enabled = False
         if self._sim_temperature_timer.isActive():
             self._sim_temperature_timer.stop()
-        self.statusBar().showMessage("Simulation (TEMP): OFF", 1500)
+        self.statusBar().showMessage("Simulation (PLOT): OFF", 1500)
 
 
     def _on_sim_tick(self) -> None:
@@ -1233,93 +1215,8 @@ class MainWindow(QMainWindow):
     def _on_sim_temperature_tick(self) -> None:
         if not self._sim_temperature_enabled or self._listener is None:
             return
-        line = self._sim_next_temperature_line(0)
-        self._on_line_received(line)
-
-
-    def _is_in_range(self, value: float, target: float, lower_offset: float, upper_offset: float) -> bool:
-        return (target - lower_offset) <= value <= (target + upper_offset)
-    
-    def _is_lt_than(self, value: float, target: float, offset:float) -> bool:
-        return value < (target - offset)
-
-    def _is_gt_than(self, value: float, target: float, offset:float) -> bool:
-        return value > (target + offset)
-
-
-    def _sim_next_temperature_line(self, mode=0) -> str:
-        self._sim_temperature_seq += 1
-        # ------------------------------------------------------------------------------------------------------------------------------------------
-        # This simulation profile creates a situation in which the chamber temperature (Chamber) rises continuously, but the hotspot NTC temperature (Core) rises faster. 
-        # This fact corresponds to reality, as the hotspot NTC is located near the heating coil.
-        # The chamber temperature may exceed the set target value by a maximum of 5 degrees and differ by 5 degrees. Thus, we have a range of 10 degrees.
-        # Since we are working with a slow environment, the heater must be deactivated early to avoid overshooting as much as possible.
-        # The minimum heater-on time must not be less than 2 seconds, as we do not have a PWM-controlled system.
-        # If the target temperature has not been reached and the heater is off, the system waits n seconds (the time constant) until the heater turns on again 
-        # for 2-5 seconds. 
-        # If the chamber temperature reaches the target temperature minus 5 degrees, the heater remains off until this target temperature minus 5 degrees is again exceeded.
-        # ------------------------------------------------------------------------------------------------------------------------------------------
-
-        # if self._sim_temperature_seq == 10: # do not start earlier as xxx ticks (100=10 seconds)
-        #     self._sim_temperature_heater = 1 
-        #     self._sim_temperature_running = True
-        self._sim_temperature_running = True
-
-        if not self._sim_temperature_running:
-            # before starting the simulation, keep the temperature stable
-            self._sim_temperature_ntc_chamber = 21.9
-            self._sim_temperature_ntc_hotspot = 21.5
-            self._sim_temperature_heater = False
-            return ""
-
-        if self._sim_temperature_heater:
-            self._sim_temperature_ntc_chamber += self._sim_temperature_chamber_increase_deg * (random.random() * 1.5) # chamber heats up slower than hotspot (slow environment)
-            self._sim_temperature_ntc_hotspot += self._sim_temperature_hotspot_increase_deg * (random.random() * 1.75)
-        else:
-            self._sim_temperature_ntc_chamber -= (0.1 * (random.random() * 1.2)) # chamber cools down slower than hotspot (slow environment)
-            self._sim_temperature_ntc_hotspot -= (0.5 * (random.random() * 1.5)) # hotspot cools down faster than chamber
-
-        # self._sim_temperature_ntc_chamber = max(self._sim_temperature_ntc_chamber_tgt, min(self._sim_temperature_ntc_chamber_tgt, self._sim_temperature_ntc_chamber))
-        # self._sim_temperature_ntc_hotspot = max(self._sim_temperature_max_hotspot, min(self._sim_temperature_max_hotspot, self._sim_temperature_ntc_hotspot))
-
-        # system is running, but chamber not in temp range and heater is off? If yes heater = on
-        # if (
-        #     self._sim_temperature_ntc_chamber
-        #     < (self._sim_temperature_ntc_chamber_tgt - self._sim_temperature_chamber_lower_offset)
-        #     and not self._sim_temperature_heater
-        # ):
-        #     self._sim_temperature_heater = 1  # turn on heater if chamber is below target minus x degrees
-        
-
-        # is chamber in temp range? If yes heater = off
-        if (
-            self._sim_temperature_ntc_chamber
-            > (self._sim_temperature_ntc_chamber_tgt - self._sim_temperature_chamber_lower_offset)
-            or (
-                self._sim_temperature_ntc_chamber
-                > self._sim_temperature_ntc_chamber_tgt + self._sim_temperature_chamber_upper_offset
-                and self._sim_temperature_heater
-            )
-        ):
-            self._sim_temperature_heater = 0  # turn off heater once the chamber is in range
-
-        # if heater overheated? If yes heater = off
-        if self._sim_temperature_ntc_hotspot > self._sim_temperature_max_hotspot:
-            self._sim_temperature_heater = 0  # turn off heater if hotspot exceeds target
-
-        return (
-            f";[CSV_CLIENT_TEMP];"
-            #f"{" ON" if self._sim_temperature_heater else "OFF"};"
-            f"0;0;"
-            f"{int(self._sim_temperature_ntc_hotspot * self._sim_temperature_multiplier_degrees):03d};" 
-            f"0;0;"
-            f"{int(self._sim_temperature_ntc_chamber * self._sim_temperature_multiplier_degrees):03d};"
-            f"{int(self._sim_temperature_heater)};"
-            f"1;" # valid flag
-            f"2" # state
-            #f"{int(self._sim_temperature_ntc_chamber_tgt  * self._sim_temperature_multiplier_degrees):03d};"
-            #f"{int(self._sim_temperature_max_hotspot  * self._sim_temperature_multiplier_degrees):03d}"
-        ) 
+        for line in next_temperature_plot_simulation_lines(self._sim_temperature_state):
+            self._on_line_received(line)
 
 
     def _on_sim_logic_tick(self) -> None:

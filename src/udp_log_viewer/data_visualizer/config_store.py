@@ -28,7 +28,7 @@ class ConfigStore:
         self._preferences = preferences or AppPreferences()
 
     def load_slot_configs(self) -> dict[VisualizerGraphType, list[VisualizerConfig]]:
-        configs = self._build_empty_slot_config_map()
+        configs = self._build_default_slot_config_map()
         parser = self._read_parser()
         if parser is None:
             return configs
@@ -46,7 +46,10 @@ class ConfigStore:
         if has_new_schema:
             return configs
 
-        return self._load_legacy_slot_configs(parser)
+        legacy_configs = self._load_legacy_slot_configs(parser)
+        if any(config.enabled and config.filter_string for config in legacy_configs["plot"] + legacy_configs["logic"]):
+            return legacy_configs
+        return configs
 
     def save_slot_configs(self, configs_by_type: dict[VisualizerGraphType, list[VisualizerConfig]]) -> None:
         if self._config_path is None:
@@ -81,6 +84,13 @@ class ConfigStore:
             "plot": [self._build_empty_config("plot") for _ in range(self.DEFAULT_VISUALIZER_COUNT)],
             "logic": [self._build_empty_config("logic") for _ in range(self.DEFAULT_VISUALIZER_COUNT)],
         }
+
+    def _build_default_slot_config_map(self) -> dict[VisualizerGraphType, list[VisualizerConfig]]:
+        configs = self._build_empty_slot_config_map()
+        configs["plot"][0] = self._build_default_csv_temp_config(self._preferences)
+        configs["plot"][1] = self._build_default_csv_host_plot_config(self._preferences)
+        configs["logic"][0] = self._build_default_logic_config(self._preferences)
+        return configs
 
     def _load_legacy_slot_configs(
         self,
@@ -145,11 +155,21 @@ class ConfigStore:
         parser.set(section, "y1_logarithmic", str(bool(config.y1_axis.logarithmic)).lower())
         parser.set(section, "y1_min", "" if config.y1_axis.min_value is None else str(config.y1_axis.min_value))
         parser.set(section, "y1_max", "" if config.y1_axis.max_value is None else str(config.y1_axis.max_value))
+        parser.set(
+            section,
+            "y1_major_tick_step",
+            "" if config.y1_axis.major_tick_step is None else str(config.y1_axis.major_tick_step),
+        )
 
         parser.set(section, "y2_label", config.y2_axis.label)
         parser.set(section, "y2_logarithmic", str(bool(config.y2_axis.logarithmic)).lower())
         parser.set(section, "y2_min", "" if config.y2_axis.min_value is None else str(config.y2_axis.min_value))
         parser.set(section, "y2_max", "" if config.y2_axis.max_value is None else str(config.y2_axis.max_value))
+        parser.set(
+            section,
+            "y2_major_tick_step",
+            "" if config.y2_axis.major_tick_step is None else str(config.y2_axis.major_tick_step),
+        )
 
         parser.set(section, "field_count", str(len(config.fields)))
         for field_index, field in enumerate(config.fields):
@@ -206,12 +226,24 @@ class ConfigStore:
             logarithmic=self._get_bool(parser, section, "y1_logarithmic", default=base_config.y1_axis.logarithmic),
             min_value=self._get_float_or_none(parser, section, "y1_min", default=base_config.y1_axis.min_value),
             max_value=self._get_float_or_none(parser, section, "y1_max", default=base_config.y1_axis.max_value),
+            major_tick_step=self._get_float_or_none(
+                parser,
+                section,
+                "y1_major_tick_step",
+                default=base_config.y1_axis.major_tick_step,
+            ),
         )
         y2_axis = VisualizerAxisConfig(
             label=parser.get(section, "y2_label", fallback=base_config.y2_axis.label),
             logarithmic=self._get_bool(parser, section, "y2_logarithmic", default=base_config.y2_axis.logarithmic),
             min_value=self._get_float_or_none(parser, section, "y2_min", default=base_config.y2_axis.min_value),
             max_value=self._get_float_or_none(parser, section, "y2_max", default=base_config.y2_axis.max_value),
+            major_tick_step=self._get_float_or_none(
+                parser,
+                section,
+                "y2_major_tick_step",
+                default=base_config.y2_axis.major_tick_step,
+            ),
         )
 
         max_samples = self._get_int(parser, section, "max_samples", default=base_config.max_samples)
@@ -228,7 +260,7 @@ class ConfigStore:
             default=base_config.default_window_size,
         )
 
-        return VisualizerConfig(
+        config = VisualizerConfig(
             enabled=self._get_bool(parser, section, "enabled", default=base_config.enabled),
             title=parser.get(section, "title", fallback=base_config.title),
             filter_string=parser.get(section, "filter_string", fallback=base_config.filter_string),
@@ -253,6 +285,34 @@ class ConfigStore:
             y2_axis=y2_axis,
             fields=fields or list(base_config.fields),
         )
+        return self._normalize_loaded_plot_config(config)
+
+    @staticmethod
+    def _normalize_loaded_plot_config(config: VisualizerConfig) -> VisualizerConfig:
+        if config.graph_type != "plot":
+            return config
+        if config.filter_string != "[CSV_HOST_PLOT]":
+            return config
+
+        field_names = [field.field_name.strip().lower() for field in config.fields]
+        legacy_host_names = ["chamber", "hotspot", "target", "chamber_min", "chamber_max", "state"]
+        if field_names != legacy_host_names:
+            return config
+
+        config.fields = [
+            VisualizerFieldConfig("Tch", active=True, numeric=True, scale=10, plot=True, axis="Y1", render_style="Line", color="blue", line_style="solid", unit="°C"),
+            VisualizerFieldConfig("Thot", active=True, numeric=True, scale=10, plot=True, axis="Y1", render_style="Line", color="red", line_style="solid", unit="°C"),
+            VisualizerFieldConfig("target", active=True, numeric=True, scale=10, plot=True, axis="Y1", render_style="Line", color="green", line_style="solid", unit="°C"),
+            VisualizerFieldConfig("temp_range", active=False, numeric=False, scale=1, plot=False, axis="Y1", render_style="Line", color="black", line_style="dashed", unit=""),
+            VisualizerFieldConfig("state", active=False, numeric=True, scale=1, plot=False, axis="Y2", render_style="Step", color="gray", line_style="dotted", unit=""),
+        ]
+        config.y1_axis.label = config.y1_axis.label or "Temperature"
+        config.y2_axis.label = config.y2_axis.label or "State"
+        if config.y2_axis.min_value is None:
+            config.y2_axis.min_value = -0.1
+        if config.y2_axis.max_value is None:
+            config.y2_axis.max_value = 3.1
+        return config
 
     def _default_config_for_type(self, graph_type: VisualizerGraphType) -> VisualizerConfig:
         if graph_type == "logic":
@@ -325,8 +385,8 @@ class ConfigStore:
         prefs = preferences or AppPreferences()
         return VisualizerConfig(
             enabled=True,
-            title="CSV_CLIENT_TEMP Graph",
-            filter_string="[CSV_CLIENT_TEMP]",
+            title="CSV_CLIENT_PLOT Graph",
+            filter_string="[CSV_CLIENT_PLOT]",
             show_legend=True,
             graph_type="plot",
             max_samples=600,
@@ -337,7 +397,7 @@ class ConfigStore:
                 continuous=True,
                 max_value=float(prefs.plot_window_size_default),
             ),
-            y1_axis=VisualizerAxisConfig(label="Temperature", min_value=0.0, max_value=160.0),
+            y1_axis=VisualizerAxisConfig(label="Temperature", min_value=0.0, max_value=160.0, major_tick_step=10.0),
             y2_axis=VisualizerAxisConfig(label="State", min_value=-0.1, max_value=3.1),
             fields=[
                 VisualizerFieldConfig("rawHot", active=True, numeric=True, scale=1, plot=False, axis="Y1", render_style="Line", color="black", line_style="solid", unit="raw"),
@@ -348,6 +408,34 @@ class ConfigStore:
                 VisualizerFieldConfig("Tch", active=True, numeric=True, scale=10, plot=True, axis="Y1", render_style="Line", color="blue", line_style="dashed", unit="°C"),
                 VisualizerFieldConfig("heater_on", active=False, numeric=True, scale=1, plot=False, axis="Y2", render_style="Step", color="orange", line_style="dotted", unit="Bool"),
                 VisualizerFieldConfig("door_open", active=False, numeric=True, scale=1, plot=False, axis="Y2", render_style="Step", color="purple", line_style="dotted", unit="Bool"),
+                VisualizerFieldConfig("state", active=False, numeric=True, scale=1, plot=False, axis="Y2", render_style="Step", color="green", line_style="dashdot", unit=""),
+            ],
+        )
+
+    @staticmethod
+    def _build_default_csv_host_plot_config(preferences: AppPreferences | None = None) -> VisualizerConfig:
+        prefs = preferences or AppPreferences()
+        return VisualizerConfig(
+            enabled=True,
+            title="CSV_HOST_PLOT Graph",
+            filter_string="[CSV_HOST_PLOT]",
+            show_legend=True,
+            graph_type="plot",
+            max_samples=600,
+            sliding_window_enabled=prefs.plot_sliding_window_default,
+            default_window_size=prefs.plot_window_size_default,
+            x_axis=VisualizerAxisConfig(
+                label="Samples",
+                continuous=True,
+                max_value=float(prefs.plot_window_size_default),
+            ),
+            y1_axis=VisualizerAxisConfig(label="Temperature", min_value=0.0, max_value=160.0, major_tick_step=10.0),
+            y2_axis=VisualizerAxisConfig(label="State", min_value=-0.1, max_value=3.1),
+            fields=[
+                VisualizerFieldConfig("Tch", active=True, numeric=True, scale=10, plot=True, axis="Y1", render_style="Line", color="blue", line_style="solid", unit="°C"),
+                VisualizerFieldConfig("Thot", active=True, numeric=True, scale=10, plot=True, axis="Y1", render_style="Line", color="red", line_style="solid", unit="°C"),
+                VisualizerFieldConfig("target", active=False, numeric=True, scale=10, plot=False, axis="Y1", render_style="Line", color="gray", line_style="dashed", unit="°C"),
+                VisualizerFieldConfig("temp_range", active=False, numeric=False, scale=1, plot=False, axis="Y1", render_style="Line", color="black", line_style="dashed", unit=""),
                 VisualizerFieldConfig("state", active=False, numeric=True, scale=1, plot=False, axis="Y2", render_style="Step", color="green", line_style="dashdot", unit=""),
             ],
         )

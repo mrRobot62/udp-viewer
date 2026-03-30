@@ -60,4 +60,4 @@ def test_simulation_helpers_emit_expected_prefixes() -> None:
     logic_line = next_client_logic_simulation_line([0] * 8)
 
     assert text_line.startswith("[")
-    assert logic_line.startswith("[CSV_LOGIC];")
+    assert logic_line.startswith("[CSV_CLIENT_LOGIC];")

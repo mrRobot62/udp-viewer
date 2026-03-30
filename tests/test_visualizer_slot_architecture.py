@@ -100,6 +100,103 @@ def test_config_store_preserves_other_ini_sections_when_saving_slots(tmp_path: P
     assert "[visualizer_1]" not in saved
 
 
+def test_config_store_uses_client_and_host_plot_defaults_without_sections(tmp_path: Path) -> None:
+    config_path = tmp_path / "config.ini"
+    config_path.write_text("[preferences]\nlanguage = de\n", encoding="utf-8")
+
+    slot_configs = ConfigStore(config_path=config_path).load_slot_configs()
+
+    assert slot_configs["plot"][0].filter_string == "[CSV_CLIENT_PLOT]"
+    assert slot_configs["plot"][1].filter_string == "[CSV_HOST_PLOT]"
+    assert slot_configs["plot"][0].enabled is True
+    assert slot_configs["plot"][1].enabled is True
+
+
+def test_config_store_migrates_legacy_host_plot_fields_to_new_layout(tmp_path: Path) -> None:
+    config_path = tmp_path / "config.ini"
+    config_path.write_text(
+        "\n".join(
+            [
+                "[plot_visualizer_2]",
+                "enabled = true",
+                "title = HOST Temp",
+                "filter_string = [CSV_HOST_PLOT]",
+                "graph_type = plot",
+                "field_count = 6",
+                "field_0_name = Chamber",
+                "field_0_active = true",
+                "field_0_numeric = true",
+                "field_0_scale = 10",
+                "field_0_plot = true",
+                "field_0_axis = Y1",
+                "field_0_render_style = Line",
+                "field_0_color = orange",
+                "field_0_line_style = solid",
+                "field_0_unit = ",
+                "field_1_name = HotSpot",
+                "field_1_active = true",
+                "field_1_numeric = true",
+                "field_1_scale = 10",
+                "field_1_plot = true",
+                "field_1_axis = Y1",
+                "field_1_render_style = Line",
+                "field_1_color = red",
+                "field_1_line_style = solid",
+                "field_1_unit = ",
+                "field_2_name = Target",
+                "field_2_active = true",
+                "field_2_numeric = true",
+                "field_2_scale = 10",
+                "field_2_plot = true",
+                "field_2_axis = Y1",
+                "field_2_render_style = Line",
+                "field_2_color = green",
+                "field_2_line_style = solid",
+                "field_2_unit = ",
+                "field_3_name = Chamber_Min",
+                "field_3_active = true",
+                "field_3_numeric = true",
+                "field_3_scale = 10",
+                "field_3_plot = true",
+                "field_3_axis = Y2",
+                "field_3_render_style = Line",
+                "field_3_color = blue",
+                "field_3_line_style = dotted",
+                "field_3_unit = ",
+                "field_4_name = Chamber_Max",
+                "field_4_active = true",
+                "field_4_numeric = true",
+                "field_4_scale = 10",
+                "field_4_plot = true",
+                "field_4_axis = Y2",
+                "field_4_render_style = Line",
+                "field_4_color = purple",
+                "field_4_line_style = solid",
+                "field_4_unit = ",
+                "field_5_name = State",
+                "field_5_active = false",
+                "field_5_numeric = false",
+                "field_5_scale = 1",
+                "field_5_plot = true",
+                "field_5_axis = Y1",
+                "field_5_render_style = Line",
+                "field_5_color = gray",
+                "field_5_line_style = dotted",
+                "field_5_unit = ",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    slot_configs = ConfigStore(config_path=config_path).load_slot_configs()
+    host_config = slot_configs["plot"][1]
+
+    assert [field.field_name for field in host_config.fields] == ["Tch", "Thot", "target", "temp_range", "state"]
+    assert host_config.fields[0].plot is True
+    assert host_config.fields[1].plot is True
+    assert host_config.fields[2].plot is True
+
+
 class _DummyWindow:
     def __init__(self) -> None:
         self.shown = False
