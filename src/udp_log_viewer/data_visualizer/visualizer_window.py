@@ -47,6 +47,11 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
 
 
+WINDOW_SIZE_MIN = 1
+WINDOW_SIZE_MAX = 5000
+WINDOW_SIZE_TOOLTIP = f"Sliding window size. Minimum: {WINDOW_SIZE_MIN}, Maximum: {WINDOW_SIZE_MAX}."
+
+
 class VisualizerWindow:
     def __init__(
         self,
@@ -172,7 +177,7 @@ class VisualizerWindow:
             parsed = self.config.default_window_size
         if parsed <= 0:
             parsed = self.config.default_window_size
-        return min(parsed, self.config.max_samples)
+        return max(WINDOW_SIZE_MIN, min(parsed, self.config.max_samples, WINDOW_SIZE_MAX))
 
     @staticmethod
     def _can_create_widget() -> bool:
@@ -228,10 +233,11 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._sliding_window_checkbox.stateChanged.connect(self._on_sliding_window_changed)
 
             self._window_size_spin = QSpinBox()
-            self._window_size_spin.setRange(10, max(10, self._controller.config.max_samples))
+            self._window_size_spin.setRange(WINDOW_SIZE_MIN, max(WINDOW_SIZE_MIN, min(self._controller.config.max_samples, WINDOW_SIZE_MAX)))
             self._window_size_spin.setSingleStep(50)
             self._window_size_spin.setKeyboardTracking(False)
             self._window_size_spin.setMinimumWidth(88)
+            self._window_size_spin.setToolTip(WINDOW_SIZE_TOOLTIP)
             self._window_size_spin.setValue(self._controller.runtime_window_size)
             self._window_size_spin.valueChanged.connect(self._on_window_size_changed)
 
@@ -255,7 +261,9 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             top_bar.addWidget(self._sliding_window_checkbox)
             for button in self._preset_buttons:
                 top_bar.addWidget(button)
-            top_bar.addWidget(QLabel("Window Size"))
+            window_size_label = QLabel("Window Size")
+            window_size_label.setToolTip(WINDOW_SIZE_TOOLTIP)
+            top_bar.addWidget(window_size_label)
             top_bar.addWidget(self._window_size_spin)
             top_bar.addWidget(self._reset_button)
             top_bar.addWidget(self._screenshot_button)
@@ -362,7 +370,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._controller.set_runtime_window_size(value)
 
         def _set_window_preset(self, value: int) -> None:
-            self._window_size_spin.setValue(min(value, self._controller.config.max_samples))
+            self._window_size_spin.setValue(min(value, self._controller.config.max_samples, WINDOW_SIZE_MAX))
 
         def _on_reset_window_clicked(self) -> None:
             self._controller.reset_runtime_window()
@@ -374,7 +382,10 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._sliding_window_checkbox.blockSignals(True)
             self._window_size_spin.blockSignals(True)
             self._sliding_window_checkbox.setChecked(self._controller.runtime_sliding_window_enabled)
-            self._window_size_spin.setMaximum(max(10, self._controller.config.max_samples))
+            self._window_size_spin.setRange(
+                WINDOW_SIZE_MIN,
+                max(WINDOW_SIZE_MIN, min(self._controller.config.max_samples, WINDOW_SIZE_MAX)),
+            )
             self._window_size_spin.setValue(self._controller.runtime_window_size)
             self._window_size_spin.setEnabled(self._controller.runtime_sliding_window_enabled)
             self._sliding_window_checkbox.blockSignals(False)

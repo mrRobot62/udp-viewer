@@ -4,7 +4,7 @@ Dieses Dokument beschreibt die aktuell implementierte Simulationslogik des UDP-V
 
 Stand der Beschreibung:
 
-- Codebasis `0.15.2`
+- Codebasis `0.16.0`
 - relevante Implementierung in [replay_simulation.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/replay_simulation.py)
 
 ## 1. Zweck

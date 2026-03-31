@@ -34,6 +34,7 @@ Die aktuelle Codebasis implementiert folgende sichtbare Funktionen:
 - CSV-basierter Datenvisualizer mit zwei Y-Achsen
 - Logic-Visualizer für bis zu 8 Kanäle
 - Sliding-Window-Steuerung direkt in Plot- und Logic-Graphen
+- Flanken- und Periodenmessung im Logic-Graphen
 - Screenshot-Export aus Visualizer-Fenstern
 - Persistenz über `QSettings` und `config.ini`
 - Plattformübergreifende Packaging-Skripte für macOS und Windows
@@ -153,7 +154,7 @@ Wenn `filter_string` passt und die Feldanzahl mit der Konfiguration übereinstim
 Das Hauptfenster enthält:
 
 - Obere Aktionsleiste
-  `SAVE`, `CLEAR`, `COPY`, `CONNECT`, `PAUSE`, `Auto-Scroll`, `Timestamp`
+  `SAVE`, `RESET`, `CLEAR`, `COPY`, `CONNECT`, `PAUSE`, `Auto-Scroll`, `Timestamp`
 - Verbindungsparameter
   Bind-IP, UDP-Port, Max-Lines
 - Filter-Bereich
@@ -164,6 +165,8 @@ Das Hauptfenster enthält:
   Hinzufügen, Bearbeiten, Entfernen und Zurücksetzen von Highlight-Slots
 - Haupt-Logansicht
 - Statusleiste
+
+`RESET` trennt den Listener, leert die flüchtige Session-Anzeige samt Puffern und bereitet sofort eine neue Live-Logdatei vor. Ein aktiver Projektkontext bleibt dabei erhalten.
 
 Menüstruktur:
 
@@ -342,7 +345,16 @@ Der Logic-Visualizer ist für binäre oder schwellwertbasierte Kanäle optimiert
 - Kanalnamen auf der Y-Achse
 - Sliding-Window-Steuerung im geöffneten Fenster
 - Cursor-Linie bei Mausbewegung
+- interaktive Flanken- und Periodenmessung per Mausklick
 - Screenshot-Export nach PNG
+
+Die Messfunktion arbeitet kanalbezogen:
+
+- Linksklick misst bis zur nächsten Flanke
+- `Shift` + Linksklick misst bis zur nächsten gleichartigen Flanke
+- während aktiver Messung pausiert die Anzeige
+- `Space` oder `Esc` löschen die Messung und setzen den vorherigen
+  Refresh-Zustand wieder ein
 
 ### 10.5 Standardprofile
 

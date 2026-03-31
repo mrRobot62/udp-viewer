@@ -8,6 +8,7 @@ Vollständige deutsche Dokumentation:
 
 - [docs/DOKUMENTATION_de.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/DOKUMENTATION_de.md)
 - [docs/USER_GUIDE_de.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/USER_GUIDE_de.md)
+- [docs/RELEASE_0.16.0.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/RELEASE_0.16.0.md)
 
 Vollständige englische Dokumentation:
 
@@ -44,10 +45,12 @@ Die aktuelle Codebasis enthält:
 - Echtzeit-UDP-Logempfang
 - Filter-, Exclude- und Highlight-Regeln
 - Live-Session-Logging
+- `RESET` im Hauptfenster für einen frischen Log-Start innerhalb derselben App-Session
 - Replay gespeicherter Logdateien
 - integrierte Simulation für Text-, Temperatur- und Logic-Traffic
 - CSV-basierte Datenvisualisierung
 - Logic-Kanal-Visualisierung
+- Flanken- und Periodenmessung direkt im Logic-Graphen
 - Sliding-Window-Steuerung direkt im Graph-Fenster
 - Packaging-Skripte für macOS und Windows
 

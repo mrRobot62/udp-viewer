@@ -19,7 +19,7 @@ Typical use cases:
 
 The main interface consists primarily of:
 
-- action row with `SAVE`, `CLEAR`, `COPY`, `CONNECT`, `PAUSE`
+- action row with `SAVE`, `RESET`, `CLEAR`, `COPY`, `CONNECT`, `PAUSE`
 - options for `Auto-Scroll` and `Timestamp`
 - input fields for `Bind-IP`, `Port`, and `Max lines`
 - areas for `Filter`, `Exclude`, and `Highlight`
@@ -136,7 +136,26 @@ This is mainly useful to:
 - reset the display for a new observation phase
 - inspect the effect of active filters or highlights more clearly
 
-### 5.3 `COPY`
+### 5.3 `RESET`
+
+`RESET` starts a new log phase inside the same application session.
+
+At the current behavior it:
+
+- clears the visible main log view
+- resets in-memory buffers and counters
+- switches `CONNECT` back to `OFF`
+- closes the current live log cleanly
+- immediately prepares a new live log file with a fresh timestamp
+- keeps an active `PROJECT` context
+
+This is useful to:
+
+- begin a new test phase without restarting the application
+- generate a fresh log file with a clean beginning
+- continue working in the same project folder
+
+### 5.4 `COPY`
 
 `COPY` copies the visible content of the main log view to the clipboard.
 
@@ -250,6 +269,70 @@ Typical workflow:
 2. define `filter_string` and fields to match the expected CSV structure
 3. show the visualizer window
 4. receive or simulate matching CSV lines
+
+### 9.1 Sliding Window in the graph window
+
+Both the plot and logic visualizers provide direct sliding-window
+controls inside the graph window.
+
+Visible controls:
+
+- `Sliding Window`
+- presets `100`, `150`, `200`, `300`
+- `Window Size`
+- `Reset`
+- `Auto Refresh`
+
+Meaning:
+
+- `Sliding Window` enabled
+  shows only the latest `N` samples
+- `Window Size`
+  controls the currently visible window size
+  valid runtime range: `1..5000`
+- presets
+  quickly set common window sizes
+- `Reset`
+  restores the runtime setting to the configured graph default
+
+Important:
+
+- changes in an open graph window are runtime overrides first
+- the persistent default comes from the visualizer configuration or the
+  global preferences
+
+### 9.2 Measuring in the logic graph
+
+The logic graph can measure time distances directly on one selected
+channel.
+
+Controls:
+
+- left click on a channel row
+  starts an edge-to-edge measurement
+- `Shift` + left click on a channel row
+  starts a period measurement
+- `Space` or `Esc`
+  clears the measurement
+
+Behavior:
+
+- the start marker snaps to the next edge of the selected channel
+- a normal click uses the next edge on that same channel as the end
+- `Shift` + click uses the next edge of the same type as the end
+- while a measurement is active, the graph pauses so the signal does not
+  continue drifting left
+- after `Space` or `Esc`, the graph resumes with the previous refresh
+  state
+
+Display:
+
+- red start line
+- blue end line
+- dashed arrow line between start and end
+- duration text in `MM:SS.mmm`
+- if the span is too short, the text is placed to the right of the blue
+  end marker
 
 Important:
 

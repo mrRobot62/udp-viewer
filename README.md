@@ -8,6 +8,7 @@ Complete English documentation:
 
 - [docs/DOCUMENTATION_en.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/DOCUMENTATION_en.md)
 - [docs/USER_GUIDE_en.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/USER_GUIDE_en.md)
+- [docs/RELEASE_0.16.0.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/RELEASE_0.16.0.md)
 
 Complete German documentation:
 
@@ -44,11 +45,13 @@ The current codebase includes:
 - real-time UDP log reception
 - filter, exclude, and highlight rules
 - live session logging
+- main-window `RESET` support to start a fresh log phase inside the same app session
 - runtime project contexts for grouping logs and screenshots per test session
 - replay of saved log files
 - built-in simulation for text, temperature, and logic traffic
 - CSV-based data visualization
 - logic-channel visualization
+- edge and period measurement directly inside the logic graph
 - macOS and Windows packaging scripts
 
 ## Run From Source

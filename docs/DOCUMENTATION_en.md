@@ -33,6 +33,7 @@ The current codebase implements the following user-visible functionality:
 - Built-in simulation for logic CSV traffic
 - CSV-based data visualizer with dual Y axes
 - Logic-state visualizer for up to 8 channels
+- edge and period measurement inside the logic graph
 - Screenshot export from visualizer windows
 - Config persistence via `QSettings` and `config.ini`
 - Cross-platform packaging scripts for macOS and Windows
@@ -152,7 +153,7 @@ If the `filter_string` matches and the field count matches the configuration, th
 The main window contains:
 
 - Top action row
-  `SAVE`, `CLEAR`, `COPY`, `CONNECT`, `PAUSE`, `Auto-Scroll`, `Timestamp`
+  `SAVE`, `RESET`, `CLEAR`, `COPY`, `CONNECT`, `PAUSE`, `Auto-Scroll`, `Timestamp`
 - Connection settings
   bind IP, UDP port, max lines
 - Filter area
@@ -163,6 +164,8 @@ The main window contains:
   add, edit, remove, reset highlight slots
 - Main log text area
 - Status bar
+
+`RESET` disconnects the listener, clears the transient session view and buffers, and immediately prepares a new live log file. An active project context remains unchanged.
 
 Menu structure:
 
@@ -319,7 +322,16 @@ The logic visualizer is optimized for binary or thresholded channels:
 - vertically separated step traces
 - channel labels on Y axis
 - hover cursor line on the plot
+- interactive edge and period measurement by mouse click
 - screenshot export to PNG
+
+Measurement behavior:
+
+- left click measures to the next edge on the selected channel
+- `Shift` + left click measures to the next edge of the same type
+- the graph pauses while a measurement is active
+- `Space` or `Esc` clear the measurement and restore the previous
+  refresh state
 
 ### 10.5 Default visualizer profiles
 

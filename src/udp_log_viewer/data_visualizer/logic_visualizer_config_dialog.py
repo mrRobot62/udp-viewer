@@ -70,7 +70,8 @@ class LogicVisualizerConfigDialog(QDialog):
         self.sb_max.setRange(100, 100000)
         self.chk_sliding_default = QCheckBox()
         self.sb_window_default = QSpinBox()
-        self.sb_window_default.setRange(10, 100000)
+        self.sb_window_default.setRange(1, 5000)
+        self.sb_window_default.setToolTip("Minimum: 1, Maximum: 5000.")
 
         self.ed_x_label = QLineEdit()
 

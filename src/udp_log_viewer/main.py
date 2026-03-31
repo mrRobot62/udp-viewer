@@ -43,10 +43,11 @@ from .connection_runtime import (
     append_live_log_line,
     build_connection_status,
     close_live_log,
+    ensure_active_live_log,
     ensure_logs_dir,
     format_bytes,
     live_status_snippet,
-    open_live_log,
+    reset_live_log_session,
 )
 from .file_runtime import copy_log_file, fsync_file_handle, write_text_log
 from .highlighter import HighlightRule, LogHighlighter
@@ -386,23 +387,36 @@ class MainWindow(QMainWindow):
         return ensure_logs_dir(self._preferred_log_dir())
 
     def _open_new_live_log(self) -> None:
-        self._close_live_log()
-
         try:
             stamp = self._now_stamp()
-            handle, path = open_live_log(
+            path = reset_live_log_session(
+                self._connection_state,
                 self._ensure_logs_dir(),
                 stamp,
                 filename=self._build_log_filename("udp_live", stamp),
             )
-            self._connection_state.handle = handle
-            self._connection_state.active_path = path
             self.statusBar().showMessage(f"Live log: {path}", 4000)
         except Exception as e:
             self._connection_state.handle = None
             self._connection_state.active_path = None
             QMessageBox.critical(self, "Logfile Error", f"Could not create live logfile:\n{e}")
             self.log.appendPlainText(f"[UI/ERROR] Could not create live logfile: {e}")
+
+    def _ensure_active_live_log(self) -> None:
+        try:
+            stamp = self._now_stamp()
+            path = ensure_active_live_log(
+                self._connection_state,
+                self._ensure_logs_dir(),
+                stamp,
+                filename=self._build_log_filename("udp_live", stamp),
+            )
+            self.statusBar().showMessage(f"Live log: {path}", 4000)
+        except Exception as e:
+            self._connection_state.handle = None
+            self._connection_state.active_path = None
+            QMessageBox.critical(self, "Logfile Error", f"Could not prepare live logfile:\n{e}")
+            self.log.appendPlainText(f"[UI/ERROR] Could not prepare live logfile: {e}")
 
     def _close_live_log(self) -> None:
         close_live_log(self._connection_state)
@@ -558,6 +572,9 @@ class MainWindow(QMainWindow):
         self.btn_save = QPushButton("SAVE")
         self.btn_save.clicked.connect(self.on_save_clicked)
 
+        self.btn_reset = QPushButton("RESET")
+        self.btn_reset.clicked.connect(self.on_reset_clicked)
+
         self.btn_clear = QPushButton("CLEAR")
         self.btn_clear.clicked.connect(self.on_clear_clicked)
 
@@ -584,6 +601,7 @@ class MainWindow(QMainWindow):
         top_row.addWidget(self.btn_project)
         top_row.addSpacing(18)
         top_row.addWidget(self.btn_save)
+        top_row.addWidget(self.btn_reset)
         top_row.addWidget(self.btn_clear)
         top_row.addWidget(self.btn_copy)
         top_row.addSpacing(12)
@@ -1334,7 +1352,7 @@ class MainWindow(QMainWindow):
         self._listener = t
         t.start()
 
-        self._open_new_live_log()
+        self._ensure_active_live_log()
         return True
 
     def _stop_listener(self) -> None:
@@ -1345,6 +1363,49 @@ class MainWindow(QMainWindow):
 
         stop_listener_thread(t, wait_ms=800)
         self._close_live_log()
+
+    def _clear_session_buffers(self) -> None:
+        self.log.clear()
+        self._queue.clear()
+        self._connection_state.trimmed_lines_total = 0
+        self._connection_state.rx_packets = 0
+        self._connection_state.rx_lines = 0
+        self._pause_buffer, self._pause_dropped, self._ui_paused = reset_pause_state(
+            self._pause_buffer,
+            maxlen=self._pause_buffer.maxlen or 2000,
+        )
+        self.btn_pause.blockSignals(True)
+        self.btn_pause.setChecked(False)
+        self.btn_pause.blockSignals(False)
+        self._visualizer_manager.clear_all_buffers()
+
+    def _reset_runtime_sources(self) -> None:
+        self.on_stop_replay_clicked()
+        self.on_stop_replay_temperature_clicked()
+        self._stop_simulation()
+        self._stop_simulation_temperature()
+        self._sim_logic_enabled = False
+        if self._sim_logic_timer.isActive():
+            self._sim_logic_timer.stop()
+
+        for action_name in ("act_simulate", "act_simulate_temperature", "act_simulate_logic"):
+            action = getattr(self, action_name, None)
+            if action is None or not action.isChecked():
+                continue
+            action.blockSignals(True)
+            action.setChecked(False)
+            action.blockSignals(False)
+
+    def _reset_session(self) -> Path | None:
+        self._reset_runtime_sources()
+        self._stop_listener()
+        self._clear_session_buffers()
+        self._ensure_active_live_log()
+        self.btn_connect.blockSignals(True)
+        self.btn_connect.setChecked(False)
+        self.btn_connect.blockSignals(False)
+        self._update_connection_ui()
+        return self._connection_state.active_path
 
     def _on_line_received(self, line: str) -> None:
         self._dispatch_log_line(line, is_live_source=True)
@@ -1502,6 +1563,13 @@ class MainWindow(QMainWindow):
         self.log.clear()
         self._connection_state.trimmed_lines_total = 0
         self.statusBar().showMessage("Cleared (UI only)", 2000)
+
+    def on_reset_clicked(self) -> None:
+        new_live_log = self._reset_session()
+        if new_live_log is not None:
+            self.statusBar().showMessage(f"Session reset. Listener OFF. New live log: {new_live_log}", 5000)
+        else:
+            self.statusBar().showMessage("Session reset. Listener OFF.", 4000)
 
     def on_copy_clicked(self) -> None:
         cursor = self.log.textCursor()

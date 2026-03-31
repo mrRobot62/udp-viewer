@@ -19,7 +19,7 @@ Typische Einsatzfälle:
 
 Die Hauptoberfläche besteht im Wesentlichen aus:
 
-- Aktionsleiste mit `SAVE`, `CLEAR`, `COPY`, `CONNECT`, `PAUSE`
+- Aktionsleiste mit `SAVE`, `RESET`, `CLEAR`, `COPY`, `CONNECT`, `PAUSE`
 - Optionen `Auto-Scroll` und `Timestamp`
 - Eingabefeldern für `Bind-IP`, `Port` und `Max lines`
 - Bereichen für `Filter`, `Exclude` und `Highlight`
@@ -141,7 +141,26 @@ Das dient vor allem dazu:
 - die Anzeige für eine neue Beobachtungsphase aufzuräumen
 - aktuelle Effekte von Filtern oder Highlights übersichtlicher zu prüfen
 
-### 5.3 `COPY`
+### 5.3 `RESET`
+
+`RESET` startet innerhalb derselben App-Session eine neue Log-Phase.
+
+Dabei passiert im aktuellen Verhalten:
+
+- die sichtbare Hauptansicht wird geleert
+- interne Buffer und Zähler werden zurückgesetzt
+- `CONNECT` geht auf `OFF`
+- das laufende Live-Log wird sauber abgeschlossen
+- sofort wird eine neue Live-Logdatei mit aktuellem Zeitstempel vorbereitet
+- ein aktives `PROJECT` bleibt erhalten
+
+Praktischer Nutzen:
+
+- neue Testphase beginnen, ohne die Anwendung neu zu starten
+- neue Logdatei mit sauberem Anfang erzeugen
+- weiterhin im gleichen Projektordner weiterarbeiten
+
+### 5.4 `COPY`
 
 `COPY` kopiert den sichtbaren Inhalt der Hauptansicht in die Zwischenablage.
 
@@ -321,6 +340,7 @@ Bedeutung:
   zeigt immer nur die letzten `N` Samples
 - `Window Size`
   bestimmt die aktuell sichtbare Fenstergröße
+  gültiger Bereich im aktuellen Stand: `1..5000`
 - Presets
   setzen die Fenstergröße schnell auf typische Werte
 - `Reset`
@@ -330,6 +350,37 @@ Wichtig:
 
 - Änderungen im geöffneten Graph-Fenster sind zunächst Laufzeit-Overrides
 - die persistente Default-Vorgabe kommt aus der Graph-Konfiguration bzw. aus den globalen Präferenzen
+
+### 9.2 Messung im Logic-Graphen
+
+Im Logic-Graphen kann die Zeit zwischen Signalflanken direkt gemessen
+werden.
+
+Bedienung:
+
+- Linksklick auf eine Kanalzeile
+  startet eine Flankenmessung
+- `Shift` + Linksklick auf eine Kanalzeile
+  startet eine Periodenmessung
+- `Space` oder `Esc`
+  löscht die Messung wieder
+
+Verhalten:
+
+- der Start rastet auf die nächste Flanke des gewählten Kanals ein
+- bei normalem Klick endet die Messung an der nächsten Flanke desselben Kanals
+- bei `Shift`-Klick endet die Messung an der nächsten gleichartigen Flanke
+- während eine Messung aktiv ist, pausiert die Graph-Ansicht, damit das Signal nicht weiter nach links wandert
+- nach `Space` oder `Esc` läuft die Anzeige wieder mit dem vorherigen Refresh-Zustand weiter
+
+Darstellung:
+
+- rote Startlinie
+- blaue Endlinie
+- gestrichelte Pfeillinie zwischen Start und Ende
+- Zeittext im Format `MM:SS.mmm`
+- wenn der Platz zwischen Start und Ende zu klein ist, erscheint der
+  Text rechts neben der blauen Endlinie
 
 Wichtig:
 
