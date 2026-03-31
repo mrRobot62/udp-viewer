@@ -13,6 +13,10 @@ Complete German documentation:
 
 - [docs/DOKUMENTATION_de.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/DOKUMENTATION_de.md)
 
+## MAC users only
+after installation this application is not signed and can't be started directly.
+You have to set this command: `xattr -dr com.apple.quarantine /Applications/UDPLogViewer.app` 
+
 ## Screenshots
 
 Screenshot assets should eventually be stored under [assets/screenshots](/Users/bernhardklein/workspace/python/udp-viewer/assets/screenshots). The images below currently still use the existing GitHub asset URLs until local files are added to the repository.
