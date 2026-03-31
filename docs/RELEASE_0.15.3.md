@@ -4,7 +4,7 @@ Release date: 2026-03-31
 
 ## Summary
 
-Version `0.15.3` focuses on bugfixing and usability improvements for plot and logic visualization, log-file handling, and visualizer configuration workflows.
+Version `0.15.3` focuses on bugfixing and usability improvements for plot and logic visualization, log-file handling, project-scoped artifact management, and visualizer configuration workflows.
 
 ## Highlights
 
@@ -12,6 +12,7 @@ Version `0.15.3` focuses on bugfixing and usability improvements for plot and lo
 - multi-line plot tooltips for better readability
 - hover support in plot windows with horizontal guide line and cross cursor
 - configurable default log folder via `Preferences > Log Path`
+- runtime-only `PROJECT` mode with a root folder, automatic project subfolder creation, and project-based file naming
 - clearer live-log and save-path reporting in the main window
 - `APPLY` support in plot and logic config dialogs
 - corrected slot-change handling so save/discard prompts only appear for real edits
@@ -26,10 +27,11 @@ Version `0.15.3` focuses on bugfixing and usability improvements for plot and lo
 - host plot legacy filter aliases such as `CSV_CLIENT_TEMP` and `CSV_HOST_TEMP` are normalized on load
 - plot and logic dialogs now place `CANCEL | APPLY | SAVE` on the right side
 - plot and logic graph windows use a wider `Window Size` field
+- project dialogs use English tooltips and show the effective project output folder
 
 ## Validation
 
-The release was validated with the automated test suites used during the bugfix thread, including visualizer slot/config behavior, parser consistency, preferences persistence, settings persistence, and sliding-window behavior.
+The release was validated with the automated test suites used during the bugfix thread, including project runtime helpers, visualizer slot/config behavior, parser consistency, preferences persistence, settings persistence, and sliding-window behavior.
 
 ## Packaging
 

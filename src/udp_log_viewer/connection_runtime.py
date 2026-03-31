@@ -20,9 +20,9 @@ def ensure_logs_dir(logs_dir: str | Path) -> Path:
     return path
 
 
-def open_live_log(logs_dir: str | Path, stamp: str) -> tuple[object, Path]:
+def open_live_log(logs_dir: str | Path, stamp: str, filename: str | None = None) -> tuple[object, Path]:
     base_dir = ensure_logs_dir(logs_dir)
-    path = base_dir / f"udp_live_{stamp}.txt"
+    path = base_dir / (filename or f"udp_live_{stamp}.txt")
     handle = open(path, "w", encoding="utf-8", newline="\n")
     handle.write(f"# UDP Log Viewer live session — {stamp}\n")
     handle.flush()

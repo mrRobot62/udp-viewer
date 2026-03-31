@@ -29,12 +29,15 @@ principles where applicable.
 -   Added `Log Path` to `Preferences` so the default log/save folder can
     be configured centrally
 -   Added `APPLY` actions to plot and logic configuration dialogs
+-   Added a runtime-only `PROJECT` context with project-based output
+    folders, file prefixes, and title suffixes
 
 ### Technical
 
 -   Bumped application and package version metadata to `0.15.3`
 -   Added coverage for legacy host plot config normalization and release
     consistency updates
+-   Added runtime project-name validation and filename helper coverage
 
 ------------------------------------------------------------------------
 ## 0.15.2 -- 2026-03-29

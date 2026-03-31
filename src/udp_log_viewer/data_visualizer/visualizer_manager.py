@@ -36,6 +36,8 @@ class VisualizerManager:
         self.selected_slot_by_type: dict[VisualizerGraphType, int] = {"plot": 0, "logic": 0}
         self.windows_by_slot: dict[VisualizerSlotId, VisualizerWindow | LogicVisualizerWindow] = {}
         self.sample_counters_by_slot: dict[VisualizerSlotId, int] = {}
+        self.project_name: str | None = None
+        self.output_dir: Path | None = None
 
     def load_configs(self) -> None:
         self.config_store = ConfigStore(config_path=self.config_store._config_path, preferences=self.preferences)
@@ -49,6 +51,11 @@ class VisualizerManager:
 
     def save_configs(self) -> None:
         self.config_store.save_slot_configs(self.configs_by_type)
+
+    def set_runtime_context(self, *, project_name: str | None, output_dir: str | Path | None) -> None:
+        self.project_name = project_name.strip() if project_name else None
+        self.output_dir = Path(output_dir) if output_dir is not None else None
+        self.close_all_windows()
 
     def process_log_line(self, line: str) -> int:
         accepted_samples = 0
@@ -234,12 +241,16 @@ class VisualizerManager:
                 config,
                 screenshot_dir=self.screenshot_dir,
                 window_size_presets=self.preferences.visualizer_presets,
+                project_name=self.project_name,
+                output_dir=self.output_dir,
             )
         else:
             window = VisualizerWindow(
                 config,
                 screenshot_dir=self.screenshot_dir,
                 window_size_presets=self.preferences.visualizer_presets,
+                project_name=self.project_name,
+                output_dir=self.output_dir,
             )
 
         if hasattr(window, "set_initial_position"):

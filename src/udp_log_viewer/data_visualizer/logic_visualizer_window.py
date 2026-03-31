@@ -7,6 +7,7 @@ import re
 
 from .visualizer_sample import VisualizerSample
 from ..preferences import DEFAULT_VISUALIZER_PRESETS
+from ..project_runtime import build_project_filename, build_project_title_suffix
 
 try:
     from PyQt5.QtCore import Qt, QSettings
@@ -50,10 +51,14 @@ class LogicVisualizerWindow:
         config,
         screenshot_dir: str | Path | None = None,
         window_size_presets: tuple[int, ...] | None = None,
+        project_name: str | None = None,
+        output_dir: str | Path | None = None,
     ) -> None:
         self.config = config
         self.screenshot_dir = Path(screenshot_dir) if screenshot_dir is not None else None
         self.window_size_presets = tuple(window_size_presets or DEFAULT_VISUALIZER_PRESETS)
+        self.project_name = (project_name or "").strip() or None
+        self.output_dir = Path(output_dir) if output_dir is not None else None
         self.samples: list[VisualizerSample] = []
         self.auto_refresh_enabled = True
         self.freeze_sample_index: int | None = None
@@ -194,7 +199,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._controller = controller
             self._initial_position_applied = False
 
-            self.setWindowTitle(controller.config.title or "Logic Visualizer")
+            self.setWindowTitle(self._build_window_title())
             self.resize(1100, 620)
 
             self._figure = Figure(figsize=(10, 5))
@@ -299,6 +304,8 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             return target_path
 
         def _get_default_screenshot_dir(self) -> Path:
+            if self._controller.output_dir is not None:
+                return self._controller.output_dir
             persisted = self._load_last_screenshot_dir()
             if persisted is not None:
                 return persisted
@@ -329,7 +336,15 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
 
         def _build_screenshot_filename(self) -> str:
             safe_title = self._sanitize_filename(self._controller.config.title or "logic_visualizer")
-            return f"{safe_title}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+            return build_project_filename(
+                self._controller.project_name,
+                safe_title,
+                datetime.now().strftime('%Y%m%d_%H%M%S'),
+                ".png",
+            )
+
+        def _build_window_title(self) -> str:
+            return f"{self._controller.config.title or 'Logic Visualizer'}{build_project_title_suffix(self._controller.project_name)}"
 
         def _on_auto_refresh_changed(self, state: int) -> None:
             self._controller.set_auto_refresh(state == Qt.Checked)
@@ -377,7 +392,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._canvas.draw_idle()
 
         def _render_plot(self) -> None:
-            self.setWindowTitle(self._controller.config.title or "Logic Visualizer")
+            self.setWindowTitle(self._build_window_title())
             self._axes.clear()
 
             visible_samples = self._get_visible_samples()

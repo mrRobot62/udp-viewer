@@ -48,7 +48,7 @@ from .connection_runtime import (
     live_status_snippet,
     open_live_log,
 )
-from .file_runtime import copy_log_file, default_save_name, fsync_file_handle, write_text_log
+from .file_runtime import copy_log_file, fsync_file_handle, write_text_log
 from .highlighter import HighlightRule, LogHighlighter
 from .listener_runtime import (
     parse_listener_request,
@@ -80,6 +80,13 @@ from .settings_store import SettingsStore
 from .ui_state import UiState
 from .preferences import AppPreferences
 from .preferences_dialog import PreferencesDialog
+from .project_dialog import ProjectDialog
+from .project_runtime import (
+    RuntimeProject,
+    build_project_filename,
+    build_project_title_suffix,
+    is_valid_project_name,
+)
 from .udp_listener import UdpListenerThread
 from .udp_log_utils import drain_queue
 from .data_visualizer.visualizer_manager import VisualizerManager
@@ -272,6 +279,7 @@ class MainWindow(QMainWindow):
         self._hl_rules: List[HighlightRule] = []
 
         self._local_ip = _get_local_ipv4()
+        self._active_project: RuntimeProject | None = None
         self._update_window_title()
 
         self.resize(1100, 760)
@@ -305,6 +313,7 @@ class MainWindow(QMainWindow):
             diagnostic_callback=self._on_visualizer_diagnostic,
         )
         self._visualizer_manager.load_configs()
+        self._sync_runtime_context()
 
     # ---------------- Helpers ----------------
 
@@ -337,9 +346,22 @@ class MainWindow(QMainWindow):
         return _dt.datetime.now().strftime("%Y%m%d_%H%M%S")
 
     def _default_save_name(self) -> str:
-        return default_save_name(self._now_stamp())
+        return self._build_log_filename("udp_log", self._now_stamp())
+
+    def _build_log_filename(self, stem: str, stamp: str) -> str:
+        return build_project_filename(self._project_name(), stem, stamp, ".txt")
+
+    def _project_name(self) -> str | None:
+        return self._active_project.name if self._active_project is not None else None
+
+    def _project_output_dir(self) -> Path | None:
+        if self._active_project is None:
+            return None
+        return self._active_project.output_dir
 
     def _preferred_log_dir(self) -> Path:
+        if self._active_project is not None:
+            return self._active_project.output_dir
         configured = (self._preferences.log_path or "").strip()
         if configured:
             return Path(configured).expanduser()
@@ -349,7 +371,16 @@ class MainWindow(QMainWindow):
         return self._preferred_log_dir() / self._default_save_name()
 
     def _update_window_title(self) -> None:
-        self.setWindowTitle(f"UDP Log Viewer — {APP_VERSION} — {self._local_ip}")
+        self.setWindowTitle(
+            f"UDP Log Viewer — {APP_VERSION} — {self._local_ip}{build_project_title_suffix(self._project_name())}"
+        )
+
+    def _sync_runtime_context(self) -> None:
+        self._visualizer_manager.set_runtime_context(
+            project_name=self._project_name(),
+            output_dir=self._project_output_dir(),
+        )
+        self._update_window_title()
 
     def _ensure_logs_dir(self) -> Path:
         return ensure_logs_dir(self._preferred_log_dir())
@@ -358,7 +389,12 @@ class MainWindow(QMainWindow):
         self._close_live_log()
 
         try:
-            handle, path = open_live_log(self._ensure_logs_dir(), self._now_stamp())
+            stamp = self._now_stamp()
+            handle, path = open_live_log(
+                self._ensure_logs_dir(),
+                stamp,
+                filename=self._build_log_filename("udp_live", stamp),
+            )
             self._connection_state.handle = handle
             self._connection_state.active_path = path
             self.statusBar().showMessage(f"Live log: {path}", 4000)
@@ -516,6 +552,9 @@ class MainWindow(QMainWindow):
         top_row = QHBoxLayout()
         top_row.setSpacing(8)
 
+        self.btn_project = QPushButton("PROJECT")
+        self.btn_project.clicked.connect(self.on_project_clicked)
+
         self.btn_save = QPushButton("SAVE")
         self.btn_save.clicked.connect(self.on_save_clicked)
 
@@ -542,6 +581,8 @@ class MainWindow(QMainWindow):
         self.chk_timestamp = QCheckBox("Timestamp")
         self.chk_timestamp.stateChanged.connect(self.on_timestamp_changed)
 
+        top_row.addWidget(self.btn_project)
+        top_row.addSpacing(18)
         top_row.addWidget(self.btn_save)
         top_row.addWidget(self.btn_clear)
         top_row.addWidget(self.btn_copy)
@@ -1431,6 +1472,31 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Save Failed", f"Could not save file:\n{e}")
             return None
+
+    def on_project_clicked(self) -> None:
+        dialog = ProjectDialog(self._active_project, self)
+        if dialog.exec_() != QDialog.Accepted:
+            return
+
+        project_name = dialog.project_name()
+        if not is_valid_project_name(project_name):
+            QMessageBox.warning(
+                self,
+                "Invalid Project Name",
+                "Project name must contain 1 to 15 alphanumeric characters.",
+            )
+            return
+
+        root_dir = dialog.root_dir()
+        if not str(root_dir):
+            QMessageBox.warning(self, "Missing Root Folder", "Please select a root folder.")
+            return
+
+        project = RuntimeProject(name=project_name, root_dir=root_dir)
+        project.output_dir.mkdir(parents=True, exist_ok=True)
+        self._active_project = project
+        self._sync_runtime_context()
+        self.statusBar().showMessage(f"Project active: {project.output_dir}", 4000)
 
     def on_clear_clicked(self) -> None:
         self.log.clear()
