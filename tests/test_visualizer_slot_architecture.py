@@ -191,10 +191,141 @@ def test_config_store_migrates_legacy_host_plot_fields_to_new_layout(tmp_path: P
     slot_configs = ConfigStore(config_path=config_path).load_slot_configs()
     host_config = slot_configs["plot"][1]
 
-    assert [field.field_name for field in host_config.fields] == ["Tch", "Thot", "target", "temp_range", "state"]
+    assert [field.field_name for field in host_config.fields] == ["Tch", "Thot", "target", "target_min", "target_max", "state"]
     assert host_config.fields[0].plot is True
     assert host_config.fields[1].plot is True
     assert host_config.fields[2].plot is True
+
+
+def test_config_store_normalizes_legacy_temp_filter_aliases(tmp_path: Path) -> None:
+    config_path = tmp_path / "config.ini"
+    config_path.write_text(
+        "\n".join(
+            [
+                "[plot_visualizer_1]",
+                "enabled = true",
+                "title = Client Plot",
+                "filter_string = [CSV_CLIENT_TEMP]",
+                "graph_type = plot",
+                "field_count = 1",
+                "field_0_name = value",
+                "field_0_active = true",
+                "field_0_numeric = true",
+                "field_0_scale = 1",
+                "field_0_plot = true",
+                "field_0_axis = Y1",
+                "field_0_render_style = Line",
+                "field_0_color = blue",
+                "field_0_line_style = solid",
+                "field_0_unit = C",
+                "",
+                "[plot_visualizer_2]",
+                "enabled = true",
+                "title = Host Plot",
+                "filter_string = [CSV_HOST_TEMP]",
+                "graph_type = plot",
+                "field_count = 1",
+                "field_0_name = value",
+                "field_0_active = true",
+                "field_0_numeric = true",
+                "field_0_scale = 1",
+                "field_0_plot = true",
+                "field_0_axis = Y1",
+                "field_0_render_style = Line",
+                "field_0_color = red",
+                "field_0_line_style = solid",
+                "field_0_unit = C",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    slot_configs = ConfigStore(config_path=config_path).load_slot_configs()
+
+    assert slot_configs["plot"][0].filter_string == "[CSV_CLIENT_PLOT]"
+    assert slot_configs["plot"][1].filter_string == "[CSV_HOST_PLOT]"
+
+
+def test_config_store_migrates_split_host_range_fields_to_compact_host_plot_format(tmp_path: Path) -> None:
+    config_path = tmp_path / "config.ini"
+    config_path.write_text(
+        "\n".join(
+            [
+                "[plot_visualizer_2]",
+                "enabled = true",
+                "title = HOST Temperatures",
+                "filter_string = [CSV_HOST_PLOT]",
+                "graph_type = plot",
+                "field_count = 6",
+                "field_0_name = Tch",
+                "field_0_active = true",
+                "field_0_numeric = true",
+                "field_0_scale = 10",
+                "field_0_plot = true",
+                "field_0_axis = Y1",
+                "field_0_render_style = Line",
+                "field_0_color = blue",
+                "field_0_line_style = solid",
+                "field_0_unit = °C",
+                "field_1_name = Thot",
+                "field_1_active = true",
+                "field_1_numeric = true",
+                "field_1_scale = 10",
+                "field_1_plot = true",
+                "field_1_axis = Y1",
+                "field_1_render_style = Line",
+                "field_1_color = red",
+                "field_1_line_style = solid",
+                "field_1_unit = °C",
+                "field_2_name = target",
+                "field_2_active = true",
+                "field_2_numeric = true",
+                "field_2_scale = 10",
+                "field_2_plot = true",
+                "field_2_axis = Y1",
+                "field_2_render_style = Line",
+                "field_2_color = green",
+                "field_2_line_style = solid",
+                "field_2_unit = °C",
+                "field_3_name = target_min",
+                "field_3_active = true",
+                "field_3_numeric = true",
+                "field_3_scale = 10",
+                "field_3_plot = true",
+                "field_3_axis = Y1",
+                "field_3_render_style = Line",
+                "field_3_color = black",
+                "field_3_line_style = dashed",
+                "field_3_unit = ",
+                "field_4_name = target_max",
+                "field_4_active = true",
+                "field_4_numeric = true",
+                "field_4_scale = 10",
+                "field_4_plot = true",
+                "field_4_axis = Y1",
+                "field_4_render_style = Line",
+                "field_4_color = gray",
+                "field_4_line_style = solid",
+                "field_4_unit = ",
+                "field_5_name = state",
+                "field_5_active = false",
+                "field_5_numeric = true",
+                "field_5_scale = 1",
+                "field_5_plot = false",
+                "field_5_axis = Y2",
+                "field_5_render_style = Step",
+                "field_5_color = gray",
+                "field_5_line_style = dotted",
+                "field_5_unit = ",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    slot_configs = ConfigStore(config_path=config_path).load_slot_configs()
+    host_config = slot_configs["plot"][1]
+
+    assert [field.field_name for field in host_config.fields] == ["Tch", "Thot", "target", "target_min", "target_max", "state"]
 
 
 class _DummyWindow:

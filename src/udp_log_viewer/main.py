@@ -199,6 +199,7 @@ class MainWindow(QMainWindow):
             APP_VERSION,
             config_path=config_path,
         )
+        self._default_logs_dir = Path(self._paths_cfg.logs_dir)
         self._settings_store = SettingsStore(self._settings, self._paths_cfg.config_path)
         self._preferences = self._settings_store.load_preferences()
         self._ui_state = UiState(
@@ -338,11 +339,20 @@ class MainWindow(QMainWindow):
     def _default_save_name(self) -> str:
         return default_save_name(self._now_stamp())
 
+    def _preferred_log_dir(self) -> Path:
+        configured = (self._preferences.log_path or "").strip()
+        if configured:
+            return Path(configured).expanduser()
+        return self._default_logs_dir
+
+    def _default_save_path(self) -> Path:
+        return self._preferred_log_dir() / self._default_save_name()
+
     def _update_window_title(self) -> None:
         self.setWindowTitle(f"UDP Log Viewer — {APP_VERSION} — {self._local_ip}")
 
     def _ensure_logs_dir(self) -> Path:
-        return ensure_logs_dir(self._paths_cfg.logs_dir)
+        return ensure_logs_dir(self._preferred_log_dir())
 
     def _open_new_live_log(self) -> None:
         self._close_live_log()
@@ -351,8 +361,7 @@ class MainWindow(QMainWindow):
             handle, path = open_live_log(self._ensure_logs_dir(), self._now_stamp())
             self._connection_state.handle = handle
             self._connection_state.active_path = path
-            # Keep status short (filename only)
-            self.statusBar().showMessage(f"Live log: {path.name}", 3000)
+            self.statusBar().showMessage(f"Live log: {path}", 4000)
         except Exception as e:
             self._connection_state.handle = None
             self._connection_state.active_path = None
@@ -430,9 +439,9 @@ class MainWindow(QMainWindow):
         self.act_simulate.toggled.connect(self.on_simulate_toggled)
         tools_menu.addAction(self.act_simulate)
 
-        self.act_simulate_temperature = QAction("Simulate Temperature Traffic", self)
+        self.act_simulate_temperature = QAction("Simulate Plot Traffic", self)
         self.act_simulate_temperature.setCheckable(True)
-        self.act_simulate_temperature.setToolTip("Generate sample temperature log lines locally (for visual graph testing)")
+        self.act_simulate_temperature.setToolTip("Generate sample numeric plot log lines locally (for visual graph testing)")
         self.act_simulate_temperature.toggled.connect(self.on_simulate_toggled_temperature)
         tools_menu.addAction(self.act_simulate_temperature)
 
@@ -445,7 +454,7 @@ class MainWindow(QMainWindow):
         visualize_menu = self.menuBar().addMenu("Visualize")
 
         # Plot Visualizer
-        self.menu_visualize_temperature = visualize_menu.addMenu("Temperature")
+        self.menu_visualize_temperature = visualize_menu.addMenu("Plot")
 
         self.act_visualizer_csv_temp_config = QAction("Config", self)
         self.act_visualizer_csv_temp_config.triggered.connect(self.on_visualizer_csv_temp_config_clicked)
@@ -728,13 +737,15 @@ class MainWindow(QMainWindow):
     def _apply_preferences(self, preferences: AppPreferences) -> None:
         self._preferences = preferences
         self._settings_store.save_preferences(self._preferences)
+        self._settings_store.ini_set("paths", "logs_dir", str(self._preferred_log_dir()))
+        self._paths_cfg.logs_dir = self._preferred_log_dir()
         self._ui_state.autoscroll = self._preferences.autoscroll_default
         self._ui_state.timestamp_enabled = self._preferences.timestamp_default
         self._ui_state.max_lines = self._preferences.max_lines_default
         self._save_settings()
         self._apply_state_to_widgets()
         self._visualizer_manager.set_preferences(self._preferences)
-        self.statusBar().showMessage("Preferences saved", 2000)
+        self.statusBar().showMessage(f"Preferences saved: Log path {self._preferred_log_dir()}", 3000)
 
     # ---------------- Slot persistence ----------------
 
@@ -1059,7 +1070,7 @@ class MainWindow(QMainWindow):
         if not self._replay_lines_temperature:
             self._replay_timer_temperature.stop()
             self._replay_active_temperature = False
-            self.statusBar().showMessage("Replay temperature finished", 2000)
+            self.statusBar().showMessage("Replay plot finished", 2000)
             return
 
         for line in drain_replay_batch(self._replay_lines_temperature, REPLAY_LINES_PER_TICK):
@@ -1067,7 +1078,12 @@ class MainWindow(QMainWindow):
 
 
     def on_open_log_clicked(self) -> None:
-        path, _ = QFileDialog.getOpenFileName(self, "Open Log", "", "Text Files (*.txt);;All Files (*)")
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Open Log",
+            str(self._preferred_log_dir()),
+            "Text Files (*.txt);;All Files (*)",
+        )
         if not path:
             return
 
@@ -1092,14 +1108,14 @@ class MainWindow(QMainWindow):
         self._replay_lines_temperature = deque(build_temperature_replay_sample())
         self._replay_active_temperature = True
         self._replay_timer_temperature.start()
-        self.statusBar().showMessage("Replay: temperature sample", 2000)
+        self.statusBar().showMessage("Replay: plot sample", 2000)
 
     def on_stop_replay_temperature_clicked(self) -> None:
         if self._replay_timer_temperature.isActive():
             self._replay_timer_temperature.stop()
         self._replay_lines_temperature.clear()
         self._replay_active_temperature = False
-        self.statusBar().showMessage("Replay temperature stopped", 1500)
+        self.statusBar().showMessage("Replay plot stopped", 1500)
 
     # -------------------------------------------------------
     # simulation user friendly log entries
@@ -1123,7 +1139,7 @@ class MainWindow(QMainWindow):
     def on_visualizer_csv_temp_config_clicked(self) -> None:
         changed = self._visualizer_manager.configure_csv_temp(parent=self)
         if changed:
-            self.statusBar().showMessage("CSV_TEMP visualizer config saved", 3000)
+            self.statusBar().showMessage("Plot visualizer config saved", 3000)
 
     def on_visualizer_csv_temp_show_clicked(self) -> None:
         self._visualizer_manager.show_windows("plot")
@@ -1373,15 +1389,17 @@ class MainWindow(QMainWindow):
 
     # ---------------- UI actions ----------------
 
-    def on_save_clicked(self) -> None:
-        path, _ = QFileDialog.getSaveFileName(
+    def on_save_clicked(self) -> Path | None:
+        selected_path, _ = QFileDialog.getSaveFileName(
             self,
             "Save Log",
-            self._default_save_name(),
+            str(self._default_save_path()),
             "Text Files (*.txt);;All Files (*)",
         )
-        if not path:
-            return
+        if not selected_path:
+            return None
+        path = Path(selected_path).expanduser()
+        path.parent.mkdir(parents=True, exist_ok=True)
 
         src: Optional[Path] = None
         if self._connection_state.active_path is not None:
@@ -1400,17 +1418,19 @@ class MainWindow(QMainWindow):
         if src is not None and src.exists():
             try:
                 copy_log_file(src, path)
-                self.statusBar().showMessage(f"Saved: {os.path.basename(path)}", 4000)
-                return
+                self.statusBar().showMessage(f"Saved: {path}", 5000)
+                return path
             except Exception as e:
                 QMessageBox.critical(self, "Save Failed", f"Could not copy logfile:\n{e}")
-                return
+                return None
 
         try:
             write_text_log(path, self.log.toPlainText())
-            self.statusBar().showMessage(f"Saved: {os.path.basename(path)}", 4000)
+            self.statusBar().showMessage(f"Saved: {path}", 5000)
+            return path
         except Exception as e:
             QMessageBox.critical(self, "Save Failed", f"Could not save file:\n{e}")
+            return None
 
     def on_clear_clicked(self) -> None:
         self.log.clear()
@@ -1429,6 +1449,7 @@ class MainWindow(QMainWindow):
 
     def on_connect_toggled(self) -> None:
         requested = self.btn_connect.isChecked()
+        saved_path: Path | None = None
 
         if requested:
             ok = self._start_listener()
@@ -1447,7 +1468,7 @@ class MainWindow(QMainWindow):
 
             self._append_log_line(f"[UI/INFO] Listening on {self._ui_state.bind_ip}:{self._ui_state.port}", write_live=False)
             if self._connection_state.active_path is not None:
-                self.log.appendPlainText(f"[UI/INFO] Live logfile: {self._connection_state.active_path.name}")
+                self.log.appendPlainText(f"[UI/INFO] Live logfile: {self._connection_state.active_path}")
         else:
             if self._listener is not None:
                 mb = QMessageBox(self)
@@ -1469,7 +1490,7 @@ class MainWindow(QMainWindow):
                     self._update_connection_ui()
                     return
                 if clicked == yes:
-                    self.on_save_clicked()
+                    saved_path = self.on_save_clicked()
 
             self._stop_listener()
 
@@ -1491,6 +1512,8 @@ class MainWindow(QMainWindow):
             self._append_log_line("[UI/INFO] Listener stopped", write_live=False)
 
         self._update_connection_ui()
+        if not requested and saved_path is not None:
+            self.statusBar().showMessage(f"Saved: {saved_path}", 5000)
 
     def on_pause_toggled(self) -> None:
         if self._listener is None:

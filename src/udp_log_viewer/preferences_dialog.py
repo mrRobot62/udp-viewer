@@ -5,9 +5,11 @@ from PyQt5.QtWidgets import (
     QComboBox,
     QDialog,
     QDialogButtonBox,
+    QFileDialog,
     QFormLayout,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QPushButton,
     QSpinBox,
     QTabWidget,
@@ -57,6 +59,7 @@ class PreferencesDialog(QDialog):
             autoscroll_default=self._autoscroll_default.isChecked(),
             timestamp_default=self._timestamp_default.isChecked(),
             max_lines_default=int(self._max_lines_default.value()),
+            log_path=self._log_path.text().strip(),
             visualizer_presets=(
                 int(self._preset_1.value()),
                 int(self._preset_2.value()),
@@ -74,6 +77,7 @@ class PreferencesDialog(QDialog):
         self._autoscroll_default.setChecked(preferences.autoscroll_default)
         self._timestamp_default.setChecked(preferences.timestamp_default)
         self._max_lines_default.setValue(preferences.max_lines_default)
+        self._log_path.setText(preferences.log_path)
         self._preset_1.setValue(preferences.visualizer_presets[0])
         self._preset_2.setValue(preferences.visualizer_presets[1])
         self._preset_3.setValue(preferences.visualizer_presets[2])
@@ -95,11 +99,23 @@ class PreferencesDialog(QDialog):
         self._timestamp_default = QCheckBox("Enabled", tab)
         self._max_lines_default = QSpinBox(tab)
         self._max_lines_default.setRange(1000, 500000)
+        self._log_path = QLineEdit(tab)
+        self._log_path.setMinimumWidth(420)
+        self._log_path_browse = QPushButton("Browse…", tab)
+        self._log_path_browse.clicked.connect(self._browse_log_path)
+        log_path_row = QHBoxLayout()
+        log_path_row.setContentsMargins(0, 0, 0, 0)
+        log_path_row.addWidget(self._log_path)
+        log_path_row.addWidget(self._log_path_browse)
+        log_path_row.setStretch(0, 1)
+        log_path_widget = QWidget(tab)
+        log_path_widget.setLayout(log_path_row)
 
         layout.addRow("Language", self._language)
         layout.addRow("Auto-Scroll Default", self._autoscroll_default)
         layout.addRow("Timestamp Default", self._timestamp_default)
         layout.addRow("Max Lines Default", self._max_lines_default)
+        layout.addRow("Log Path", log_path_widget)
         return tab
 
     def _build_visualizer_tab(self) -> QWidget:
@@ -139,3 +155,12 @@ class PreferencesDialog(QDialog):
         spin.setRange(10, 100000)
         spin.setSingleStep(10)
         return spin
+
+    def _browse_log_path(self) -> None:
+        selected = QFileDialog.getExistingDirectory(
+            self,
+            "Select Default Log Folder",
+            self._log_path.text().strip(),
+        )
+        if selected:
+            self._log_path.setText(selected)

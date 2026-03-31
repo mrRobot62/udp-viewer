@@ -224,6 +224,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._window_size_spin.setRange(10, max(10, self._controller.config.max_samples))
             self._window_size_spin.setSingleStep(50)
             self._window_size_spin.setKeyboardTracking(False)
+            self._window_size_spin.setMinimumWidth(88)
             self._window_size_spin.setValue(self._controller.runtime_window_size)
             self._window_size_spin.valueChanged.connect(self._on_window_size_changed)
 

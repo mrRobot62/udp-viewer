@@ -183,15 +183,35 @@ class VisualizerManager:
 
         configs = self.configs_by_type[graph_type]
         selected_slot = self.selected_slot_by_type.get(graph_type, 0)
+        apply_callback = lambda new_configs, slot: self._apply_dialog_configs(graph_type, new_configs, slot)
         if graph_type == "logic":
-            dialog = LogicVisualizerConfigDialog(configs=configs, current_slot=selected_slot, parent=parent)
+            dialog = LogicVisualizerConfigDialog(
+                configs=configs,
+                current_slot=selected_slot,
+                on_apply=apply_callback,
+                parent=parent,
+            )
         else:
-            dialog = VisualizerConfigDialog(configs=configs, current_slot=selected_slot, parent=parent)
+            dialog = VisualizerConfigDialog(
+                configs=configs,
+                current_slot=selected_slot,
+                on_apply=apply_callback,
+                parent=parent,
+            )
         if dialog.exec_() != dialog.Accepted:
             return False
 
-        self.configs_by_type[graph_type] = dialog.result_configs()
-        self.selected_slot_by_type[graph_type] = dialog.current_slot()
+        self._apply_dialog_configs(graph_type, dialog.result_configs(), dialog.current_slot())
+        return True
+
+    def _apply_dialog_configs(
+        self,
+        graph_type: VisualizerGraphType,
+        configs: list[VisualizerConfig],
+        selected_slot: int,
+    ) -> None:
+        self.configs_by_type[graph_type] = [ConfigStore.clone_config(config) for config in configs]
+        self.selected_slot_by_type[graph_type] = selected_slot
         self.save_configs()
 
         for slot_index in range(SLOT_COUNT):
@@ -200,8 +220,6 @@ class VisualizerManager:
             if existing_window is not None:
                 existing_window.close()
             self.sample_counters_by_slot[slot_id] = 0
-
-        return True
 
     def _get_or_create_window(
         self,

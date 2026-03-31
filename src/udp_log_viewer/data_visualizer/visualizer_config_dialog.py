@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Callable
+
 from PyQt5.QtWidgets import (
     QCheckBox, QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox,
     QFormLayout, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton,
@@ -25,6 +27,7 @@ class VisualizerConfigDialog(QDialog):
         self,
         configs: list[VisualizerConfig],
         current_slot: int = 0,
+        on_apply: Callable[[list[VisualizerConfig], int], None] | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -32,8 +35,10 @@ class VisualizerConfigDialog(QDialog):
         while len(self._configs) < SLOT_COUNT:
             self._configs.append(VisualizerConfig(graph_type="plot"))
         self._current_slot = max(0, min(current_slot, SLOT_COUNT - 1))
+        self._on_apply = on_apply
+        self._loaded_form_config = ConfigStore.clone_config(self._configs[self._current_slot])
         self._switch_guard = False
-        self.setWindowTitle("CSV_TEMP Visualizer Config")
+        self.setWindowTitle("Plot Visualizer Config")
         self.setModal(True)
         self.resize(1260, 720)
 
@@ -144,10 +149,18 @@ class VisualizerConfigDialog(QDialog):
         buttons_row.addStretch(1)
         root.addLayout(buttons_row)
 
-        dlg_buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel, parent=self)
-        dlg_buttons.accepted.connect(self.accept)
-        dlg_buttons.rejected.connect(self.reject)
-        root.addWidget(dlg_buttons)
+        buttons_row = QHBoxLayout()
+        buttons_row.addStretch(1)
+        self._cancel_button = QPushButton("CANCEL")
+        self._cancel_button.clicked.connect(self.reject)
+        self._apply_button = QPushButton("APPLY")
+        self._apply_button.clicked.connect(self._on_apply_clicked)
+        self._save_button = QPushButton("SAVE")
+        self._save_button.clicked.connect(self._on_save_clicked)
+        buttons_row.addWidget(self._cancel_button)
+        buttons_row.addWidget(self._apply_button)
+        buttons_row.addWidget(self._save_button)
+        root.addLayout(buttons_row)
 
         self._load_slot_into_form(self._current_slot)
 
@@ -157,6 +170,20 @@ class VisualizerConfigDialog(QDialog):
 
     def current_slot(self) -> int:
         return self._current_slot
+
+    def _persist_current_config(self) -> list[VisualizerConfig]:
+        configs = self.result_configs()
+        self._loaded_form_config = ConfigStore.clone_config(self._configs[self._current_slot])
+        if self._on_apply is not None:
+            self._on_apply(configs, self._current_slot)
+        return configs
+
+    def _on_apply_clicked(self) -> None:
+        self._persist_current_config()
+
+    def _on_save_clicked(self) -> None:
+        self._persist_current_config()
+        self.accept()
 
     def _load_slot_into_form(self, slot_index: int) -> None:
         config = ConfigStore.clone_config(self._configs[slot_index])
@@ -188,6 +215,7 @@ class VisualizerConfigDialog(QDialog):
         for field in config.fields:
             self._append_row(field)
         self._switch_guard = False
+        self._loaded_form_config = self._read_form_config()
 
     def _read_form_config(self) -> VisualizerConfig:
         fields = []
@@ -244,19 +272,43 @@ class VisualizerConfigDialog(QDialog):
         )
 
     def _has_unsaved_changes(self) -> bool:
-        return self._read_form_config() != self._configs[self._current_slot]
+        return self._read_form_config() != self._loaded_form_config
 
-    def _confirm_discard_changes(self) -> bool:
+    def _confirm_slot_change(self) -> str:
         if not self._has_unsaved_changes():
-            return True
-        result = QMessageBox.question(
-            self,
-            "Discard Changes?",
-            "Unsaved changes in the current slot will be discarded. Continue?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
-        )
-        return result == QMessageBox.Yes
+            return "keep"
+        box = QMessageBox(self)
+        box.setWindowTitle("Unsaved Changes")
+        box.setIcon(QMessageBox.Question)
+        box.setText("Save changes before switching to another slot?")
+        save_button = box.addButton("Speichern", QMessageBox.AcceptRole)
+        discard_button = box.addButton("Verwerfen", QMessageBox.DestructiveRole)
+        cancel_button = box.addButton("Abbrechen", QMessageBox.RejectRole)
+        box.setDefaultButton(save_button)
+        box.exec_()
+        clicked = box.clickedButton()
+        if clicked == save_button:
+            return "save"
+        if clicked == discard_button:
+            return "discard"
+        return "cancel"
+
+    def _change_slot(self, next_slot: int) -> None:
+        self._current_slot = next_slot
+        self._load_slot_into_form(next_slot)
+
+    def _reset_slot_spin(self) -> None:
+        self._switch_guard = True
+        self._slot_spin.setValue(self._current_slot + 1)
+        self._switch_guard = False
+
+    def _save_and_switch_slot(self, next_slot: int) -> None:
+        self._persist_current_config()
+        self._change_slot(next_slot)
+
+    def _discard_and_switch_slot(self, next_slot: int) -> None:
+        self._configs[self._current_slot] = ConfigStore.clone_config(self._loaded_form_config)
+        self._change_slot(next_slot)
 
     def _on_slot_changed(self, value: int) -> None:
         if self._switch_guard:
@@ -264,13 +316,17 @@ class VisualizerConfigDialog(QDialog):
         next_slot = value - 1
         if next_slot == self._current_slot:
             return
-        if not self._confirm_discard_changes():
-            self._switch_guard = True
-            self._slot_spin.setValue(self._current_slot + 1)
-            self._switch_guard = False
+        decision = self._confirm_slot_change()
+        if decision == "cancel":
+            self._reset_slot_spin()
             return
-        self._current_slot = next_slot
-        self._load_slot_into_form(next_slot)
+        if decision == "save":
+            self._save_and_switch_slot(next_slot)
+            return
+        if decision == "discard":
+            self._discard_and_switch_slot(next_slot)
+            return
+        self._change_slot(next_slot)
 
     def _append_row(self, field: VisualizerFieldConfig) -> None:
         row = self._table.rowCount()
