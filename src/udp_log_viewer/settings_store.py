@@ -37,11 +37,15 @@ class SettingsStore:
         self._settings.sync()
 
     def load_preferences(self) -> AppPreferences:
+        log_path = self.ini_get(self._PREFS_SECTION, "log_path", "").strip()
+        if not log_path:
+            log_path = self.ini_get("paths", "logs_dir", "").strip()
         return AppPreferences(
             language=self.ini_get(self._PREFS_SECTION, "language", "de"),
             autoscroll_default=self._ini_get_bool(self._PREFS_SECTION, "autoscroll_default", True),
             timestamp_default=self._ini_get_bool(self._PREFS_SECTION, "timestamp_default", True),
             max_lines_default=self._ini_get_int(self._PREFS_SECTION, "max_lines_default", 20000),
+            log_path=log_path,
             visualizer_presets=self.ini_get(self._PREFS_SECTION, "visualizer_presets", "100,150,200,300"),
             plot_sliding_window_default=self._ini_get_bool(
                 self._PREFS_SECTION,
@@ -73,6 +77,7 @@ class SettingsStore:
         parser.set(self._PREFS_SECTION, "autoscroll_default", str(bool(preferences.autoscroll_default)).lower())
         parser.set(self._PREFS_SECTION, "timestamp_default", str(bool(preferences.timestamp_default)).lower())
         parser.set(self._PREFS_SECTION, "max_lines_default", str(preferences.max_lines_default))
+        parser.set(self._PREFS_SECTION, "log_path", preferences.log_path)
         parser.set(self._PREFS_SECTION, "visualizer_presets", preferences.presets_as_ini())
         parser.set(
             self._PREFS_SECTION,

@@ -205,6 +205,8 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._axes_y1: Axes = self._figure.add_subplot(111)
             self._axes_y2: Axes = self._axes_y1.twinx()
             self._annotation = None
+            self._hover_line_y1 = self._axes_y1.axhline(y=0, color="#666666", linestyle=":", linewidth=0.9, visible=False)
+            self._hover_line_y2 = self._axes_y2.axhline(y=0, color="#666666", linestyle=":", linewidth=0.9, visible=False)
             self._series_metadata: list[dict[str, object]] = []
             self._canvas.mpl_connect("motion_notify_event", self._on_mouse_move)
             self._canvas.mpl_connect("axes_leave_event", self._on_mouse_leave)
@@ -224,6 +226,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._window_size_spin.setRange(10, max(10, self._controller.config.max_samples))
             self._window_size_spin.setSingleStep(50)
             self._window_size_spin.setKeyboardTracking(False)
+            self._window_size_spin.setMinimumWidth(88)
             self._window_size_spin.setValue(self._controller.runtime_window_size)
             self._window_size_spin.valueChanged.connect(self._on_window_size_changed)
 
@@ -367,6 +370,8 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._annotation = None
             self._axes_y1.clear()
             self._axes_y2.clear()
+            self._hover_line_y1 = self._axes_y1.axhline(y=0, color="#666666", linestyle=":", linewidth=0.9, visible=False)
+            self._hover_line_y2 = self._axes_y2.axhline(y=0, color="#666666", linestyle=":", linewidth=0.9, visible=False)
             self._series_metadata = []
 
             samples = self._get_visible_samples()
@@ -529,15 +534,20 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
         def _draw_end_labels(self) -> None:
             if not self._series_metadata:
                 return
+            offsets_by_axis = {
+                self._axes_y1: _build_staggered_label_offsets(self._series_metadata, self._axes_y1),
+                self._axes_y2: _build_staggered_label_offsets(self._series_metadata, self._axes_y2),
+            }
             for meta in self._series_metadata:
                 axis = meta["axis"]
                 latest_value = meta["latest"]
                 latest_index = meta["latest_index"]
                 color = meta["color"]
+                vertical_offset = offsets_by_axis.get(axis, {}).get(id(meta), 0)
                 axis.annotate(
                     _format_plot_value(latest_value),
                     xy=(latest_index, latest_value),
-                    xytext=(8, 0),
+                    xytext=(8, vertical_offset),
                     textcoords="offset points",
                     ha="left",
                     va="center",
@@ -579,9 +589,11 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             x_value = match["x"]
             y_value = match["y"]
             color = match["color"]
+            self._show_hover_line(axis, y_value, color)
+            self._canvas.setCursor(Qt.CrossCursor)
             tooltip = (
-                f"{match['field_name']}: {_format_plot_value(y_value, match['unit'])} | "
-                f"Latest: {_format_plot_value(match['latest'], match['unit'])} | "
+                f"{match['field_name']}: {_format_plot_value(y_value, match['unit'])}\n"
+                f"Latest: {_format_plot_value(match['latest'], match['unit'])}\n"
                 f"Max: {_format_plot_value(match['max'], match['unit'])}"
             )
             if self._annotation is None:
@@ -620,10 +632,23 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._hide_annotation()
 
         def _hide_annotation(self) -> None:
-            if self._annotation is None:
-                return
-            self._annotation.set_visible(False)
+            if self._annotation is not None:
+                self._annotation.set_visible(False)
+            self._hide_hover_lines()
+            self._canvas.setCursor(Qt.ArrowCursor)
             self._canvas.draw_idle()
+
+        def _show_hover_line(self, axis: Axes, y_value: float, color: str) -> None:
+            target_line = self._hover_line_y2 if axis is self._axes_y2 else self._hover_line_y1
+            other_line = self._hover_line_y1 if axis is self._axes_y2 else self._hover_line_y2
+            target_line.set_ydata([y_value, y_value])
+            target_line.set_color(color)
+            target_line.set_visible(True)
+            other_line.set_visible(False)
+
+        def _hide_hover_lines(self) -> None:
+            self._hover_line_y1.set_visible(False)
+            self._hover_line_y2.set_visible(False)
 
         def _find_hover_match(self, event) -> dict[str, object] | None:
             best_match = None
@@ -755,6 +780,40 @@ def _format_plot_value(value: float | int | None, unit: str = "") -> str:
     if unit:
         return f"{formatted} {unit}"
     return formatted
+
+
+def _build_staggered_label_offsets(
+    series_metadata: list[dict[str, object]],
+    axis: "Axes",
+    *,
+    min_gap_points: int = 14,
+    max_offset_points: int = 42,
+) -> dict[int, int]:
+    axis_series = [meta for meta in series_metadata if meta.get("axis") is axis]
+    if len(axis_series) <= 1:
+        return {id(meta): 0 for meta in axis_series}
+
+    ordered_series = sorted(axis_series, key=lambda meta: float(meta.get("latest", 0.0)))
+    offsets: dict[int, int] = {}
+    previous_y_px: float | None = None
+    previous_offset = 0
+
+    for meta in ordered_series:
+        latest_value = float(meta.get("latest", 0.0))
+        latest_index = float(meta.get("latest_index", 0.0))
+        _, y_px = axis.transData.transform((latest_index, latest_value))
+
+        offset = 0
+        if previous_y_px is not None and abs(y_px - previous_y_px) < min_gap_points:
+            direction = 1 if previous_offset <= 0 else -1
+            magnitude = min(max_offset_points, abs(previous_offset) + min_gap_points)
+            offset = direction * magnitude
+
+        offsets[id(meta)] = offset
+        previous_y_px = y_px + offset
+        previous_offset = offset
+
+    return offsets
 
 
 def _uses_binary_step_axis(fields, *, axis: str) -> bool:

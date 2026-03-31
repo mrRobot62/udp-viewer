@@ -34,7 +34,7 @@ from typing import Deque, List
 # ---------------------------------------------------------------------------
 # These constants define the qualitative physical behavior of the simple oven
 # model. The intended direction is:
-#
+#[]
 #   heater -> hotspot -> chamber
 #
 # So the HotSpot sensor reacts first and more aggressively. Chamber follows
@@ -155,7 +155,7 @@ def build_client_temperature_replay_sample() -> List[str]:
 def build_host_temperature_replay_sample() -> List[str]:
     """Kleines Einzelbeispiel im Host-PLOT-Format fuer Replay/Smoke-Tests."""
     return [
-        "[CSV_HOST_PLOT];221;228;600;570,650;0",
+        "[CSV_HOST_PLOT];221;228;600;570;650;0",
     ]
 
 
@@ -460,7 +460,7 @@ def next_temperature_plot_simulation_lines(state: TemperaturePlotSimulationState
     )
     host_line = (
         f"[CSV_HOST_PLOT];{chamber_tenths};{hot_tenths};{target_tenths};"
-        f"{temp_min_tenths},{temp_max_tenths};{state.state}"
+        f"{temp_min_tenths};{temp_max_tenths};{state.state}"
     )
     return [client_line, host_line]
 

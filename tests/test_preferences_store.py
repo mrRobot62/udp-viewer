@@ -16,6 +16,7 @@ def test_preferences_are_persisted_in_config_ini(tmp_path: Path) -> None:
         autoscroll_default=False,
         timestamp_default=False,
         max_lines_default=12345,
+        log_path=str(tmp_path / "logs"),
         visualizer_presets=(100, 150, 200, 300),
         plot_sliding_window_default=False,
         plot_window_size_default=150,
@@ -30,6 +31,7 @@ def test_preferences_are_persisted_in_config_ini(tmp_path: Path) -> None:
     assert loaded.autoscroll_default is False
     assert loaded.timestamp_default is False
     assert loaded.max_lines_default == 12345
+    assert loaded.log_path == str(tmp_path / "logs")
     assert loaded.visualizer_presets == (100, 150, 200, 300)
     assert loaded.plot_sliding_window_default is False
     assert loaded.plot_window_size_default == 150

@@ -12,6 +12,7 @@ class AppPreferences:
     autoscroll_default: bool = True
     timestamp_default: bool = True
     max_lines_default: int = 20000
+    log_path: str = ""
     visualizer_presets: tuple[int, int, int, int] = DEFAULT_VISUALIZER_PRESETS
     plot_sliding_window_default: bool = True
     plot_window_size_default: int = 200
@@ -21,6 +22,7 @@ class AppPreferences:
     def __post_init__(self) -> None:
         self.language = (self.language or "de").strip().lower() or "de"
         self.max_lines_default = self._normalize_positive_int(self.max_lines_default, fallback=20000, minimum=1000)
+        self.log_path = self._normalize_log_path(self.log_path)
         self.visualizer_presets = self._normalize_presets(self.visualizer_presets)
         self.plot_window_size_default = self._normalize_positive_int(
             self.plot_window_size_default,
@@ -40,6 +42,10 @@ class AppPreferences:
         except (TypeError, ValueError):
             parsed = fallback
         return max(minimum, parsed)
+
+    @staticmethod
+    def _normalize_log_path(value: str | None) -> str:
+        return (value or "").strip()
 
     @classmethod
     def _normalize_presets(

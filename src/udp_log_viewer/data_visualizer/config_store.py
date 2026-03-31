@@ -291,27 +291,32 @@ class ConfigStore:
     def _normalize_loaded_plot_config(config: VisualizerConfig) -> VisualizerConfig:
         if config.graph_type != "plot":
             return config
-        if config.filter_string != "[CSV_HOST_PLOT]":
-            return config
-
-        field_names = [field.field_name.strip().lower() for field in config.fields]
-        legacy_host_names = ["chamber", "hotspot", "target", "chamber_min", "chamber_max", "state"]
-        if field_names != legacy_host_names:
-            return config
-
-        config.fields = [
-            VisualizerFieldConfig("Tch", active=True, numeric=True, scale=10, plot=True, axis="Y1", render_style="Line", color="blue", line_style="solid", unit="°C"),
-            VisualizerFieldConfig("Thot", active=True, numeric=True, scale=10, plot=True, axis="Y1", render_style="Line", color="red", line_style="solid", unit="°C"),
-            VisualizerFieldConfig("target", active=True, numeric=True, scale=10, plot=True, axis="Y1", render_style="Line", color="green", line_style="solid", unit="°C"),
-            VisualizerFieldConfig("temp_range", active=False, numeric=False, scale=1, plot=False, axis="Y1", render_style="Line", color="black", line_style="dashed", unit=""),
-            VisualizerFieldConfig("state", active=False, numeric=True, scale=1, plot=False, axis="Y2", render_style="Step", color="gray", line_style="dotted", unit=""),
-        ]
-        config.y1_axis.label = config.y1_axis.label or "Temperature"
-        config.y2_axis.label = config.y2_axis.label or "State"
-        if config.y2_axis.min_value is None:
-            config.y2_axis.min_value = -0.1
-        if config.y2_axis.max_value is None:
-            config.y2_axis.max_value = 3.1
+        legacy_filter_aliases = {
+            "[CSV_CLIENT_TEMP]": "[CSV_CLIENT_PLOT]",
+            "[CSV_HOST_TEMP]": "[CSV_HOST_PLOT]",
+            "CSV_CLIENT_TEMP": "CSV_CLIENT_PLOT",
+            "CSV_HOST_TEMP": "CSV_HOST_PLOT",
+        }
+        config.filter_string = legacy_filter_aliases.get(config.filter_string, config.filter_string)
+        if config.filter_string == "[CSV_HOST_PLOT]":
+            field_names = [field.field_name.strip().lower() for field in config.fields]
+            legacy_host_names = ["chamber", "hotspot", "target", "chamber_min", "chamber_max", "state"]
+            compact_host_names = ["tch", "thot", "target", "temp_range", "state"]
+            if field_names in (legacy_host_names, compact_host_names):
+                config.fields = [
+                    VisualizerFieldConfig("Tch", active=True, numeric=True, scale=10, plot=True, axis="Y1", render_style="Line", color="blue", line_style="solid", unit="°C"),
+                    VisualizerFieldConfig("Thot", active=True, numeric=True, scale=10, plot=True, axis="Y1", render_style="Line", color="red", line_style="solid", unit="°C"),
+                    VisualizerFieldConfig("target", active=True, numeric=True, scale=10, plot=True, axis="Y1", render_style="Line", color="green", line_style="solid", unit="°C"),
+                    VisualizerFieldConfig("target_min", active=True, numeric=True, scale=10, plot=True, axis="Y1", render_style="Line", color="black", line_style="dashed", unit=""),
+                    VisualizerFieldConfig("target_max", active=True, numeric=True, scale=10, plot=True, axis="Y1", render_style="Line", color="gray", line_style="solid", unit=""),
+                    VisualizerFieldConfig("state", active=False, numeric=True, scale=1, plot=False, axis="Y2", render_style="Step", color="gray", line_style="dotted", unit=""),
+                ]
+                config.y1_axis.label = config.y1_axis.label or "Temperature"
+                config.y2_axis.label = config.y2_axis.label or "State"
+                if config.y2_axis.min_value is None:
+                    config.y2_axis.min_value = -0.1
+                if config.y2_axis.max_value is None:
+                    config.y2_axis.max_value = 3.1
         return config
 
     def _default_config_for_type(self, graph_type: VisualizerGraphType) -> VisualizerConfig:
@@ -434,8 +439,9 @@ class ConfigStore:
             fields=[
                 VisualizerFieldConfig("Tch", active=True, numeric=True, scale=10, plot=True, axis="Y1", render_style="Line", color="blue", line_style="solid", unit="°C"),
                 VisualizerFieldConfig("Thot", active=True, numeric=True, scale=10, plot=True, axis="Y1", render_style="Line", color="red", line_style="solid", unit="°C"),
-                VisualizerFieldConfig("target", active=False, numeric=True, scale=10, plot=False, axis="Y1", render_style="Line", color="gray", line_style="dashed", unit="°C"),
-                VisualizerFieldConfig("temp_range", active=False, numeric=False, scale=1, plot=False, axis="Y1", render_style="Line", color="black", line_style="dashed", unit=""),
+                VisualizerFieldConfig("target", active=True, numeric=True, scale=10, plot=True, axis="Y1", render_style="Line", color="green", line_style="solid", unit="°C"),
+                VisualizerFieldConfig("target_min", active=True, numeric=True, scale=10, plot=True, axis="Y1", render_style="Line", color="black", line_style="dashed", unit=""),
+                VisualizerFieldConfig("target_max", active=True, numeric=True, scale=10, plot=True, axis="Y1", render_style="Line", color="gray", line_style="solid", unit=""),
                 VisualizerFieldConfig("state", active=False, numeric=True, scale=1, plot=False, axis="Y2", render_style="Step", color="green", line_style="dashdot", unit=""),
             ],
         )

@@ -14,7 +14,7 @@ from udp_log_viewer.udp_log_utils import compile_patterns, match_exclude, match_
 
 
 def test_package_version_is_consistent() -> None:
-    assert __version__ == "0.15.2"
+    assert __version__ == "0.15.3"
     assert __display_version__.startswith(__version__)
 
 
@@ -67,8 +67,9 @@ def test_temperature_plot_simulation_keeps_host_and_client_in_sync() -> None:
     assert client_sample.values_by_name["Tch"] == host_sample.values_by_name["Tch"]
     assert client_sample.values_by_name["Thot"] == host_sample.values_by_name["Thot"]
     assert host_sample.values_by_name["target"] == 60.0
+    assert host_sample.values_by_name["target_min"] == 57.0
+    assert host_sample.values_by_name["target_max"] == 65.0
     assert host_sample.values_by_name["state"] == client_sample.values_by_name["state"]
-    assert host_sample.values_by_name["temp_range"] is None
 
 
 def test_temperature_plot_simulation_chamber_moves_toward_target() -> None:

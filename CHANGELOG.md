@@ -7,6 +7,36 @@ The format is based on Keep a Changelog and follows semantic versioning
 principles where applicable.
 
 ------------------------------------------------------------------------
+## 0.15.3 -- 2026-03-31
+### Fixed
+
+-   Staggered latest-value labels in plot windows to reduce overlap at
+    the right edge
+-   Switched plot hover tooltips to a multi-line layout for better
+    readability
+-   Added plot hover guide lines and a cross cursor for easier value
+    inspection
+-   Updated `SAVE` and `Open Log...` to use an explicit default log
+    folder and report the chosen save path in the status bar
+-   Ensured live session log files follow the configured `Log Path`
+-   Corrected host plot simulation output to emit `target_min` and
+    `target_max` as separate values again
+-   Fixed false-positive unsaved-change prompts when switching plot or
+    logic slots without real edits
+
+### Added
+
+-   Added `Log Path` to `Preferences` so the default log/save folder can
+    be configured centrally
+-   Added `APPLY` actions to plot and logic configuration dialogs
+
+### Technical
+
+-   Bumped application and package version metadata to `0.15.3`
+-   Added coverage for legacy host plot config normalization and release
+    consistency updates
+
+------------------------------------------------------------------------
 ## 0.15.2 -- 2026-03-29
 ### Improved
 
