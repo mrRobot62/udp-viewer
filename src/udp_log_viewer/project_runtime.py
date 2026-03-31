@@ -5,7 +5,7 @@ from pathlib import Path
 import re
 
 
-_PROJECT_NAME_RE = re.compile(r"^[A-Za-z0-9]{1,15}$")
+_PROJECT_NAME_RE = re.compile(r"^[A-Za-z0-9_]{1,20}$")
 
 
 @dataclass(slots=True)

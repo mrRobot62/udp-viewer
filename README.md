@@ -40,6 +40,7 @@ The current codebase includes:
 - real-time UDP log reception
 - filter, exclude, and highlight rules
 - live session logging
+- runtime project contexts for grouping logs and screenshots per test session
 - replay of saved log files
 - built-in simulation for text, temperature, and logic traffic
 - CSV-based data visualization

@@ -10,13 +10,14 @@ from udp_log_viewer.project_runtime import (
 def test_project_name_validation_accepts_short_alnum_names() -> None:
     assert is_valid_project_name("Project42") is True
     assert is_valid_project_name("ABC123xyz") is True
+    assert is_valid_project_name("Demo_123") is True
+    assert is_valid_project_name("Project_Name_123456") is True
 
 
 def test_project_name_validation_rejects_invalid_names() -> None:
     assert is_valid_project_name("") is False
-    assert is_valid_project_name("project_name") is False
     assert is_valid_project_name("project-1") is False
-    assert is_valid_project_name("abcdefghijklmnop") is False
+    assert is_valid_project_name("abcdefghijklmnopqrstu") is False
 
 
 def test_build_project_filename_prefixes_project_name() -> None:

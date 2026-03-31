@@ -13,6 +13,7 @@ Version `0.15.3` focuses on bugfixing and usability improvements for plot and lo
 - hover support in plot windows with horizontal guide line and cross cursor
 - configurable default log folder via `Preferences > Log Path`
 - runtime-only `PROJECT` mode with a root folder, automatic project subfolder creation, and project-based file naming
+- refined `PROJECT` dialog sizing and validation for longer names and long output paths
 - clearer live-log and save-path reporting in the main window
 - `APPLY` support in plot and logic config dialogs
 - corrected slot-change handling so save/discard prompts only appear for real edits

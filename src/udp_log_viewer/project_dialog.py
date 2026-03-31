@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PyQt5.QtCore import QRegularExpression
+from PyQt5.QtCore import QRegularExpression, Qt
 from PyQt5.QtGui import QRegularExpressionValidator
 from PyQt5.QtWidgets import (
     QDialog,
@@ -30,16 +30,18 @@ class ProjectDialog(QDialog):
         form = QFormLayout()
 
         self._name = QLineEdit(self)
-        self._name.setMaxLength(15)
+        self._name.setMaxLength(20)
+        self._name.setMinimumWidth(260)
         self._name.setPlaceholderText("Project name")
         self._name.setToolTip(
-            "Use 1 to 15 alphanumeric characters. The name is used for the project folder, file names, and window titles."
+            "Use 1 to 20 characters with letters, digits, or underscores. The name is used for the project folder, file names, and window titles."
         )
-        self._name.setValidator(QRegularExpressionValidator(QRegularExpression(r"[A-Za-z0-9]{0,15}"), self._name))
+        self._name.setValidator(QRegularExpressionValidator(QRegularExpression(r"[A-Za-z0-9_]{0,20}"), self._name))
         self._name.textChanged.connect(self._update_preview)
 
         self._root_dir = QLineEdit(self)
         self._root_dir.setPlaceholderText("Select a root folder")
+        self._root_dir.setMinimumWidth(440)
         self._root_dir.setToolTip(
             "Select the parent folder for the project, for example Downloads. Saving will automatically create a subfolder with the project name and store all project artifacts there."
         )
@@ -54,8 +56,10 @@ class ProjectDialog(QDialog):
         root_widget = QWidget(self)
         root_widget.setLayout(root_row)
 
-        self._preview = QLabel(self)
-        self._preview.setWordWrap(True)
+        self._preview = QLineEdit(self)
+        self._preview.setReadOnly(True)
+        self._preview.setMinimumWidth(440)
+        self._preview.setAlignment(Qt.AlignRight)
 
         form.addRow("Project name", self._name)
         form.addRow("Root folder", root_widget)
@@ -67,6 +71,8 @@ class ProjectDialog(QDialog):
         self._cancel = QPushButton("CANCEL", self)
         self._cancel.clicked.connect(self.reject)
         self._save = QPushButton("SAVE", self)
+        self._save.setDefault(True)
+        self._save.setAutoDefault(True)
         self._save.clicked.connect(self.accept)
         buttons.addWidget(self._cancel)
         buttons.addWidget(self._save)

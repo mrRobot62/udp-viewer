@@ -23,6 +23,9 @@ principles where applicable.
     `target_max` as separate values again
 -   Fixed false-positive unsaved-change prompts when switching plot or
     logic slots without real edits
+-   Refined the `PROJECT` dialog with wider fields, underscore support
+    in project names, right-aligned long output paths, and `SAVE` as the
+    default action
 
 ### Added
 
