@@ -4,28 +4,30 @@ title: "[FEATURE] "
 labels: ["feature"]
 
 body:
+  - type: markdown
+    attributes:
+      value: "## New Feature is needed...."
+  - type: input
+    id: version
+    attributes:
+      label: Current Firmware Version
+      placeholder: 0.15.3 / 0.16.0 / ...
   - type: textarea
     id: description
     attributes:
-      label: Which release do you use?
-      description: Version
-      label: Feature description
-      description: Discribe your feature as good as you can
+      label: Describe this feature
+      description: as clearly as possible
     validations:
       required: true
 
-  - type: textarea
-    id: description
+  - type: dropdown
+    id: component
     attributes:
-      label: More infos around you feature
-      description: 
-    validations:
-      required: true
-  - 
-  - type: textarea
-    id: description
-    attributes:
-      label: More infos around you feature
-      description: 
-    validations:
-      required: true
+      label: Affected Component
+      options:
+        - Other (new)
+        - Main log screen
+        - PLOT visualization/config
+        - LOGIC visualization/config
+        - Preferences
+        - Logging
