@@ -14,7 +14,10 @@ Complete German documentation:
 
 - [docs/DOKUMENTATION_de.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/DOKUMENTATION_de.md)
 
-## MAC users only
+## Windows-User
+please use setup.exe to install this viewer
+
+## ToDo for MAC users
 after installation this application is not signed and can't be started directly.
 You have to set this command: `xattr -dr com.apple.quarantine /Applications/UDPLogViewer.app` 
 
