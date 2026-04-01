@@ -20,16 +20,21 @@ principles where applicable.
     clear the measurement
 -   Added `Shift`-click period measurement in the logic graph to measure
     from one edge to the next edge of the same type
+-   Added project-description notes in the `PROJECT` dialog and write
+    them as `README_<projectname>.md` files inside the project folder
 
 ### Improved
 
 -   Limited plot and logic `Window Size` controls to `1..5000` and
     exposed the allowed range via tooltips in graph windows and config
     dialogs
+-   Added runtime `Legend` toggles in plot and logic graph windows
 -   Moved compact logic-measurement labels to the right of the blue end
     marker when the measured span is too short for centered text
 -   Reused an already prepared live log on the next `CONNECT` instead of
     rotating it again immediately after a reset
+-   Added explicit `TAB` navigation plus keyboard shortcuts for save and
+    screenshot actions in the main and graph windows
 
 ### Technical
 

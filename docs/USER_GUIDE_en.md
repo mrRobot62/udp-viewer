@@ -159,6 +159,42 @@ This is useful to:
 
 `COPY` copies the visible content of the main log view to the clipboard.
 
+### 5.5 Keyboard use in the main window
+
+The main window provides explicit keyboard navigation via `TAB` and
+`Shift` + `TAB`.
+
+This allows direct keyboard focus traversal across controls such as:
+
+- `PROJECT`
+- `SAVE`
+- `RESET`
+- `CLEAR`
+- `COPY`
+- `CONNECT`
+- `PAUSE`
+- the `Bind-IP`, `Port`, and `Max lines` input fields
+
+Additional save shortcuts:
+
+- `Ctrl` + `S`
+- `Cmd` + `S`
+- `F12`
+
+### 5.6 `PROJECT`
+
+The `PROJECT` dialog now also contains a multi-line Markdown
+description.
+
+Behavior:
+
+- when a project is created or saved, a file
+  `README_<projectname>.md` is written into the project folder
+- the default content starts with a heading containing the project name
+  and the current timestamp
+- the description is limited to `1024` characters
+- allowed project-name characters are `A-Za-z`, `0-9`, `_`, and `-`
+
 ## 6. Filter, Exclude, and Highlight
 
 The application provides slot-based rules for:
@@ -278,6 +314,7 @@ controls inside the graph window.
 Visible controls:
 
 - `Sliding Window`
+- `Legend`
 - presets `100`, `150`, `200`, `300`
 - `Window Size`
 - `Reset`
@@ -290,6 +327,8 @@ Meaning:
 - `Window Size`
   controls the currently visible window size
   valid runtime range: `1..5000`
+- `Legend`
+  toggles the legend in the open graph window at runtime
 - presets
   quickly set common window sizes
 - `Reset`
@@ -300,6 +339,15 @@ Important:
 - changes in an open graph window are runtime overrides first
 - the persistent default comes from the visualizer configuration or the
   global preferences
+
+Additional screenshot shortcuts in graph windows:
+
+- `Ctrl` + `Shift` + `S`
+- `Cmd` + `Shift` + `S`
+- `F12`
+
+The graph windows also provide explicit `TAB` navigation across the
+visible controls.
 
 ### 9.2 Measuring in the logic graph
 

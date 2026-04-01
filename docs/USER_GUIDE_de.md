@@ -164,6 +164,42 @@ Praktischer Nutzen:
 
 `COPY` kopiert den sichtbaren Inhalt der Hauptansicht in die Zwischenablage.
 
+### 5.5 Tastaturbedienung im Hauptfenster
+
+Das Hauptfenster unterstützt eine explizite Tastaturbedienung über
+`TAB` und `Shift` + `TAB`.
+
+Damit lassen sich nacheinander unter anderem erreichen:
+
+- `PROJECT`
+- `SAVE`
+- `RESET`
+- `CLEAR`
+- `COPY`
+- `CONNECT`
+- `PAUSE`
+- die Eingabefelder für `Bind-IP`, `Port` und `Max lines`
+
+Zusätzliche Save-Kürzel:
+
+- `Ctrl` + `S`
+- `Cmd` + `S`
+- `F12`
+
+### 5.6 `PROJECT`
+
+Im `PROJECT`-Dialog steht jetzt zusätzlich eine mehrzeilige
+Markdown-Beschreibung zur Verfügung.
+
+Verhalten:
+
+- beim Erstellen oder Speichern eines Projekts wird eine Datei
+  `README_<projectname>.md` im Projektordner geschrieben
+- Standardinhalt ist eine Überschrift mit Projektname und aktuellem
+  Zeitstempel
+- die Beschreibung ist auf `1024` Zeichen begrenzt
+- erlaubte Zeichen im Projektnamen sind `A-Za-z`, `0-9`, `_` und `-`
+
 ## 6. Filter, Exclude und Highlight
 
 Die App bietet jeweils Slot-basierte Regeln für:
@@ -329,6 +365,7 @@ Sowohl der Temperatur- als auch der Logic-Visualizer besitzen eine direkte Slidi
 Sichtbare Bedienelemente:
 
 - `Sliding Window`
+- `Legend`
 - Presets `100`, `150`, `200`, `300`
 - `Window Size`
 - `Reset`
@@ -341,6 +378,8 @@ Bedeutung:
 - `Window Size`
   bestimmt die aktuell sichtbare Fenstergröße
   gültiger Bereich im aktuellen Stand: `1..5000`
+- `Legend`
+  blendet die Legende im geöffneten Graph-Fenster zur Laufzeit ein oder aus
 - Presets
   setzen die Fenstergröße schnell auf typische Werte
 - `Reset`
@@ -350,6 +389,15 @@ Wichtig:
 
 - Änderungen im geöffneten Graph-Fenster sind zunächst Laufzeit-Overrides
 - die persistente Default-Vorgabe kommt aus der Graph-Konfiguration bzw. aus den globalen Präferenzen
+
+Zusätzliche Screenshot-Kürzel im Graph-Fenster:
+
+- `Ctrl` + `Shift` + `S`
+- `Cmd` + `Shift` + `S`
+- `F12`
+
+Auch die Graph-Fenster besitzen eine explizite `TAB`-Navigation über die
+sichtbaren Bedienelemente.
 
 ### 9.2 Messung im Logic-Graphen
 

@@ -12,13 +12,15 @@ from ..preferences import DEFAULT_VISUALIZER_PRESETS
 from ..project_runtime import build_project_filename, build_project_title_suffix
 
 try:
-    from PyQt5.QtCore import Qt, QSettings
+    from PyQt5.QtCore import QEvent, Qt, QSettings
+    from PyQt5.QtGui import QKeySequence
     from PyQt5.QtWidgets import (
         QCheckBox,
         QFileDialog,
         QHBoxLayout,
         QLabel,
         QPushButton,
+        QShortcut,
         QSpinBox,
         QSizePolicy,
         QVBoxLayout,
@@ -26,9 +28,12 @@ try:
     )
     _PYQT_AVAILABLE = True
 except Exception:  # pragma: no cover - fallback for non-Qt test environments
+    QEvent = None
+    QKeySequence = None
     Qt = None
     QSettings = None
     QFileDialog = None
+    QShortcut = None
     QWidget = object  # type: ignore[assignment]
     _PYQT_AVAILABLE = False
 
@@ -50,6 +55,7 @@ if TYPE_CHECKING:
 WINDOW_SIZE_MIN = 1
 WINDOW_SIZE_MAX = 5000
 WINDOW_SIZE_TOOLTIP = f"Sliding window size. Minimum: {WINDOW_SIZE_MIN}, Maximum: {WINDOW_SIZE_MAX}."
+SCREENSHOT_SHORTCUT_TIPS = "Screenshot shortcuts: Ctrl+Shift+S, Cmd+Shift+S, or F12."
 
 
 class VisualizerWindow:
@@ -71,6 +77,7 @@ class VisualizerWindow:
         self.freeze_sample_index: int | None = None
         self.runtime_sliding_window_enabled = bool(config.sliding_window_enabled)
         self.runtime_window_size = self._normalize_runtime_window_size(config.default_window_size)
+        self.runtime_show_legend = bool(config.show_legend)
         self.refresh_request_count = 0
         self.rebuild_request_count = 0
         self._widget: _VisualizerWindowWidget | None = None
@@ -103,9 +110,14 @@ class VisualizerWindow:
         self.runtime_window_size = self._normalize_runtime_window_size(value)
         self.rebuild_plot()
 
+    def set_runtime_show_legend(self, enabled: bool) -> None:
+        self.runtime_show_legend = bool(enabled)
+        self.rebuild_plot()
+
     def reset_runtime_window(self) -> None:
         self.runtime_sliding_window_enabled = bool(self.config.sliding_window_enabled)
         self.runtime_window_size = self._normalize_runtime_window_size(self.config.default_window_size)
+        self.runtime_show_legend = bool(self.config.show_legend)
         self.rebuild_plot()
 
     def refresh_plot(self) -> None:
@@ -212,6 +224,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._figure = Figure(figsize=(8, 4))
             self._canvas = FigureCanvas(self._figure)
             self._canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+            self._canvas.setFocusPolicy(Qt.ClickFocus)
             self._axes_y1: Axes = self._figure.add_subplot(111)
             self._axes_y2: Axes = self._axes_y1.twinx()
             self._annotation = None
@@ -222,15 +235,23 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._canvas.mpl_connect("axes_leave_event", self._on_mouse_leave)
 
             self._auto_refresh_checkbox = QCheckBox("Auto Refresh")
+            self._auto_refresh_checkbox.setFocusPolicy(Qt.StrongFocus)
             self._auto_refresh_checkbox.setChecked(True)
             self._auto_refresh_checkbox.stateChanged.connect(self._on_auto_refresh_changed)
 
             self._refresh_button = QPushButton("Refresh")
+            self._refresh_button.setFocusPolicy(Qt.StrongFocus)
             self._refresh_button.clicked.connect(self._on_refresh_clicked)
 
             self._sliding_window_checkbox = QCheckBox("Sliding Window")
+            self._sliding_window_checkbox.setFocusPolicy(Qt.StrongFocus)
             self._sliding_window_checkbox.setChecked(self._controller.runtime_sliding_window_enabled)
             self._sliding_window_checkbox.stateChanged.connect(self._on_sliding_window_changed)
+
+            self._legend_checkbox = QCheckBox("Legend")
+            self._legend_checkbox.setFocusPolicy(Qt.StrongFocus)
+            self._legend_checkbox.setChecked(self._controller.runtime_show_legend)
+            self._legend_checkbox.stateChanged.connect(self._on_legend_changed)
 
             self._window_size_spin = QSpinBox()
             self._window_size_spin.setRange(WINDOW_SIZE_MIN, max(WINDOW_SIZE_MIN, min(self._controller.config.max_samples, WINDOW_SIZE_MAX)))
@@ -244,14 +265,18 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._preset_buttons: list[QPushButton] = []
             for preset in self._controller.window_size_presets:
                 button = QPushButton(str(preset))
+                button.setFocusPolicy(Qt.StrongFocus)
                 button.clicked.connect(lambda _checked=False, value=preset: self._set_window_preset(value))
                 self._preset_buttons.append(button)
 
             self._reset_button = QPushButton("Reset")
+            self._reset_button.setFocusPolicy(Qt.StrongFocus)
             self._reset_button.clicked.connect(self._on_reset_window_clicked)
 
             self._screenshot_button = QPushButton("Screenshot")
+            self._screenshot_button.setFocusPolicy(Qt.StrongFocus)
             self._screenshot_button.clicked.connect(self._on_screenshot_clicked)
+            self._screenshot_button.setToolTip(SCREENSHOT_SHORTCUT_TIPS)
 
             self._status_label = QLabel("Samples: 0 visible / 0 total")
 
@@ -259,6 +284,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             top_bar.addWidget(self._auto_refresh_checkbox)
             top_bar.addWidget(self._refresh_button)
             top_bar.addWidget(self._sliding_window_checkbox)
+            top_bar.addWidget(self._legend_checkbox)
             for button in self._preset_buttons:
                 top_bar.addWidget(button)
             window_size_label = QLabel("Window Size")
@@ -274,6 +300,8 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             layout.addLayout(top_bar)
             layout.addWidget(self._canvas)
             self.setLayout(layout)
+            self._screenshot_shortcuts = self._build_screenshot_shortcuts()
+            self._configure_tab_order()
 
             self.rebuild_plot()
 
@@ -339,6 +367,53 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
                 return
             settings.setValue(self._SETTINGS_KEY, str(path))
 
+        def _build_screenshot_shortcuts(self) -> list[QShortcut]:
+            shortcuts: list[QShortcut] = []
+            if QShortcut is None or QKeySequence is None:
+                return shortcuts
+            for sequence in ("Ctrl+Shift+S", "Meta+Shift+S", "F12"):
+                shortcut = QShortcut(QKeySequence(sequence), self)
+                shortcut.activated.connect(self._on_screenshot_clicked)
+                shortcuts.append(shortcut)
+            return shortcuts
+
+        def _configure_tab_order(self) -> None:
+            tab_widgets = [
+                self._auto_refresh_checkbox,
+                self._refresh_button,
+                self._sliding_window_checkbox,
+                self._legend_checkbox,
+                *self._preset_buttons,
+                self._window_size_spin,
+                self._reset_button,
+                self._screenshot_button,
+                self._canvas,
+            ]
+            for first, second in zip(tab_widgets, tab_widgets[1:]):
+                self.setTabOrder(first, second)
+            self._tab_widgets = tab_widgets
+            for widget in self._tab_widgets:
+                widget.installEventFilter(self)
+
+        def eventFilter(self, watched, event):
+            if QEvent is not None and event.type() == QEvent.KeyPress and event.key() in (Qt.Key_Tab, Qt.Key_Backtab):
+                if watched in getattr(self, "_tab_widgets", []):
+                    self._move_focus(forward=event.key() == Qt.Key_Tab)
+                    return True
+            return super().eventFilter(watched, event)
+
+        def _move_focus(self, *, forward: bool) -> None:
+            widgets = [widget for widget in getattr(self, "_tab_widgets", []) if widget.isVisible() and widget.isEnabled()]
+            if not widgets:
+                return
+            current = self.focusWidget()
+            try:
+                index = widgets.index(current)
+            except ValueError:
+                index = -1 if forward else 0
+            next_index = (index + 1) % len(widgets) if forward else (index - 1) % len(widgets)
+            widgets[next_index].setFocus(Qt.TabFocusReason)
+
         def _settings(self) -> QSettings | None:
             if QSettings is None:
                 return None
@@ -366,6 +441,9 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
         def _on_sliding_window_changed(self, state: int) -> None:
             self._controller.set_runtime_sliding_window_enabled(state == Qt.Checked)
 
+        def _on_legend_changed(self, state: int) -> None:
+            self._controller.set_runtime_show_legend(state == Qt.Checked)
+
         def _on_window_size_changed(self, value: int) -> None:
             self._controller.set_runtime_window_size(value)
 
@@ -380,8 +458,10 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
 
         def _sync_runtime_controls(self) -> None:
             self._sliding_window_checkbox.blockSignals(True)
+            self._legend_checkbox.blockSignals(True)
             self._window_size_spin.blockSignals(True)
             self._sliding_window_checkbox.setChecked(self._controller.runtime_sliding_window_enabled)
+            self._legend_checkbox.setChecked(self._controller.runtime_show_legend)
             self._window_size_spin.setRange(
                 WINDOW_SIZE_MIN,
                 max(WINDOW_SIZE_MIN, min(self._controller.config.max_samples, WINDOW_SIZE_MAX)),
@@ -389,6 +469,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._window_size_spin.setValue(self._controller.runtime_window_size)
             self._window_size_spin.setEnabled(self._controller.runtime_sliding_window_enabled)
             self._sliding_window_checkbox.blockSignals(False)
+            self._legend_checkbox.blockSignals(False)
             self._window_size_spin.blockSignals(False)
 
         def _render_plot(self) -> None:
@@ -459,9 +540,9 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._status_label.setText(f"Samples: {visible_count} visible / {total_count} total")
 
             self._draw_end_labels()
-            if plotted_y1 and getattr(self._controller.config, "show_legend", True):
+            if plotted_y1 and self._controller.runtime_show_legend:
                 self._axes_y1.legend(loc="upper left")
-            if plotted_y2 and getattr(self._controller.config, "show_legend", True):
+            if plotted_y2 and self._controller.runtime_show_legend:
                 self._axes_y2.legend(loc="upper right")
 
             self._figure.subplots_adjust(bottom=0.24)

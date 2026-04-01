@@ -46,11 +46,14 @@ Die aktuelle Codebasis enthält:
 - Filter-, Exclude- und Highlight-Regeln
 - Live-Session-Logging
 - `RESET` im Hauptfenster für einen frischen Log-Start innerhalb derselben App-Session
+- Projektbeschreibungen als `README_<projectname>.md` direkt im Projektordner
 - Replay gespeicherter Logdateien
 - integrierte Simulation für Text-, Temperatur- und Logic-Traffic
 - CSV-basierte Datenvisualisierung
 - Logic-Kanal-Visualisierung
 - Flanken- und Periodenmessung direkt im Logic-Graphen
+- Legende per Laufzeit-Checkbox in Plot- und Logic-Fenstern ein-/ausblendbar
+- explizite `TAB`-Navigation sowie Tastaturkürzel für Save und Screenshot
 - Sliding-Window-Steuerung direkt im Graph-Fenster
 - Packaging-Skripte für macOS und Windows
 

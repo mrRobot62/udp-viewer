@@ -47,11 +47,14 @@ The current codebase includes:
 - live session logging
 - main-window `RESET` support to start a fresh log phase inside the same app session
 - runtime project contexts for grouping logs and screenshots per test session
+- project descriptions stored as `README_<projectname>.md` inside the project folder
 - replay of saved log files
 - built-in simulation for text, temperature, and logic traffic
 - CSV-based data visualization
 - logic-channel visualization
 - edge and period measurement directly inside the logic graph
+- runtime `Legend` toggle in plot and logic graph windows
+- keyboard-driven screenshot/save shortcuts and explicit `TAB` navigation in the main and graph windows
 - macOS and Windows packaging scripts
 
 ## Run From Source

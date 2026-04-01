@@ -15,6 +15,8 @@ interactive measurement support in the logic graph.
 - active `PROJECT` context stays unchanged during reset
 - current live log is closed cleanly and a fresh live log file is
   prepared immediately
+- project descriptions can be authored in the `PROJECT` dialog and are
+  written as `README_<projectname>.md` into the project folder
 - logic-graph edge measurement with red/blue markers and duration label
 - `Shift`-click period measurement in the logic graph
 - active measurement pauses the logic graph until `Space` or `Esc`
@@ -22,6 +24,9 @@ interactive measurement support in the logic graph.
 - compact measurement labels move to the right of the blue end marker
   when the span is too short
 - `Window Size` runtime and config limits aligned to `1..5000`
+- runtime `Legend` toggles in plot and logic graph windows
+- explicit `TAB` navigation plus save/screenshot shortcuts in the main
+  and graph windows
 
 ## Validation
 
