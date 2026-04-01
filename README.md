@@ -78,3 +78,5 @@ udp-log-viewer
 ```bash
 ./scripts/bootstrap_macos_linux.sh
 ```
+# You like it?
+⭐ If you like this project, consider giving it a star!
