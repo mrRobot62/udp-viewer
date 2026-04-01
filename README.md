@@ -20,23 +20,27 @@ You have to set this command: `xattr -dr com.apple.quarantine /Applications/UDPL
 
 ## Screenshots
 
-Screenshot assets should eventually be stored under [assets/screenshots](/Users/bernhardklein/workspace/python/udp-viewer/assets/screenshots). The images below currently still use the existing GitHub asset URLs until local files are added to the repository.
+Screenshot assets are stored under [assets/screenshots](/Users/bernhardklein/workspace/python/udp-viewer/assets/screenshots).
 
 ### Main Screen
 
-<img width="1100" height="785" alt="UDP Log Viewer main screen" src="https://github.com/user-attachments/assets/1d86de14-ef78-48fb-9b06-0868c29e1b72" />
+![UDP Log Viewer main screen with active connection, reset workflow, and rule chips](assets/screenshots/udp_log_viewer_main_highlighted.png)
 
-### Highlighting
+### Rule Configuration
 
-<img width="1100" height="785" alt="UDP Log Viewer highlighting" src="https://github.com/user-attachments/assets/6423b809-f52e-462a-8957-b17a9840f6af" />
+![UDP Log Viewer filter-rule dialog on top of the main window](assets/screenshots/udp_log_viewer_main_rule_config.png)
 
-### Filter Adjustment
+### Project Dialog
 
-<img width="232" height="387" alt="UDP Log Viewer filter adjustment" src="https://github.com/user-attachments/assets/56fb3ab1-fdb6-46e6-98d6-4c1e933cd127" />
+![UDP Log Viewer project dialog with Markdown project description](assets/screenshots/udp_log_viewer_project_config.png)
 
-### Saving and Loading Logs
+### Plot Visualizer Tooltip
 
-<img width="963" height="213" alt="UDP Log Viewer save and load dialog" src="https://github.com/user-attachments/assets/1dd140b2-8a6a-467e-9dd3-c9728ab3d86c" />
+![Plot visualizer with legend, target lines, and tooltip values](assets/screenshots/udp_log_viewer_plot_tooltip.png)
+
+### Logic Measurement
+
+![Logic visualizer period measurement with red and blue markers](assets/screenshots/udp_log_viewer_logic_period.png)
 
 ## Current Scope
 

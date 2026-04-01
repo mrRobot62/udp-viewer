@@ -31,6 +31,8 @@ Wichtig zur Menüführung:
 - auf macOS können `Preferences...` und `Quit` systemtypisch im App-Menü erscheinen
 - auf Windows und Linux liegen diese Einträge typischerweise im `File`-Menü
 
+![Hauptfenster mit aktiver Verbindung, Highlight-Chips und Reset-Button](../assets/screenshots/udp_log_viewer_main_highlighted.png)
+
 ## 3. Erster Start und typische Verbindung
 
 ### 3.1 Bind-IP und Port
@@ -200,6 +202,8 @@ Verhalten:
 - die Beschreibung ist auf `1024` Zeichen begrenzt
 - erlaubte Zeichen im Projektnamen sind `A-Za-z`, `0-9`, `_` und `-`
 
+![Projekt-Dialog mit mehrzeiliger Markdown-Beschreibung](../assets/screenshots/udp_log_viewer_project_config.png)
+
 ## 6. Filter, Exclude und Highlight
 
 Die App bietet jeweils Slot-basierte Regeln für:
@@ -252,6 +256,8 @@ Der typische Ablauf ist in allen drei Bereichen ähnlich:
 
 Vorhandene Chips können anschließend bearbeitet oder entfernt werden.
 
+![Filter-Regel-Konfiguration im Dialog](../assets/screenshots/udp_log_viewer_main_rule_config.png)
+
 ### 6.5 Zurücksetzen
 
 Über `RESET` im Regelbereich lassen sich aktive Regeln wieder zurücksetzen.
@@ -297,6 +303,8 @@ Diese Funktionen sind hilfreich, wenn:
 - Visualizer-Fenster mit Testdaten gespeist werden sollen
 
 Im aktuellen Verhalten erfordern bestimmte Simulationen eine aktive Verbindung.
+
+![Menüeintrag für integrierte Traffic-Simulationen](../assets/screenshots/udp_log_viewer_menu_simulation.png)
 
 ## 9. Visualizer-Nutzung
 
@@ -390,6 +398,8 @@ Wichtig:
 - Änderungen im geöffneten Graph-Fenster sind zunächst Laufzeit-Overrides
 - die persistente Default-Vorgabe kommt aus der Graph-Konfiguration bzw. aus den globalen Präferenzen
 
+![Plot-Visualizer mit Tooltip, Legende und Zielbereichen](../assets/screenshots/udp_log_viewer_plot_tooltip.png)
+
 Zusätzliche Screenshot-Kürzel im Graph-Fenster:
 
 - `Ctrl` + `Shift` + `S`
@@ -437,6 +447,8 @@ Wichtig:
 - für Plot-Fenster muss `matplotlib` in der aktiven Python-Umgebung
   installiert sein
 
+![Logic-Visualizer mit Periodenmessung und Markerlinien](../assets/screenshots/udp_log_viewer_logic_period.png)
+
 ## 10. Persistenz aus Anwendersicht
 
 Die App merkt sich wichtige Nutzungsdaten, zum Beispiel:
@@ -469,6 +481,8 @@ Dort lassen sich aktuell unter anderem einstellen:
 - Default-Sliding-Window-Werte für Plot und Logic
 
 Diese Werte werden in `config.ini` persistiert.
+
+![Preferences-Dialog auf der Registerkarte General](../assets/screenshots/udp_log_viewer_preferences_general.png)
 
 ## 11. Typische Arbeitsabläufe
 

@@ -26,6 +26,8 @@ The main interface consists primarily of:
 - main log view
 - menu bar with `File`, `Tools`, and `Visualize`
 
+![Main window with active connection, highlight chips, and reset button](../assets/screenshots/udp_log_viewer_main_highlighted.png)
+
 ## 3. First Start and Basic Connection Flow
 
 ### 3.1 Bind IP and Port
@@ -195,6 +197,8 @@ Behavior:
 - the description is limited to `1024` characters
 - allowed project-name characters are `A-Za-z`, `0-9`, `_`, and `-`
 
+![Project dialog with multi-line Markdown description](../assets/screenshots/udp_log_viewer_project_config.png)
+
 ## 6. Filter, Exclude, and Highlight
 
 The application provides slot-based rules for:
@@ -247,6 +251,8 @@ The typical workflow is similar across all three areas:
 
 Existing chips can then be edited or removed.
 
+![Filter rule configuration dialog](../assets/screenshots/udp_log_viewer_main_rule_config.png)
+
 ### 6.5 Reset
 
 `RESET` in the rules area clears the active rule state again.
@@ -289,6 +295,8 @@ These are useful when:
 - visualizer windows should be driven from synthetic data
 
 At the current behavior, some simulation flows require an active connection.
+
+![Tools menu with built-in traffic simulation entries](../assets/screenshots/udp_log_viewer_menu_simulation.png)
 
 ## 9. Using the Visualizers
 
@@ -340,6 +348,8 @@ Important:
 - the persistent default comes from the visualizer configuration or the
   global preferences
 
+![Plot visualizer with legend, target lines, and tooltip values](../assets/screenshots/udp_log_viewer_plot_tooltip.png)
+
 Additional screenshot shortcuts in graph windows:
 
 - `Ctrl` + `Shift` + `S`
@@ -387,6 +397,8 @@ Important:
 - the viewer does not define the sender's CSV structure
 - it can only visualize data if the filter token, field count, and field meaning match the visualizer configuration
 
+![Logic visualizer with period measurement and marker lines](../assets/screenshots/udp_log_viewer_logic_period.png)
+
 ## 10. Persistence From a User Perspective
 
 The application remembers important usage state such as:
@@ -403,6 +415,8 @@ If no usable `config.ini` is found:
 
 - the application asks for a save/load location
 - the selected path is then remembered
+
+![Preferences dialog on the General tab](../assets/screenshots/udp_log_viewer_preferences_general.png)
 
 ## 11. Common Workflows
 

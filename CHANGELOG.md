@@ -7,7 +7,7 @@ The format is based on Keep a Changelog and follows semantic versioning
 principles where applicable.
 
 ------------------------------------------------------------------------
-## 0.16.0 -- 2026-03-31
+## 0.16.0 -- 2026-04-01
 ### Added
 
 -   Added a main-window `RESET` action that clears the active in-memory
@@ -42,7 +42,7 @@ principles where applicable.
 -   Expanded automated coverage for live-log rotation, logic
     measurements, label placement, and window-size clamping
 -   Updated release, user, and packaging documentation for the
-    `0.16.0` release candidate
+    final `0.16.0` release
 
 ------------------------------------------------------------------------
 ## 0.15.4 -- 2026-03-31

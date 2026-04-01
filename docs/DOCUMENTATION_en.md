@@ -1,6 +1,7 @@
 # UDP Log Viewer Documentation
 
-This document describes the current codebase status of `udp-viewer` as found in the repository on March 26, 2026.
+This document describes the current codebase status of `udp-viewer` as
+found in the repository on April 1, 2026.
 
 ## 1. Purpose
 
@@ -20,9 +21,13 @@ The current codebase implements the following user-visible functionality:
 - Optional timestamp prefixing for displayed lines
 - Automatic live session logging to a file while connected
 - Manual save of the current or last session log
+- Main-window `RESET` for starting a fresh log phase inside the same app
+  session
 - UI pause/resume while live file logging continues
 - Auto-scroll toggle
 - Log trimming with configurable maximum line count
+- Project dialog with Markdown project description and
+  `README_<projectname>.md` output
 - Slot-based filter rules
 - Slot-based exclude rules
 - Slot-based highlight rules with color mapping
@@ -33,7 +38,10 @@ The current codebase implements the following user-visible functionality:
 - Built-in simulation for logic CSV traffic
 - CSV-based data visualizer with dual Y axes
 - Logic-state visualizer for up to 8 channels
+- Runtime `Legend` toggle in plot and logic graph windows
 - edge and period measurement inside the logic graph
+- keyboard-driven screenshot and save shortcuts
+- explicit `TAB` navigation in the main and graph windows
 - Screenshot export from visualizer windows
 - Config persistence via `QSettings` and `config.ini`
 - Cross-platform packaging scripts for macOS and Windows
@@ -211,13 +219,11 @@ The default log directory is `<app_support_dir>/logs`.
 
 ### 7.3 Visualizer config sections
 
-`ConfigStore` persists up to 5 visualizer configs in sections named:
+`ConfigStore` persists visualizer configs in separate plot and logic
+sections:
 
-- `visualizer_1`
-- `visualizer_2`
-- `visualizer_3`
-- `visualizer_4`
-- `visualizer_5`
+- `plot_visualizer_1` to `plot_visualizer_5`
+- `logic_visualizer_1` to `logic_visualizer_5`
 
 Stored values include:
 

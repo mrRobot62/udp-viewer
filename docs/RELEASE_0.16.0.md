@@ -1,12 +1,12 @@
-# Release 0.16.0 RC1
+# Release 0.16.0
 
-Release date: 2026-03-31
+Release date: 2026-04-01
 
 ## Summary
 
-Version `0.16.0` is prepared as a release candidate on the feature
-branch and combines the new session-oriented `RESET` workflow with
-interactive measurement support in the logic graph.
+Version `0.16.0` finalizes the new session-oriented `RESET` workflow,
+interactive logic-graph measurement, project notes, keyboard-driven
+navigation, and refreshed packaging and release documentation.
 
 ## Highlights
 
@@ -30,9 +30,9 @@ interactive measurement support in the logic graph.
 
 ## Validation
 
-The release-candidate branch was validated with the relevant automated
-test sets for runtime helpers, sliding-window behavior, and logic
-measurement handling, including:
+The release branch was validated with the relevant automated test sets
+for runtime helpers, sliding-window behavior, logic measurement
+handling, and project persistence, including:
 
 - `tests/test_core_behavior.py`
 - `tests/test_connection_runtime.py`
@@ -42,17 +42,12 @@ measurement handling, including:
 
 ## Packaging Status
 
-- macOS packaging path prepared via `./build_dmg.sh`
-- Windows packaging path prepared via `build_exe.bat`,
-  `freeze_setup.py`, and the Inno Setup installer flow
-- release branch keeps packaging metadata and docs aligned to
-  `0.16.0`
-
-## Branching Note
-
-This release candidate is intended to live on the feature branch and is
-not merged into `main`. The `main` branch remains on the older stable
-line.
+- published release tag: `0.16.0`
+- published release assets:
+  - `UDPLogViewer-0.16.0.dmg`
+  - `UDPLogViewer-0.16.0-Setup.exe`
+- local and CI packaging paths are documented in the current build and
+  packaging references
 
 ## Related Files
 
@@ -61,3 +56,5 @@ line.
 - [README_de.md](/Users/bernhardklein/workspace/python/udp-viewer/README_de.md)
 - [USER_GUIDE_en.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/USER_GUIDE_en.md)
 - [USER_GUIDE_de.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/USER_GUIDE_de.md)
+- [BUILD_AND_PACKAGING_REFERENCE_en.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/BUILD_AND_PACKAGING_REFERENCE_en.md)
+- [BUILD_AND_PACKAGING_REFERENCE_de.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/BUILD_AND_PACKAGING_REFERENCE_de.md)

@@ -1,6 +1,7 @@
 # UDP Log Viewer Dokumentation
 
-Dieses Dokument beschreibt den aktuell vorliegenden Stand der Codebasis von `udp-viewer` auf Basis der Repository-Analyse vom 26. März 2026.
+Dieses Dokument beschreibt den aktuell vorliegenden Stand der Codebasis
+von `udp-viewer` auf Basis der Repository-Analyse vom 1. April 2026.
 
 ## 1. Zweck
 
@@ -20,9 +21,13 @@ Die aktuelle Codebasis implementiert folgende sichtbare Funktionen:
 - Optionales Voranstellen lokaler Zeitstempel an angezeigte Zeilen
 - Automatisches Mitschreiben einer Live-Session in eine Datei während der Verbindung
 - Manuelles Speichern des aktuellen oder letzten Session-Logs
+- `RESET` im Hauptfenster für einen frischen Log-Start innerhalb
+  derselben App-Session
 - UI-Pause/Resume, während die Dateilogik weiterlaufen kann
 - Auto-Scroll-Schalter
 - Zeilenbegrenzung mit konfigurierbarer Maximalanzahl
+- Projekt-Dialog mit Markdown-Beschreibung und
+  `README_<projectname>.md` im Projektordner
 - Slot-basierte Filterregeln
 - Slot-basierte Exclude-Regeln
 - Slot-basierte Highlight-Regeln mit Farbzuteilung
@@ -34,7 +39,10 @@ Die aktuelle Codebasis implementiert folgende sichtbare Funktionen:
 - CSV-basierter Datenvisualizer mit zwei Y-Achsen
 - Logic-Visualizer für bis zu 8 Kanäle
 - Sliding-Window-Steuerung direkt in Plot- und Logic-Graphen
+- Laufzeit-Checkbox `Legend` in Plot- und Logic-Fenstern
 - Flanken- und Periodenmessung im Logic-Graphen
+- Tastaturkürzel für Save und Screenshot
+- explizite `TAB`-Navigation im Hauptfenster und in Graph-Fenstern
 - Screenshot-Export aus Visualizer-Fenstern
 - Persistenz über `QSettings` und `config.ini`
 - Plattformübergreifende Packaging-Skripte für macOS und Windows
@@ -217,7 +225,7 @@ Das Standard-Logverzeichnis ist `<app_support_dir>/logs`.
 
 ### 7.3 Visualizer-Konfigurationen
 
-`ConfigStore` speichert bis zu 5 Plot- und 5 Logic-Konfigurationen in
+`ConfigStore` speichert Plot- und Logic-Konfigurationen getrennt in
 Abschnitten:
 
 - `plot_visualizer_1`
