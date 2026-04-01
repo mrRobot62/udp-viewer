@@ -1,6 +1,7 @@
 # UDP Log Viewer Documentation
 
-This document describes the current codebase status of `udp-viewer` as found in the repository on March 26, 2026.
+This document describes the current codebase status of `udp-viewer` as
+found in the repository on April 1, 2026.
 
 ## 1. Purpose
 
@@ -20,9 +21,13 @@ The current codebase implements the following user-visible functionality:
 - Optional timestamp prefixing for displayed lines
 - Automatic live session logging to a file while connected
 - Manual save of the current or last session log
+- Main-window `RESET` for starting a fresh log phase inside the same app
+  session
 - UI pause/resume while live file logging continues
 - Auto-scroll toggle
 - Log trimming with configurable maximum line count
+- Project dialog with Markdown project description and
+  `README_<projectname>.md` output
 - Slot-based filter rules
 - Slot-based exclude rules
 - Slot-based highlight rules with color mapping
@@ -33,6 +38,10 @@ The current codebase implements the following user-visible functionality:
 - Built-in simulation for logic CSV traffic
 - CSV-based data visualizer with dual Y axes
 - Logic-state visualizer for up to 8 channels
+- Runtime `Legend` toggle in plot and logic graph windows
+- edge and period measurement inside the logic graph
+- keyboard-driven screenshot and save shortcuts
+- explicit `TAB` navigation in the main and graph windows
 - Screenshot export from visualizer windows
 - Config persistence via `QSettings` and `config.ini`
 - Cross-platform packaging scripts for macOS and Windows
@@ -152,7 +161,7 @@ If the `filter_string` matches and the field count matches the configuration, th
 The main window contains:
 
 - Top action row
-  `SAVE`, `CLEAR`, `COPY`, `CONNECT`, `PAUSE`, `Auto-Scroll`, `Timestamp`
+  `SAVE`, `RESET`, `CLEAR`, `COPY`, `CONNECT`, `PAUSE`, `Auto-Scroll`, `Timestamp`
 - Connection settings
   bind IP, UDP port, max lines
 - Filter area
@@ -163,6 +172,8 @@ The main window contains:
   add, edit, remove, reset highlight slots
 - Main log text area
 - Status bar
+
+`RESET` disconnects the listener, clears the transient session view and buffers, and immediately prepares a new live log file. An active project context remains unchanged.
 
 Menu structure:
 
@@ -208,13 +219,11 @@ The default log directory is `<app_support_dir>/logs`.
 
 ### 7.3 Visualizer config sections
 
-`ConfigStore` persists up to 5 visualizer configs in sections named:
+`ConfigStore` persists visualizer configs in separate plot and logic
+sections:
 
-- `visualizer_1`
-- `visualizer_2`
-- `visualizer_3`
-- `visualizer_4`
-- `visualizer_5`
+- `plot_visualizer_1` to `plot_visualizer_5`
+- `logic_visualizer_1` to `logic_visualizer_5`
 
 Stored values include:
 
@@ -319,7 +328,16 @@ The logic visualizer is optimized for binary or thresholded channels:
 - vertically separated step traces
 - channel labels on Y axis
 - hover cursor line on the plot
+- interactive edge and period measurement by mouse click
 - screenshot export to PNG
+
+Measurement behavior:
+
+- left click measures to the next edge on the selected channel
+- `Shift` + left click measures to the next edge of the same type
+- the graph pauses while a measurement is active
+- `Space` or `Esc` clear the measurement and restore the previous
+  refresh state
 
 ### 10.5 Default visualizer profiles
 

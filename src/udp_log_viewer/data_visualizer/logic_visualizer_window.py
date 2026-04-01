@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -10,13 +11,16 @@ from ..preferences import DEFAULT_VISUALIZER_PRESETS
 from ..project_runtime import build_project_filename, build_project_title_suffix
 
 try:
-    from PyQt5.QtCore import Qt, QSettings
+    from PyQt5.QtCore import QEvent, Qt, QSettings
+    from PyQt5.QtGui import QKeySequence
     from PyQt5.QtWidgets import (
+        QApplication,
         QCheckBox,
         QFileDialog,
         QHBoxLayout,
         QLabel,
         QPushButton,
+        QShortcut,
         QSpinBox,
         QSizePolicy,
         QVBoxLayout,
@@ -24,9 +28,13 @@ try:
     )
     _PYQT_AVAILABLE = True
 except Exception:  # pragma: no cover
+    QApplication = None
+    QEvent = None
+    QKeySequence = None
     Qt = None
     QSettings = None
     QFileDialog = None
+    QShortcut = None
     QWidget = object  # type: ignore[assignment]
     _PYQT_AVAILABLE = False
 
@@ -43,6 +51,108 @@ except Exception:  # pragma: no cover
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
+
+
+WINDOW_SIZE_MIN = 1
+WINDOW_SIZE_MAX = 5000
+WINDOW_SIZE_TOOLTIP = f"Sliding window size. Minimum: {WINDOW_SIZE_MIN}, Maximum: {WINDOW_SIZE_MAX}."
+SCREENSHOT_SHORTCUT_TIPS = "Screenshot shortcuts: Ctrl+Shift+S, Cmd+Shift+S, or F12."
+
+
+@dataclass(slots=True, frozen=True)
+class LogicMeasurement:
+    field_name: str
+    start_index: int
+    start_edge: str
+    end_index: int | None
+    end_edge: str | None
+    mode: str
+
+
+def parse_visualizer_timestamp(timestamp_raw: str) -> datetime | None:
+    value = (timestamp_raw or "").strip()
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value.split(" ")[0], "%Y%m%d-%H:%M:%S.%f")
+    except ValueError:
+        return None
+
+
+def format_measurement_duration(start_time: datetime | None, end_time: datetime | None) -> str:
+    if start_time is None or end_time is None:
+        return "--:--.---"
+    delta_ms = max(0, int(round((end_time - start_time).total_seconds() * 1000.0)))
+    minutes, remainder_ms = divmod(delta_ms, 60_000)
+    seconds, milliseconds = divmod(remainder_ms, 1000)
+    return f"{minutes:02d}:{seconds:02d}.{milliseconds:03d}"
+
+
+def choose_measurement_label_anchor(start_x: int, end_x: int, label_text: str) -> tuple[float, str]:
+    span = max(0, end_x - start_x)
+    min_span_for_center = max(4, len(label_text) // 2)
+    if span >= min_span_for_center:
+        return (start_x + end_x) / 2.0, "center"
+    return end_x + 0.35, "left"
+
+
+def _logic_level_from_sample(sample: VisualizerSample, field_name: str) -> bool | None:
+    raw = sample.values_by_name.get(field_name)
+    if raw is None:
+        return None
+    return float(raw) >= 0.5
+
+
+def find_next_logic_edge(
+    samples: list[VisualizerSample],
+    field_name: str,
+    start_index: int,
+    *,
+    edge_type: str | None = None,
+) -> tuple[int, str] | None:
+    if len(samples) < 2:
+        return None
+
+    begin = max(1, int(start_index))
+    for index in range(begin, len(samples)):
+        prev_level = _logic_level_from_sample(samples[index - 1], field_name)
+        curr_level = _logic_level_from_sample(samples[index], field_name)
+        if prev_level is None or curr_level is None or prev_level == curr_level:
+            continue
+        current_edge = "rising" if curr_level else "falling"
+        if edge_type is None or current_edge == edge_type:
+            return index, current_edge
+    return None
+
+
+def build_logic_measurement(
+    samples: list[VisualizerSample],
+    field_name: str,
+    clicked_index: int,
+    *,
+    same_edge_only: bool,
+) -> LogicMeasurement | None:
+    start_edge = find_next_logic_edge(samples, field_name, clicked_index)
+    if start_edge is None:
+        return None
+
+    start_index, start_kind = start_edge
+    end_edge = find_next_logic_edge(
+        samples,
+        field_name,
+        start_index + 1,
+        edge_type=start_kind if same_edge_only else None,
+    )
+    end_index = end_edge[0] if end_edge is not None else None
+    end_kind = end_edge[1] if end_edge is not None else None
+    return LogicMeasurement(
+        field_name=field_name,
+        start_index=start_index,
+        start_edge=start_kind,
+        end_index=end_index,
+        end_edge=end_kind,
+        mode="period" if same_edge_only else "edge",
+    )
 
 
 class LogicVisualizerWindow:
@@ -64,7 +174,9 @@ class LogicVisualizerWindow:
         self.freeze_sample_index: int | None = None
         self.runtime_sliding_window_enabled = bool(config.sliding_window_enabled)
         self.runtime_window_size = self._normalize_runtime_window_size(config.default_window_size)
+        self.runtime_show_legend = bool(getattr(config, "show_legend", True))
         self._widget: _LogicVisualizerWindowWidget | None = None
+        self._measurement_restore_state: tuple[bool, int | None] | None = None
 
         self._ensure_widget()
 
@@ -95,9 +207,14 @@ class LogicVisualizerWindow:
         self.runtime_window_size = self._normalize_runtime_window_size(value)
         self.rebuild_plot()
 
+    def set_runtime_show_legend(self, enabled: bool) -> None:
+        self.runtime_show_legend = bool(enabled)
+        self.rebuild_plot()
+
     def reset_runtime_window(self) -> None:
         self.runtime_sliding_window_enabled = bool(self.config.sliding_window_enabled)
         self.runtime_window_size = self._normalize_runtime_window_size(self.config.default_window_size)
+        self.runtime_show_legend = bool(getattr(self.config, "show_legend", True))
         self.rebuild_plot()
 
     def refresh_plot(self) -> None:
@@ -164,7 +281,7 @@ class LogicVisualizerWindow:
             parsed = self.config.default_window_size
         if parsed <= 0:
             parsed = self.config.default_window_size
-        return min(parsed, self.config.max_samples)
+        return max(WINDOW_SIZE_MIN, min(parsed, self.config.max_samples, WINDOW_SIZE_MAX))
 
     @staticmethod
     def _can_create_widget() -> bool:
@@ -201,49 +318,66 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
 
             self.setWindowTitle(self._build_window_title())
             self.resize(1100, 620)
+            self.setFocusPolicy(Qt.StrongFocus)
 
             self._figure = Figure(figsize=(10, 5))
             self._canvas = FigureCanvas(self._figure)
             self._canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+            self._canvas.setFocusPolicy(Qt.ClickFocus)
             self._axes: Axes = self._figure.add_subplot(111)
 
             # Vertical cursor line
             self._cursor_line = self._axes.axvline(x=0, color="gray", linestyle="--", visible=False)
+            self._measurement: LogicMeasurement | None = None
 
             # Mouse tracking on matplotlib canvas
             self._canvas.mpl_connect("motion_notify_event", self._on_mouse_move)
             self._canvas.mpl_connect("axes_leave_event", self._on_mouse_leave)
+            self._canvas.mpl_connect("button_press_event", self._on_mouse_click)
 
             self._auto_refresh_checkbox = QCheckBox("Auto Refresh")
+            self._auto_refresh_checkbox.setFocusPolicy(Qt.StrongFocus)
             self._auto_refresh_checkbox.setChecked(True)
             self._auto_refresh_checkbox.stateChanged.connect(self._on_auto_refresh_changed)
 
             self._refresh_button = QPushButton("Refresh")
+            self._refresh_button.setFocusPolicy(Qt.StrongFocus)
             self._refresh_button.clicked.connect(self._on_refresh_clicked)
 
             self._sliding_window_checkbox = QCheckBox("Sliding Window")
+            self._sliding_window_checkbox.setFocusPolicy(Qt.StrongFocus)
             self._sliding_window_checkbox.setChecked(self._controller.runtime_sliding_window_enabled)
             self._sliding_window_checkbox.stateChanged.connect(self._on_sliding_window_changed)
 
+            self._legend_checkbox = QCheckBox("Legend")
+            self._legend_checkbox.setFocusPolicy(Qt.StrongFocus)
+            self._legend_checkbox.setChecked(self._controller.runtime_show_legend)
+            self._legend_checkbox.stateChanged.connect(self._on_legend_changed)
+
             self._window_size_spin = QSpinBox()
-            self._window_size_spin.setRange(10, max(10, self._controller.config.max_samples))
+            self._window_size_spin.setRange(WINDOW_SIZE_MIN, max(WINDOW_SIZE_MIN, min(self._controller.config.max_samples, WINDOW_SIZE_MAX)))
             self._window_size_spin.setSingleStep(50)
             self._window_size_spin.setKeyboardTracking(False)
             self._window_size_spin.setMinimumWidth(88)
+            self._window_size_spin.setToolTip(WINDOW_SIZE_TOOLTIP)
             self._window_size_spin.setValue(self._controller.runtime_window_size)
             self._window_size_spin.valueChanged.connect(self._on_window_size_changed)
 
             self._preset_buttons: list[QPushButton] = []
             for preset in self._controller.window_size_presets:
                 button = QPushButton(str(preset))
+                button.setFocusPolicy(Qt.StrongFocus)
                 button.clicked.connect(lambda _checked=False, value=preset: self._set_window_preset(value))
                 self._preset_buttons.append(button)
 
             self._reset_button = QPushButton("Reset")
+            self._reset_button.setFocusPolicy(Qt.StrongFocus)
             self._reset_button.clicked.connect(self._on_reset_window_clicked)
 
             self._screenshot_button = QPushButton("Screenshot")
+            self._screenshot_button.setFocusPolicy(Qt.StrongFocus)
             self._screenshot_button.clicked.connect(self._on_screenshot_clicked)
+            self._screenshot_button.setToolTip(SCREENSHOT_SHORTCUT_TIPS)
 
             self._status_label = QLabel("Samples: 0 visible / 0 total")
 
@@ -251,9 +385,12 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             top_bar.addWidget(self._auto_refresh_checkbox)
             top_bar.addWidget(self._refresh_button)
             top_bar.addWidget(self._sliding_window_checkbox)
+            top_bar.addWidget(self._legend_checkbox)
             for button in self._preset_buttons:
                 top_bar.addWidget(button)
-            top_bar.addWidget(QLabel("Window Size"))
+            window_size_label = QLabel("Window Size")
+            window_size_label.setToolTip(WINDOW_SIZE_TOOLTIP)
+            top_bar.addWidget(window_size_label)
             top_bar.addWidget(self._window_size_spin)
             top_bar.addWidget(self._reset_button)
             top_bar.addWidget(self._screenshot_button)
@@ -264,6 +401,8 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             layout.addLayout(top_bar)
             layout.addWidget(self._canvas)
             self.setLayout(layout)
+            self._screenshot_shortcuts = self._build_screenshot_shortcuts()
+            self._configure_tab_order()
 
             self.rebuild_plot()
 
@@ -329,6 +468,53 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
                 return
             settings.setValue(self._SETTINGS_KEY, str(path))
 
+        def _build_screenshot_shortcuts(self) -> list[QShortcut]:
+            shortcuts: list[QShortcut] = []
+            if QShortcut is None or QKeySequence is None:
+                return shortcuts
+            for sequence in ("Ctrl+Shift+S", "Meta+Shift+S", "F12"):
+                shortcut = QShortcut(QKeySequence(sequence), self)
+                shortcut.activated.connect(self._on_screenshot_clicked)
+                shortcuts.append(shortcut)
+            return shortcuts
+
+        def _configure_tab_order(self) -> None:
+            tab_widgets = [
+                self._auto_refresh_checkbox,
+                self._refresh_button,
+                self._sliding_window_checkbox,
+                self._legend_checkbox,
+                *self._preset_buttons,
+                self._window_size_spin,
+                self._reset_button,
+                self._screenshot_button,
+                self._canvas,
+            ]
+            for first, second in zip(tab_widgets, tab_widgets[1:]):
+                self.setTabOrder(first, second)
+            self._tab_widgets = tab_widgets
+            for widget in self._tab_widgets:
+                widget.installEventFilter(self)
+
+        def eventFilter(self, watched, event):
+            if QEvent is not None and event.type() == QEvent.KeyPress and event.key() in (Qt.Key_Tab, Qt.Key_Backtab):
+                if watched in getattr(self, "_tab_widgets", []):
+                    self._move_focus(forward=event.key() == Qt.Key_Tab)
+                    return True
+            return super().eventFilter(watched, event)
+
+        def _move_focus(self, *, forward: bool) -> None:
+            widgets = [widget for widget in getattr(self, "_tab_widgets", []) if widget.isVisible() and widget.isEnabled()]
+            if not widgets:
+                return
+            current = self.focusWidget()
+            try:
+                index = widgets.index(current)
+            except ValueError:
+                index = -1 if forward else 0
+            next_index = (index + 1) % len(widgets) if forward else (index - 1) % len(widgets)
+            widgets[next_index].setFocus(Qt.TabFocusReason)
+
         def _settings(self):
             if QSettings is None:
                 return None
@@ -355,11 +541,14 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
         def _on_sliding_window_changed(self, state: int) -> None:
             self._controller.set_runtime_sliding_window_enabled(state == Qt.Checked)
 
+        def _on_legend_changed(self, state: int) -> None:
+            self._controller.set_runtime_show_legend(state == Qt.Checked)
+
         def _on_window_size_changed(self, value: int) -> None:
             self._controller.set_runtime_window_size(value)
 
         def _set_window_preset(self, value: int) -> None:
-            self._window_size_spin.setValue(min(value, self._controller.config.max_samples))
+            self._window_size_spin.setValue(min(value, self._controller.config.max_samples, WINDOW_SIZE_MAX))
 
         def _on_reset_window_clicked(self) -> None:
             self._controller.reset_runtime_window()
@@ -369,12 +558,18 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
 
         def _sync_runtime_controls(self) -> None:
             self._sliding_window_checkbox.blockSignals(True)
+            self._legend_checkbox.blockSignals(True)
             self._window_size_spin.blockSignals(True)
             self._sliding_window_checkbox.setChecked(self._controller.runtime_sliding_window_enabled)
-            self._window_size_spin.setMaximum(max(10, self._controller.config.max_samples))
+            self._legend_checkbox.setChecked(self._controller.runtime_show_legend)
+            self._window_size_spin.setRange(
+                WINDOW_SIZE_MIN,
+                max(WINDOW_SIZE_MIN, min(self._controller.config.max_samples, WINDOW_SIZE_MAX)),
+            )
             self._window_size_spin.setValue(self._controller.runtime_window_size)
             self._window_size_spin.setEnabled(self._controller.runtime_sliding_window_enabled)
             self._sliding_window_checkbox.blockSignals(False)
+            self._legend_checkbox.blockSignals(False)
             self._window_size_spin.blockSignals(False)
 
         def _on_mouse_move(self, event) -> None:
@@ -391,15 +586,55 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._cursor_line.set_visible(False)
             self._canvas.draw_idle()
 
+        def _on_mouse_click(self, event) -> None:
+            if event.inaxes != self._axes or event.button != 1:
+                return
+            if event.xdata is None or event.ydata is None:
+                return
+
+            visible_samples = self._get_visible_samples()
+            active_fields = self._get_active_fields()
+            if not visible_samples or not active_fields:
+                return
+
+            self.setFocus(Qt.MouseFocusReason)
+            field = self._field_at_y(event.ydata, active_fields)
+            if field is None:
+                return
+
+            clicked_index = max(0, min(int(round(event.xdata)), len(visible_samples) - 1))
+            same_edge_only = self._shift_pressed()
+            measurement = build_logic_measurement(
+                visible_samples,
+                field.field_name,
+                clicked_index,
+                same_edge_only=same_edge_only,
+            )
+            if measurement is None:
+                self._status_label.setText(f"No next edge found for {field.field_name}")
+                return
+
+            self._pause_for_measurement()
+            self._measurement = measurement
+            if measurement.end_index is None:
+                self._status_label.setText(f"{field.field_name}: no matching end edge found")
+            else:
+                self._status_label.setText(self._build_measurement_label(visible_samples, measurement))
+            self._render_plot()
+
+        def keyPressEvent(self, event) -> None:
+            if event.key() in (Qt.Key_Space, Qt.Key_Escape):
+                self._clear_measurement(resume=True)
+                event.accept()
+                return
+            super().keyPressEvent(event)
+
         def _render_plot(self) -> None:
             self.setWindowTitle(self._build_window_title())
             self._axes.clear()
 
             visible_samples = self._get_visible_samples()
-            active_fields = [
-                f for f in self._controller.config.fields[:8]
-                if getattr(f, "active", False) and getattr(f, "plot", True)
-            ]
+            active_fields = self._get_active_fields()
 
             x_values = list(range(len(visible_samples)))
             plotted_count = 0
@@ -471,7 +706,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
                 f"Samples: {len(visible_samples)} visible / {len(self._controller.samples)} total"
             )
 
-            if plotted_count > 0 and getattr(self._controller.config, "show_legend", True):
+            if plotted_count > 0 and self._controller.runtime_show_legend:
                 self._axes.legend(loc="upper right")
 
             # --- X axis: timestamp labels ---
@@ -491,6 +726,8 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
 
                 self._axes.set_xticks(indices)
                 self._axes.set_xticklabels(labels, rotation=45, ha="right")
+
+            self._draw_measurement_overlay(visible_samples, active_fields)
 
             # Keep cursor hidden after full redraw until mouse enters again
             self._cursor_line = self._axes.axvline(x=0, color="gray", linestyle="--", visible=False)
@@ -545,6 +782,106 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             if not self._controller.runtime_sliding_window_enabled:
                 return visible
             return visible[-self._controller.runtime_window_size :]
+
+        def _get_active_fields(self):
+            return [
+                field for field in self._controller.config.fields[:8]
+                if getattr(field, "active", False) and getattr(field, "plot", True)
+            ]
+
+        def _field_at_y(self, y_value: float, active_fields):
+            for idx, field in enumerate(active_fields):
+                base = idx * self._ROW_SPACING
+                if base <= y_value <= (base + self._ROW_SPACING):
+                    return field
+            return None
+
+        def _shift_pressed(self) -> bool:
+            if QApplication is None:
+                return False
+            return bool(QApplication.keyboardModifiers() & Qt.ShiftModifier)
+
+        def _pause_for_measurement(self) -> None:
+            if self._controller._measurement_restore_state is None:
+                self._controller._measurement_restore_state = (
+                    self._controller.auto_refresh_enabled,
+                    self._controller.freeze_sample_index,
+                )
+            if self._controller.auto_refresh_enabled:
+                self._controller.set_auto_refresh(False)
+
+        def _clear_measurement(self, *, resume: bool) -> None:
+            self._measurement = None
+            restore_state = self._controller._measurement_restore_state
+            self._controller._measurement_restore_state = None
+
+            if not resume or restore_state is None:
+                self._render_plot()
+                return
+
+            auto_refresh_enabled, freeze_sample_index = restore_state
+            self._controller.auto_refresh_enabled = auto_refresh_enabled
+            self._controller.freeze_sample_index = freeze_sample_index
+            if auto_refresh_enabled:
+                self._controller.rebuild_plot()
+            else:
+                self._status_label.setText(
+                    f"Samples: {len(self._get_visible_samples())} visible / {len(self._controller.samples)} total"
+                )
+                self._render_plot()
+
+        def _draw_measurement_overlay(self, visible_samples: list[VisualizerSample], active_fields) -> None:
+            measurement = self._measurement
+            if measurement is None:
+                return
+
+            field_index = next(
+                (idx for idx, field in enumerate(active_fields) if field.field_name == measurement.field_name),
+                None,
+            )
+            if field_index is None or measurement.start_index >= len(visible_samples):
+                self._measurement = None
+                return
+
+            row_y = field_index * self._ROW_SPACING + 1.08
+            start_x = measurement.start_index
+            self._axes.axvline(start_x, color="#d62728", linestyle="--", linewidth=1.6, zorder=6)
+
+            if measurement.end_index is None or measurement.end_index >= len(visible_samples):
+                return
+
+            end_x = measurement.end_index
+            self._axes.axvline(end_x, color="#1f77b4", linestyle="--", linewidth=1.6, zorder=6)
+            self._axes.annotate(
+                "",
+                xy=(end_x, row_y),
+                xytext=(start_x, row_y),
+                arrowprops={"arrowstyle": "<->", "linestyle": "--", "color": "#444444", "linewidth": 1.2},
+                zorder=7,
+            )
+            label_text = self._build_measurement_label(visible_samples, measurement)
+            label_x, label_align = choose_measurement_label_anchor(start_x, end_x, label_text)
+            self._axes.text(
+                label_x,
+                row_y + 0.08,
+                label_text,
+                ha=label_align,
+                va="bottom",
+                fontsize=9,
+                color="#222222",
+                bbox={"boxstyle": "round,pad=0.2", "facecolor": "#ffffff", "edgecolor": "#cccccc", "alpha": 0.92},
+                zorder=8,
+            )
+
+        def _build_measurement_label(self, visible_samples: list[VisualizerSample], measurement: LogicMeasurement) -> str:
+            if measurement.end_index is None:
+                prefix = "PERIOD" if measurement.mode == "period" else "EDGE"
+                return f"{prefix} --:--.---"
+
+            start_time = parse_visualizer_timestamp(visible_samples[measurement.start_index].timestamp_raw)
+            end_time = parse_visualizer_timestamp(visible_samples[measurement.end_index].timestamp_raw)
+            prefix = "PERIOD" if measurement.mode == "period" else "EDGE"
+            return f"{prefix} {format_measurement_duration(start_time, end_time)}"
 
         def _format_time_label(self, timestamp_raw: str) -> str:
             if not timestamp_raw:

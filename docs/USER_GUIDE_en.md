@@ -19,12 +19,14 @@ Typical use cases:
 
 The main interface consists primarily of:
 
-- action row with `SAVE`, `CLEAR`, `COPY`, `CONNECT`, `PAUSE`
+- action row with `SAVE`, `RESET`, `CLEAR`, `COPY`, `CONNECT`, `PAUSE`
 - options for `Auto-Scroll` and `Timestamp`
 - input fields for `Bind-IP`, `Port`, and `Max lines`
 - areas for `Filter`, `Exclude`, and `Highlight`
 - main log view
 - menu bar with `File`, `Tools`, and `Visualize`
+
+![Main window with active connection, highlight chips, and reset button](../assets/screenshots/udp_log_viewer_main_highlighted.png)
 
 ## 3. First Start and Basic Connection Flow
 
@@ -136,9 +138,66 @@ This is mainly useful to:
 - reset the display for a new observation phase
 - inspect the effect of active filters or highlights more clearly
 
-### 5.3 `COPY`
+### 5.3 `RESET`
+
+`RESET` starts a new log phase inside the same application session.
+
+At the current behavior it:
+
+- clears the visible main log view
+- resets in-memory buffers and counters
+- switches `CONNECT` back to `OFF`
+- closes the current live log cleanly
+- immediately prepares a new live log file with a fresh timestamp
+- keeps an active `PROJECT` context
+
+This is useful to:
+
+- begin a new test phase without restarting the application
+- generate a fresh log file with a clean beginning
+- continue working in the same project folder
+
+### 5.4 `COPY`
 
 `COPY` copies the visible content of the main log view to the clipboard.
+
+### 5.5 Keyboard use in the main window
+
+The main window provides explicit keyboard navigation via `TAB` and
+`Shift` + `TAB`.
+
+This allows direct keyboard focus traversal across controls such as:
+
+- `PROJECT`
+- `SAVE`
+- `RESET`
+- `CLEAR`
+- `COPY`
+- `CONNECT`
+- `PAUSE`
+- the `Bind-IP`, `Port`, and `Max lines` input fields
+
+Additional save shortcuts:
+
+- `Ctrl` + `S`
+- `Cmd` + `S`
+- `F12`
+
+### 5.6 `PROJECT`
+
+The `PROJECT` dialog now also contains a multi-line Markdown
+description.
+
+Behavior:
+
+- when a project is created or saved, a file
+  `README_<projectname>.md` is written into the project folder
+- the default content starts with a heading containing the project name
+  and the current timestamp
+- the description is limited to `1024` characters
+- allowed project-name characters are `A-Za-z`, `0-9`, `_`, and `-`
+
+![Project dialog with multi-line Markdown description](../assets/screenshots/udp_log_viewer_project_config.png)
 
 ## 6. Filter, Exclude, and Highlight
 
@@ -192,6 +251,8 @@ The typical workflow is similar across all three areas:
 
 Existing chips can then be edited or removed.
 
+![Filter rule configuration dialog](../assets/screenshots/udp_log_viewer_main_rule_config.png)
+
 ### 6.5 Reset
 
 `RESET` in the rules area clears the active rule state again.
@@ -235,6 +296,8 @@ These are useful when:
 
 At the current behavior, some simulation flows require an active connection.
 
+![Tools menu with built-in traffic simulation entries](../assets/screenshots/udp_log_viewer_menu_simulation.png)
+
 ## 9. Using the Visualizers
 
 The `Visualize` menu contains the visualizer functionality.
@@ -251,10 +314,90 @@ Typical workflow:
 3. show the visualizer window
 4. receive or simulate matching CSV lines
 
+### 9.1 Sliding Window in the graph window
+
+Both the plot and logic visualizers provide direct sliding-window
+controls inside the graph window.
+
+Visible controls:
+
+- `Sliding Window`
+- `Legend`
+- presets `100`, `150`, `200`, `300`
+- `Window Size`
+- `Reset`
+- `Auto Refresh`
+
+Meaning:
+
+- `Sliding Window` enabled
+  shows only the latest `N` samples
+- `Window Size`
+  controls the currently visible window size
+  valid runtime range: `1..5000`
+- `Legend`
+  toggles the legend in the open graph window at runtime
+- presets
+  quickly set common window sizes
+- `Reset`
+  restores the runtime setting to the configured graph default
+
+Important:
+
+- changes in an open graph window are runtime overrides first
+- the persistent default comes from the visualizer configuration or the
+  global preferences
+
+![Plot visualizer with legend, target lines, and tooltip values](../assets/screenshots/udp_log_viewer_plot_tooltip.png)
+
+Additional screenshot shortcuts in graph windows:
+
+- `Ctrl` + `Shift` + `S`
+- `Cmd` + `Shift` + `S`
+- `F12`
+
+The graph windows also provide explicit `TAB` navigation across the
+visible controls.
+
+### 9.2 Measuring in the logic graph
+
+The logic graph can measure time distances directly on one selected
+channel.
+
+Controls:
+
+- left click on a channel row
+  starts an edge-to-edge measurement
+- `Shift` + left click on a channel row
+  starts a period measurement
+- `Space` or `Esc`
+  clears the measurement
+
+Behavior:
+
+- the start marker snaps to the next edge of the selected channel
+- a normal click uses the next edge on that same channel as the end
+- `Shift` + click uses the next edge of the same type as the end
+- while a measurement is active, the graph pauses so the signal does not
+  continue drifting left
+- after `Space` or `Esc`, the graph resumes with the previous refresh
+  state
+
+Display:
+
+- red start line
+- blue end line
+- dashed arrow line between start and end
+- duration text in `MM:SS.mmm`
+- if the span is too short, the text is placed to the right of the blue
+  end marker
+
 Important:
 
 - the viewer does not define the sender's CSV structure
 - it can only visualize data if the filter token, field count, and field meaning match the visualizer configuration
+
+![Logic visualizer with period measurement and marker lines](../assets/screenshots/udp_log_viewer_logic_period.png)
 
 ## 10. Persistence From a User Perspective
 
@@ -272,6 +415,8 @@ If no usable `config.ini` is found:
 
 - the application asks for a save/load location
 - the selected path is then remembered
+
+![Preferences dialog on the General tab](../assets/screenshots/udp_log_viewer_preferences_general.png)
 
 ## 11. Common Workflows
 

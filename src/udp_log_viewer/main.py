@@ -9,8 +9,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Deque, List, Optional, Tuple
 
-from PyQt5.QtCore import Qt, QSettings, QTimer
-from PyQt5.QtGui import QFont, QIntValidator, QTextCursor
+from PyQt5.QtCore import QEvent, Qt, QSettings, QTimer
+from PyQt5.QtGui import QFont, QIntValidator, QKeySequence, QTextCursor
 from PyQt5.QtWidgets import (
     QAction,
     QApplication,
@@ -28,6 +28,7 @@ from PyQt5.QtWidgets import (
     QMessageBox,
     QPushButton,
     QPlainTextEdit,
+    QShortcut,
     QSizePolicy,
     QSpinBox,
     QToolButton,
@@ -43,10 +44,11 @@ from .connection_runtime import (
     append_live_log_line,
     build_connection_status,
     close_live_log,
+    ensure_active_live_log,
     ensure_logs_dir,
     format_bytes,
     live_status_snippet,
-    open_live_log,
+    reset_live_log_session,
 )
 from .file_runtime import copy_log_file, fsync_file_handle, write_text_log
 from .highlighter import HighlightRule, LogHighlighter
@@ -86,6 +88,7 @@ from .project_runtime import (
     build_project_filename,
     build_project_title_suffix,
     is_valid_project_name,
+    write_project_readme,
 )
 from .udp_listener import UdpListenerThread
 from .udp_log_utils import drain_queue
@@ -102,6 +105,7 @@ DEFAULT_TRIM_CHUNK = 2000
 
 REPLAY_TICK_MS = 25
 REPLAY_LINES_PER_TICK = 40
+MAIN_SAVE_SHORTCUT_TIPS = "Save shortcuts: Ctrl+S, Cmd+S, or F12."
 
 class PatternEditDialog(QDialog):
     """
@@ -286,6 +290,8 @@ class MainWindow(QMainWindow):
 
         self._build_actions()
         self._build_ui()
+        self._configure_main_shortcuts()
+        self._configure_main_focus_navigation()
 
         self._load_settings()
         self._apply_state_to_widgets()
@@ -386,23 +392,36 @@ class MainWindow(QMainWindow):
         return ensure_logs_dir(self._preferred_log_dir())
 
     def _open_new_live_log(self) -> None:
-        self._close_live_log()
-
         try:
             stamp = self._now_stamp()
-            handle, path = open_live_log(
+            path = reset_live_log_session(
+                self._connection_state,
                 self._ensure_logs_dir(),
                 stamp,
                 filename=self._build_log_filename("udp_live", stamp),
             )
-            self._connection_state.handle = handle
-            self._connection_state.active_path = path
             self.statusBar().showMessage(f"Live log: {path}", 4000)
         except Exception as e:
             self._connection_state.handle = None
             self._connection_state.active_path = None
             QMessageBox.critical(self, "Logfile Error", f"Could not create live logfile:\n{e}")
             self.log.appendPlainText(f"[UI/ERROR] Could not create live logfile: {e}")
+
+    def _ensure_active_live_log(self) -> None:
+        try:
+            stamp = self._now_stamp()
+            path = ensure_active_live_log(
+                self._connection_state,
+                self._ensure_logs_dir(),
+                stamp,
+                filename=self._build_log_filename("udp_live", stamp),
+            )
+            self.statusBar().showMessage(f"Live log: {path}", 4000)
+        except Exception as e:
+            self._connection_state.handle = None
+            self._connection_state.active_path = None
+            QMessageBox.critical(self, "Logfile Error", f"Could not prepare live logfile:\n{e}")
+            self.log.appendPlainText(f"[UI/ERROR] Could not prepare live logfile: {e}")
 
     def _close_live_log(self) -> None:
         close_live_log(self._connection_state)
@@ -450,7 +469,7 @@ class MainWindow(QMainWindow):
         self.act_preferences.triggered.connect(self.on_preferences_clicked)
 
         self.act_save = QAction("Save…", self)
-        self.act_save.setShortcut("Ctrl+S")
+        self.act_save.setShortcuts([QKeySequence.Save, QKeySequence("F12")])
         self.act_save.triggered.connect(self.on_save_clicked)
 
         self.act_quit = QAction("Quit", self)
@@ -540,6 +559,64 @@ class MainWindow(QMainWindow):
             "QToolButton:hover { background: #eeeeee; }"
         )
 
+    def _configure_main_shortcuts(self) -> None:
+        self._save_shortcuts = []
+        for sequence in ("Ctrl+S", "Meta+S", "F12"):
+            shortcut = QShortcut(QKeySequence(sequence), self)
+            shortcut.activated.connect(self.on_save_clicked)
+            self._save_shortcuts.append(shortcut)
+
+    def _configure_main_focus_navigation(self) -> None:
+        self._main_tab_widgets = [
+            self.btn_project,
+            self.btn_save,
+            self.btn_reset,
+            self.btn_clear,
+            self.btn_copy,
+            self.btn_connect,
+            self.btn_pause,
+            self.chk_autoscroll,
+            self.chk_timestamp,
+            self.ed_bind_ip,
+            self.ed_port,
+            self.ed_max_lines,
+            self.btn_filter_add,
+            self.btn_filter_reset,
+            self.btn_exclude_add,
+            self.btn_exclude_reset,
+            self.btn_hl_add,
+            self.btn_hl_reset,
+            self.log,
+        ]
+        for first, second in zip(self._main_tab_widgets, self._main_tab_widgets[1:]):
+            self.setTabOrder(first, second)
+        for widget in self._main_tab_widgets:
+            widget.installEventFilter(self)
+
+    def eventFilter(self, watched, event):
+        if (
+            hasattr(self, "_main_tab_widgets")
+            and QEvent is not None
+            and event.type() == QEvent.KeyPress
+            and event.key() in (Qt.Key_Tab, Qt.Key_Backtab)
+            and watched in self._main_tab_widgets
+        ):
+            self._move_main_focus(forward=event.key() == Qt.Key_Tab)
+            return True
+        return super().eventFilter(watched, event)
+
+    def _move_main_focus(self, *, forward: bool) -> None:
+        widgets = [widget for widget in getattr(self, "_main_tab_widgets", []) if widget.isVisible() and widget.isEnabled()]
+        if not widgets:
+            return
+        current = self.focusWidget()
+        try:
+            index = widgets.index(current)
+        except ValueError:
+            index = -1 if forward else 0
+        next_index = (index + 1) % len(widgets) if forward else (index - 1) % len(widgets)
+        widgets[next_index].setFocus(Qt.TabFocusReason)
+
     def _build_ui(self) -> None:
         root = QWidget(self)
         self.setCentralWidget(root)
@@ -553,37 +630,51 @@ class MainWindow(QMainWindow):
         top_row.setSpacing(8)
 
         self.btn_project = QPushButton("PROJECT")
+        self.btn_project.setFocusPolicy(Qt.StrongFocus)
         self.btn_project.clicked.connect(self.on_project_clicked)
 
         self.btn_save = QPushButton("SAVE")
+        self.btn_save.setFocusPolicy(Qt.StrongFocus)
+        self.btn_save.setToolTip(MAIN_SAVE_SHORTCUT_TIPS)
         self.btn_save.clicked.connect(self.on_save_clicked)
 
+        self.btn_reset = QPushButton("RESET")
+        self.btn_reset.setFocusPolicy(Qt.StrongFocus)
+        self.btn_reset.clicked.connect(self.on_reset_clicked)
+
         self.btn_clear = QPushButton("CLEAR")
+        self.btn_clear.setFocusPolicy(Qt.StrongFocus)
         self.btn_clear.clicked.connect(self.on_clear_clicked)
 
         self.btn_copy = QPushButton("COPY")
+        self.btn_copy.setFocusPolicy(Qt.StrongFocus)
         self.btn_copy.clicked.connect(self.on_copy_clicked)
 
         self.btn_connect = QToolButton()
         self.btn_connect.setText("CONNECT")
+        self.btn_connect.setFocusPolicy(Qt.StrongFocus)
         self.btn_connect.setCheckable(True)
         self.btn_connect.clicked.connect(self.on_connect_toggled)
 
         self.btn_pause = QToolButton()
         self.btn_pause.setText("PAUSE")
+        self.btn_pause.setFocusPolicy(Qt.StrongFocus)
         self.btn_pause.setCheckable(True)
         self.btn_pause.setEnabled(False)
         self.btn_pause.clicked.connect(self.on_pause_toggled)
 
         self.chk_autoscroll = QCheckBox("Auto-Scroll")
+        self.chk_autoscroll.setFocusPolicy(Qt.StrongFocus)
         self.chk_autoscroll.stateChanged.connect(self.on_autoscroll_changed)
 
         self.chk_timestamp = QCheckBox("Timestamp")
+        self.chk_timestamp.setFocusPolicy(Qt.StrongFocus)
         self.chk_timestamp.stateChanged.connect(self.on_timestamp_changed)
 
         top_row.addWidget(self.btn_project)
         top_row.addSpacing(18)
         top_row.addWidget(self.btn_save)
+        top_row.addWidget(self.btn_reset)
         top_row.addWidget(self.btn_clear)
         top_row.addWidget(self.btn_copy)
         top_row.addSpacing(12)
@@ -608,17 +699,20 @@ class MainWindow(QMainWindow):
 
         lbl_bind = QLabel("Bind-IP:")
         self.ed_bind_ip = QLineEdit()
+        self.ed_bind_ip.setFocusPolicy(Qt.StrongFocus)
         self.ed_bind_ip.setPlaceholderText("0.0.0.0")
         self.ed_bind_ip.editingFinished.connect(self.on_settings_edited)
 
         lbl_port = QLabel("Port:")
         self.ed_port = QLineEdit()
+        self.ed_port.setFocusPolicy(Qt.StrongFocus)
         self.ed_port.setValidator(QIntValidator(1, 65535, self))
         self.ed_port.setPlaceholderText("10514")
         self.ed_port.editingFinished.connect(self.on_settings_edited)
 
         lbl_max = QLabel("Max lines:")
         self.ed_max_lines = QLineEdit()
+        self.ed_max_lines.setFocusPolicy(Qt.StrongFocus)
         self.ed_max_lines.setValidator(QIntValidator(1000, 500000, self))
         self.ed_max_lines.setPlaceholderText(str(DEFAULT_MAX_LINES))
         self.ed_max_lines.editingFinished.connect(self.on_settings_edited)
@@ -644,6 +738,7 @@ class MainWindow(QMainWindow):
 
         self.btn_filter_add = QToolButton()
         self.btn_filter_add.setText("FILTER")
+        self.btn_filter_add.setFocusPolicy(Qt.StrongFocus)
         self.btn_filter_add.clicked.connect(self.on_filter_add_clicked)
         fx_row.addWidget(self.btn_filter_add)
 
@@ -654,6 +749,7 @@ class MainWindow(QMainWindow):
         fx_row.addWidget(self._filter_chips_container, 1)
 
         self.btn_filter_reset = QPushButton("RESET")
+        self.btn_filter_reset.setFocusPolicy(Qt.StrongFocus)
         self.btn_filter_reset.clicked.connect(self.on_filter_reset_clicked)
         fx_row.addWidget(self.btn_filter_reset)
 
@@ -663,6 +759,7 @@ class MainWindow(QMainWindow):
 
         self.btn_exclude_add = QToolButton()
         self.btn_exclude_add.setText("EXCLUDE")
+        self.btn_exclude_add.setFocusPolicy(Qt.StrongFocus)
         self.btn_exclude_add.clicked.connect(self.on_exclude_add_clicked)
         fx_row.addWidget(self.btn_exclude_add)
 
@@ -673,6 +770,7 @@ class MainWindow(QMainWindow):
         fx_row.addWidget(self._exclude_chips_container, 1)
 
         self.btn_exclude_reset = QPushButton("RESET")
+        self.btn_exclude_reset.setFocusPolicy(Qt.StrongFocus)
         self.btn_exclude_reset.clicked.connect(self.on_exclude_reset_clicked)
         fx_row.addWidget(self.btn_exclude_reset)
 
@@ -689,6 +787,7 @@ class MainWindow(QMainWindow):
 
         self.btn_hl_add = QToolButton()
         self.btn_hl_add.setText("HIGHLIGHT")
+        self.btn_hl_add.setFocusPolicy(Qt.StrongFocus)
         self.btn_hl_add.clicked.connect(self.on_hl_add_clicked)
         hl_row.addWidget(self.btn_hl_add)
 
@@ -699,6 +798,7 @@ class MainWindow(QMainWindow):
         hl_row.addWidget(self._hl_chips_container, 1)
 
         self.btn_hl_reset = QPushButton("RESET")
+        self.btn_hl_reset.setFocusPolicy(Qt.StrongFocus)
         self.btn_hl_reset.clicked.connect(self.on_hl_reset_clicked)
         hl_row.addWidget(self.btn_hl_reset)
 
@@ -706,6 +806,7 @@ class MainWindow(QMainWindow):
 
         # --- Content ---
         self.log = QPlainTextEdit()
+        self.log.setFocusPolicy(Qt.StrongFocus)
         self.log.setReadOnly(True)
         self.log.setLineWrapMode(QPlainTextEdit.NoWrap)
 
@@ -1334,7 +1435,7 @@ class MainWindow(QMainWindow):
         self._listener = t
         t.start()
 
-        self._open_new_live_log()
+        self._ensure_active_live_log()
         return True
 
     def _stop_listener(self) -> None:
@@ -1345,6 +1446,49 @@ class MainWindow(QMainWindow):
 
         stop_listener_thread(t, wait_ms=800)
         self._close_live_log()
+
+    def _clear_session_buffers(self) -> None:
+        self.log.clear()
+        self._queue.clear()
+        self._connection_state.trimmed_lines_total = 0
+        self._connection_state.rx_packets = 0
+        self._connection_state.rx_lines = 0
+        self._pause_buffer, self._pause_dropped, self._ui_paused = reset_pause_state(
+            self._pause_buffer,
+            maxlen=self._pause_buffer.maxlen or 2000,
+        )
+        self.btn_pause.blockSignals(True)
+        self.btn_pause.setChecked(False)
+        self.btn_pause.blockSignals(False)
+        self._visualizer_manager.clear_all_buffers()
+
+    def _reset_runtime_sources(self) -> None:
+        self.on_stop_replay_clicked()
+        self.on_stop_replay_temperature_clicked()
+        self._stop_simulation()
+        self._stop_simulation_temperature()
+        self._sim_logic_enabled = False
+        if self._sim_logic_timer.isActive():
+            self._sim_logic_timer.stop()
+
+        for action_name in ("act_simulate", "act_simulate_temperature", "act_simulate_logic"):
+            action = getattr(self, action_name, None)
+            if action is None or not action.isChecked():
+                continue
+            action.blockSignals(True)
+            action.setChecked(False)
+            action.blockSignals(False)
+
+    def _reset_session(self) -> Path | None:
+        self._reset_runtime_sources()
+        self._stop_listener()
+        self._clear_session_buffers()
+        self._ensure_active_live_log()
+        self.btn_connect.blockSignals(True)
+        self.btn_connect.setChecked(False)
+        self.btn_connect.blockSignals(False)
+        self._update_connection_ui()
+        return self._connection_state.active_path
 
     def _on_line_received(self, line: str) -> None:
         self._dispatch_log_line(line, is_live_source=True)
@@ -1483,7 +1627,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(
                 self,
                 "Invalid Project Name",
-                "Project name must contain 1 to 20 characters using letters, digits, or underscores.",
+                "Project name must contain 1 to 20 characters using letters, digits, underscores, or hyphens.",
             )
             return
 
@@ -1494,6 +1638,7 @@ class MainWindow(QMainWindow):
 
         project = RuntimeProject(name=project_name, root_dir=root_dir)
         project.output_dir.mkdir(parents=True, exist_ok=True)
+        write_project_readme(project, dialog.project_notes())
         self._active_project = project
         self._sync_runtime_context()
         self.statusBar().showMessage(f"Project active: {project.output_dir}", 4000)
@@ -1502,6 +1647,13 @@ class MainWindow(QMainWindow):
         self.log.clear()
         self._connection_state.trimmed_lines_total = 0
         self.statusBar().showMessage("Cleared (UI only)", 2000)
+
+    def on_reset_clicked(self) -> None:
+        new_live_log = self._reset_session()
+        if new_live_log is not None:
+            self.statusBar().showMessage(f"Session reset. Listener OFF. New live log: {new_live_log}", 5000)
+        else:
+            self.statusBar().showMessage("Session reset. Listener OFF.", 4000)
 
     def on_copy_clicked(self) -> None:
         cursor = self.log.textCursor()

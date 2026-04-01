@@ -19,7 +19,7 @@ Typische Einsatzfälle:
 
 Die Hauptoberfläche besteht im Wesentlichen aus:
 
-- Aktionsleiste mit `SAVE`, `CLEAR`, `COPY`, `CONNECT`, `PAUSE`
+- Aktionsleiste mit `SAVE`, `RESET`, `CLEAR`, `COPY`, `CONNECT`, `PAUSE`
 - Optionen `Auto-Scroll` und `Timestamp`
 - Eingabefeldern für `Bind-IP`, `Port` und `Max lines`
 - Bereichen für `Filter`, `Exclude` und `Highlight`
@@ -30,6 +30,8 @@ Wichtig zur Menüführung:
 
 - auf macOS können `Preferences...` und `Quit` systemtypisch im App-Menü erscheinen
 - auf Windows und Linux liegen diese Einträge typischerweise im `File`-Menü
+
+![Hauptfenster mit aktiver Verbindung, Highlight-Chips und Reset-Button](../assets/screenshots/udp_log_viewer_main_highlighted.png)
 
 ## 3. Erster Start und typische Verbindung
 
@@ -141,9 +143,66 @@ Das dient vor allem dazu:
 - die Anzeige für eine neue Beobachtungsphase aufzuräumen
 - aktuelle Effekte von Filtern oder Highlights übersichtlicher zu prüfen
 
-### 5.3 `COPY`
+### 5.3 `RESET`
+
+`RESET` startet innerhalb derselben App-Session eine neue Log-Phase.
+
+Dabei passiert im aktuellen Verhalten:
+
+- die sichtbare Hauptansicht wird geleert
+- interne Buffer und Zähler werden zurückgesetzt
+- `CONNECT` geht auf `OFF`
+- das laufende Live-Log wird sauber abgeschlossen
+- sofort wird eine neue Live-Logdatei mit aktuellem Zeitstempel vorbereitet
+- ein aktives `PROJECT` bleibt erhalten
+
+Praktischer Nutzen:
+
+- neue Testphase beginnen, ohne die Anwendung neu zu starten
+- neue Logdatei mit sauberem Anfang erzeugen
+- weiterhin im gleichen Projektordner weiterarbeiten
+
+### 5.4 `COPY`
 
 `COPY` kopiert den sichtbaren Inhalt der Hauptansicht in die Zwischenablage.
+
+### 5.5 Tastaturbedienung im Hauptfenster
+
+Das Hauptfenster unterstützt eine explizite Tastaturbedienung über
+`TAB` und `Shift` + `TAB`.
+
+Damit lassen sich nacheinander unter anderem erreichen:
+
+- `PROJECT`
+- `SAVE`
+- `RESET`
+- `CLEAR`
+- `COPY`
+- `CONNECT`
+- `PAUSE`
+- die Eingabefelder für `Bind-IP`, `Port` und `Max lines`
+
+Zusätzliche Save-Kürzel:
+
+- `Ctrl` + `S`
+- `Cmd` + `S`
+- `F12`
+
+### 5.6 `PROJECT`
+
+Im `PROJECT`-Dialog steht jetzt zusätzlich eine mehrzeilige
+Markdown-Beschreibung zur Verfügung.
+
+Verhalten:
+
+- beim Erstellen oder Speichern eines Projekts wird eine Datei
+  `README_<projectname>.md` im Projektordner geschrieben
+- Standardinhalt ist eine Überschrift mit Projektname und aktuellem
+  Zeitstempel
+- die Beschreibung ist auf `1024` Zeichen begrenzt
+- erlaubte Zeichen im Projektnamen sind `A-Za-z`, `0-9`, `_` und `-`
+
+![Projekt-Dialog mit mehrzeiliger Markdown-Beschreibung](../assets/screenshots/udp_log_viewer_project_config.png)
 
 ## 6. Filter, Exclude und Highlight
 
@@ -197,6 +256,8 @@ Der typische Ablauf ist in allen drei Bereichen ähnlich:
 
 Vorhandene Chips können anschließend bearbeitet oder entfernt werden.
 
+![Filter-Regel-Konfiguration im Dialog](../assets/screenshots/udp_log_viewer_main_rule_config.png)
+
 ### 6.5 Zurücksetzen
 
 Über `RESET` im Regelbereich lassen sich aktive Regeln wieder zurücksetzen.
@@ -242,6 +303,8 @@ Diese Funktionen sind hilfreich, wenn:
 - Visualizer-Fenster mit Testdaten gespeist werden sollen
 
 Im aktuellen Verhalten erfordern bestimmte Simulationen eine aktive Verbindung.
+
+![Menüeintrag für integrierte Traffic-Simulationen](../assets/screenshots/udp_log_viewer_menu_simulation.png)
 
 ## 9. Visualizer-Nutzung
 
@@ -310,6 +373,7 @@ Sowohl der Temperatur- als auch der Logic-Visualizer besitzen eine direkte Slidi
 Sichtbare Bedienelemente:
 
 - `Sliding Window`
+- `Legend`
 - Presets `100`, `150`, `200`, `300`
 - `Window Size`
 - `Reset`
@@ -321,6 +385,9 @@ Bedeutung:
   zeigt immer nur die letzten `N` Samples
 - `Window Size`
   bestimmt die aktuell sichtbare Fenstergröße
+  gültiger Bereich im aktuellen Stand: `1..5000`
+- `Legend`
+  blendet die Legende im geöffneten Graph-Fenster zur Laufzeit ein oder aus
 - Presets
   setzen die Fenstergröße schnell auf typische Werte
 - `Reset`
@@ -331,12 +398,56 @@ Wichtig:
 - Änderungen im geöffneten Graph-Fenster sind zunächst Laufzeit-Overrides
 - die persistente Default-Vorgabe kommt aus der Graph-Konfiguration bzw. aus den globalen Präferenzen
 
+![Plot-Visualizer mit Tooltip, Legende und Zielbereichen](../assets/screenshots/udp_log_viewer_plot_tooltip.png)
+
+Zusätzliche Screenshot-Kürzel im Graph-Fenster:
+
+- `Ctrl` + `Shift` + `S`
+- `Cmd` + `Shift` + `S`
+- `F12`
+
+Auch die Graph-Fenster besitzen eine explizite `TAB`-Navigation über die
+sichtbaren Bedienelemente.
+
+### 9.2 Messung im Logic-Graphen
+
+Im Logic-Graphen kann die Zeit zwischen Signalflanken direkt gemessen
+werden.
+
+Bedienung:
+
+- Linksklick auf eine Kanalzeile
+  startet eine Flankenmessung
+- `Shift` + Linksklick auf eine Kanalzeile
+  startet eine Periodenmessung
+- `Space` oder `Esc`
+  löscht die Messung wieder
+
+Verhalten:
+
+- der Start rastet auf die nächste Flanke des gewählten Kanals ein
+- bei normalem Klick endet die Messung an der nächsten Flanke desselben Kanals
+- bei `Shift`-Klick endet die Messung an der nächsten gleichartigen Flanke
+- während eine Messung aktiv ist, pausiert die Graph-Ansicht, damit das Signal nicht weiter nach links wandert
+- nach `Space` oder `Esc` läuft die Anzeige wieder mit dem vorherigen Refresh-Zustand weiter
+
+Darstellung:
+
+- rote Startlinie
+- blaue Endlinie
+- gestrichelte Pfeillinie zwischen Start und Ende
+- Zeittext im Format `MM:SS.mmm`
+- wenn der Platz zwischen Start und Ende zu klein ist, erscheint der
+  Text rechts neben der blauen Endlinie
+
 Wichtig:
 
 - der Viewer definiert die CSV-Struktur des Sendesystems nicht
 - er kann Daten nur dann visualisieren, wenn Filter-Token, Feldanzahl und Feldbedeutung zur Visualizer-Konfiguration passen
 - für Plot-Fenster muss `matplotlib` in der aktiven Python-Umgebung
   installiert sein
+
+![Logic-Visualizer mit Periodenmessung und Markerlinien](../assets/screenshots/udp_log_viewer_logic_period.png)
 
 ## 10. Persistenz aus Anwendersicht
 
@@ -370,6 +481,8 @@ Dort lassen sich aktuell unter anderem einstellen:
 - Default-Sliding-Window-Werte für Plot und Logic
 
 Diese Werte werden in `config.ini` persistiert.
+
+![Preferences-Dialog auf der Registerkarte General](../assets/screenshots/udp_log_viewer_preferences_general.png)
 
 ## 11. Typische Arbeitsabläufe
 

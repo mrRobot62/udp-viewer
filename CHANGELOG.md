@@ -7,6 +7,64 @@ The format is based on Keep a Changelog and follows semantic versioning
 principles where applicable.
 
 ------------------------------------------------------------------------
+## 0.16.0 -- 2026-04-01
+### Added
+
+-   Added a main-window `RESET` action that clears the active in-memory
+    log session, keeps the current project context, and immediately
+    prepares a fresh live log file
+-   Added runtime live-log session rotation helpers so reset/connect
+    flows can reuse or rotate live files consistently
+-   Added logic-graph edge measurement with start/end markers, duration
+    labels, automatic pause during measurement, and `Space`/`Esc` to
+    clear the measurement
+-   Added `Shift`-click period measurement in the logic graph to measure
+    from one edge to the next edge of the same type
+-   Added project-description notes in the `PROJECT` dialog and write
+    them as `README_<projectname>.md` files inside the project folder
+
+### Improved
+
+-   Limited plot and logic `Window Size` controls to `1..5000` and
+    exposed the allowed range via tooltips in graph windows and config
+    dialogs
+-   Added runtime `Legend` toggles in plot and logic graph windows
+-   Moved compact logic-measurement labels to the right of the blue end
+    marker when the measured span is too short for centered text
+-   Reused an already prepared live log on the next `CONNECT` instead of
+    rotating it again immediately after a reset
+-   Added explicit `TAB` navigation plus keyboard shortcuts for save and
+    screenshot actions in the main and graph windows
+
+### Technical
+
+-   Bumped application and package version metadata to `0.16.0`
+-   Expanded automated coverage for live-log rotation, logic
+    measurements, label placement, and window-size clamping
+-   Updated release, user, and packaging documentation for the
+    final `0.16.0` release
+
+------------------------------------------------------------------------
+## 0.15.4 -- 2026-03-31
+### Added
+
+-   Added a main-window `RESET` action that clears the in-memory log
+    session, resets counters and pause buffers, preserves the active
+    project context, and starts a fresh live log file with a new
+    timestamp
+
+### Improved
+
+-   Reused an already prepared live log on the next `CONNECT` instead of
+    rotating it again immediately after a reset
+
+### Technical
+
+-   Bumped application and package version metadata to `0.15.4`
+-   Added regression coverage for the reset-session workflow in the main
+    window
+
+------------------------------------------------------------------------
 ## 0.15.3 -- 2026-03-31
 ### Fixed
 

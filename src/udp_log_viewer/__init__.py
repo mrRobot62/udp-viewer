@@ -1,5 +1,5 @@
 """UDP Log Viewer package metadata."""
 
-__version__ = "0.15.3"
-__build__ = "T3.7.0"
-__display_version__ = f"{__version__} ({__build__})"
+__version__ = "0.16.0"
+__build__ = ""
+__display_version__ = __version__ if not __build__ else f"{__version__} ({__build__})"

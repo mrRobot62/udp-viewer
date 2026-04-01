@@ -61,7 +61,8 @@ class VisualizerConfigDialog(QDialog):
         self._max_samples.setRange(50, 100000)
         self._sliding_window_enabled = QCheckBox("Sliding Window Enabled by Default")
         self._default_window_size = QSpinBox()
-        self._default_window_size.setRange(10, 100000)
+        self._default_window_size.setRange(1, 5000)
+        self._default_window_size.setToolTip("Minimum: 1, Maximum: 5000.")
 
         slot_row = QHBoxLayout()
         slot_row.addWidget(QLabel("Slot"))

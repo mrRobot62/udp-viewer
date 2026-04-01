@@ -1,256 +1,282 @@
 # Build- und Packaging-Referenz des UDP Viewers
 
-Dieses Dokument beschreibt den aktuell im Repository vorhandenen Stand der Build-, Run-, Test- und Packaging-Wege des UDP Viewers. Es definiert keinen zukünftigen Release-Prozess, sondern dokumentiert, welche Skripte und Buildpfade heute in der Codebasis existieren und wie sie einzuordnen sind.
+Dieses Dokument beschreibt die aktuellen Build-, Test-, Packaging- und
+Release-Wege des UDP Viewers im Stand `0.16.0`. Es ist bewusst
+praxisorientiert: Ziel ist, die heute führenden Pfade von historischen
+oder sekundären Varianten zu trennen und dabei die wichtigsten Risiken
+klar zu benennen.
 
-## 1. Ziel und Einordnung
+## 1. Umfang
 
-Diese Referenz beantwortet vor allem drei Fragen:
+Diese Referenz beantwortet vier praktische Fragen:
 
-- Wie wird die Entwicklungsumgebung eingerichtet?
-- Wie wird die Anwendung lokal gestartet und getestet?
-- Welche Packaging-Wege für macOS und Windows sind aktuell vorhanden, und welche davon sind primär bzw. alternativ?
+- wie die Entwicklungsumgebung eingerichtet wird
+- wie die Anwendung lokal gestartet und getestet wird
+- wie macOS- und Windows-Artefakte gebaut werden
+- wie GitHub diese Artefakte aktuell an Releases anhängt
+
+## 2. Aktuelle Versionsquellen
+
+Die maßgeblichen Versionsquellen sind derzeit:
+
+- [__init__.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/__init__.py)
+- [pyproject.toml](/Users/bernhardklein/workspace/python/udp-viewer/pyproject.toml)
 
 Wichtig:
 
-- `freeze_setup.py` ist derzeit der wichtigste und konsistenteste Packaging-Einstiegspunkt.
-- Mehrere zusätzliche Skripte sind Wrapper oder historisch gewachsene Alternativen.
-- Nicht jeder vorhandene Packaging-Pfad ist im aktuellen Stand gleich gut gepflegt.
+- `__version__` trägt die Produktversion wie `0.16.0`
+- `__build__` kann optional einen Build-Marker wie `RC1` tragen
+- Release-Tags wie `0.16.0-rc2` leben in Git und nicht im Paket selbst
 
-## 2. Entwicklungsumgebung
+## 3. Entwicklungs-Bootstrap
 
-### 2.1 Gemeinsame Konfiguration
+### 3.1 macOS und Linux
 
-Die Shell-Skripte auf macOS/Linux nutzen [common.env](/Users/bernhardklein/workspace/python/udp-viewer/scripts/common.env).
+Die gemeinsame Shell-Konfiguration liegt in:
 
-Dort ist aktuell definiert:
+- [common.env](/Users/bernhardklein/workspace/python/udp-viewer/scripts/common.env)
 
-- virtuelles Environment unter `${HOME}/workspace/venv/udp-viewer`
-- Python-Interpreter `python3`
-- Installation mit `.[dev]`
-
-Diese Werte steuern insbesondere:
-
-- [bootstrap_macos_linux.sh](/Users/bernhardklein/workspace/python/udp-viewer/scripts/bootstrap_macos_linux.sh)
-- [dev_run.sh](/Users/bernhardklein/workspace/python/udp-viewer/scripts/dev_run.sh)
-- [dev_test.sh](/Users/bernhardklein/workspace/python/udp-viewer/scripts/dev_test.sh)
-
-### 2.2 macOS/Linux-Bootstrap
-
-Der empfohlene Bootstrap auf macOS und Linux ist:
+Der führende Bootstrap-Pfad ist:
 
 - [bootstrap_macos_linux.sh](/Users/bernhardklein/workspace/python/udp-viewer/scripts/bootstrap_macos_linux.sh)
 
-Dieses Skript:
+Dort wird aktuell angenommen:
 
-- erzeugt das virtuelle Environment bei Bedarf
-- aktiviert das Environment
-- aktualisiert `pip`, `setuptools` und `wheel`
-- installiert das Projekt editable mit Dev-Abhängigkeiten über `pip install -e ".[dev]"`
+- virtuelles Environment: `${HOME}/workspace/venv/udp-viewer`
+- Interpreter: `python3`
+- editable Installation mit `.[dev]`
 
-### 2.3 Windows-Bootstrap
+### 3.2 Windows
 
-Der konsistenteste Windows-Bootstrap ist derzeit:
+Der empfohlene Windows-Bootstrap ist:
 
 - [bootstrap_windows.ps1](/Users/bernhardklein/workspace/python/udp-viewer/scripts/bootstrap_windows.ps1)
 
 Dieses Skript:
 
-- legt ein virtuelles Environment unter `%USERPROFILE%\workspace\venv\udp-viewer` an
-- aktiviert es
-- installiert das Projekt editable mit Dev-Abhängigkeiten
+- erzeugt das virtuelle Environment unter `%USERPROFILE%\workspace\venv\udp-viewer`
+- installiert das Projekt mit Dev-Abhängigkeiten
 - aktualisiert optional `pre-commit`, `ruff` und `mypy`
 
 Die Batch-Variante
 
 - [bootstrap_windows.bat](/Users/bernhardklein/workspace/python/udp-viewer/scripts/bootstrap_windows.bat)
 
-ist im aktuellen Repository-Stand offensichtlich beschädigt oder falsch formatiert und sollte nicht als führender Bootstrap-Weg betrachtet werden.
+ist im aktuellen Repository-Stand weiterhin fehlerhaft formatiert und
+sollte nicht als empfohlener Bootstrap-Weg verwendet werden.
 
-## 3. Entwicklungslauf und Tests
+## 4. Starten und Testen aus dem Quellcode
 
-### 3.1 Lokaler Start
-
-Unter macOS/Linux:
+Aktuelle Hilfsskripte:
 
 - [dev_run.sh](/Users/bernhardklein/workspace/python/udp-viewer/scripts/dev_run.sh)
-
-Dieses Skript aktiviert das konfigurierte virtuelle Environment und startet anschließend `udp-log-viewer`.
-
-Unter Windows:
-
-- [dev_run.ps1](/Users/bernhardklein/workspace/python/udp-viewer/scripts/dev_run.ps1)
-
-Dieses Skript aktiviert das virtuelle Environment und startet anschließend `python -m udp_log_viewer.main`.
-
-### 3.2 Testausführung
-
-Unter macOS/Linux:
-
 - [dev_test.sh](/Users/bernhardklein/workspace/python/udp-viewer/scripts/dev_test.sh)
-
-Unter Windows:
-
+- [dev_run.ps1](/Users/bernhardklein/workspace/python/udp-viewer/scripts/dev_run.ps1)
 - [dev_test.ps1](/Users/bernhardklein/workspace/python/udp-viewer/scripts/dev_test.ps1)
 
-Beide Wege führen aktuell `python -m pytest -q` aus.
+Aktuelles Verhalten:
 
-## 4. Primärer Packaging-Einstiegspunkt
+- Source-Run auf macOS/Linux: `udp-log-viewer`
+- Source-Run auf Windows: `python -m udp_log_viewer.main`
+- Testpfad: `python -m pytest -q`
 
-Der aktuell wichtigste Packaging-Einstiegspunkt ist:
+## 5. Packaging-Einstiegspunkte
+
+### 5.1 Plattformübergreifender cx_Freeze-Einstieg
+
+Der wichtigste plattformübergreifende Packaging-Einstiegspunkt ist:
 
 - [freeze_setup.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup.py)
 
 Gründe:
 
-- das Skript ist plattformübergreifend ausgelegt
-- es verwendet den aktuellen `src`-Layout-Bootstrap
-- es nutzt [freeze_entry.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_entry.py) als sauberen Frozen-Entry-Point
-- es bezieht die Version zentral aus `udp_log_viewer.__version__`
+- verarbeitet das aktuelle `src`-Layout korrekt
+- nutzt [freeze_entry.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_entry.py)
+- liest die Version aus `udp_log_viewer.__version__`
+- unterstützt `build_exe`, `bdist_mac` und `bdist_dmg`
 
-Unterstützte Targets in diesem Skript:
+### 5.2 Windows-spezifischer cx_Freeze-Einstieg
 
-- `build_exe`
-- `bdist_mac`
-- `bdist_dmg`
+Zusätzlich existiert:
 
-Damit ist `freeze_setup.py` derzeit die beste Referenz für:
+- [freeze_setup_win.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup_win.py)
 
-- generische Frozen Builds
-- macOS-App-Bundles
-- macOS-DMG-Erzeugung
+Dieser Pfad bleibt relevant, weil der Windows-Installer ihn aktuell
+verwendet.
 
-## 5. macOS-Build- und Packaging-Wege
+### 5.3 Älterer macOS-Einstieg
 
-### 5.1 Primärer Weg
+Als älterer Alternativpfad existiert außerdem:
 
-Der klarste vorhandene macOS-Buildpfad ist:
+- [freeze_setup_dmg.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup_dmg.py)
+
+Dieser Weg sollte derzeit als sekundär oder historisch eingeordnet
+werden, nicht als führende Referenz.
+
+## 6. macOS-Buildpfade
+
+### 6.1 Führender lokaler DMG-Build
+
+Der führende lokale macOS-Buildpfad ist:
+
+```bash
+./build_dmg.sh
+```
+
+Der Wrapper liegt in:
+
+- [build_dmg.sh](/Users/bernhardklein/workspace/python/udp-viewer/build_dmg.sh)
+
+Intern läuft dabei:
 
 ```bash
 python freeze_setup.py bdist_dmg
 ```
 
-oder über den Wrapper:
+Das ist aktuell der primäre lokale DMG-Weg.
 
-- [build_dmg.sh](/Users/bernhardklein/workspace/python/udp-viewer/build_dmg.sh)
-
-Dieser Weg nutzt `cx_Freeze` direkt für die DMG-Erzeugung.
-
-### 5.2 Alternative mit `dmgbuild`
+### 6.2 Alternative mit `dmgbuild`
 
 Zusätzlich existiert:
 
 - [packaging/macos/build_dmg.sh](/Users/bernhardklein/workspace/python/udp-viewer/packaging/macos/build_dmg.sh)
 
-Dieser Weg macht zwei Schritte:
+Dieser Weg:
 
-1. `python freeze_setup.py bdist_mac`
-2. `python -m dmgbuild -s packaging/macos/dmg_settings.py "UDPLogViewer" "dist/UDPLogViewer.dmg"`
+1. baut die `.app` via `python freeze_setup.py bdist_mac`
+2. baut anschließend eine DMG via `python -m dmgbuild`
 
-Die dazugehörige Finder-/DMG-Konfiguration liegt in:
+Diesen Pfad sollte man vor allem dann verwenden, wenn die Finder-/DMG-
+Gestaltung über
+[dmg_settings.py](/Users/bernhardklein/workspace/python/udp-viewer/packaging/macos/dmg_settings.py)
+explizit kontrolliert werden soll.
 
-- [dmg_settings.py](/Users/bernhardklein/workspace/python/udp-viewer/packaging/macos/dmg_settings.py)
+### 6.3 Typische Ausgaben
 
-Einordnung:
+Je nach cx_Freeze-Version und verwendetem Pfad entstehen typischerweise:
 
-- dieser Weg ist technisch plausibel
-- er ist eher ein alternativer, stärker manuell kontrollierter DMG-Pfad
-- der eigentliche App-Build kommt auch hier wieder aus `freeze_setup.py`
+- `build/UDPLogViewer.dmg`
+- `dist/UDPLogViewer.dmg`
+- `build/UDPLogViewer.app` oder ein Bundle unterhalb von `build/`
 
-### 5.3 Älterer Alternativpfad
+Der GitHub-macOS-Workflow sucht anschließend im Repository nach
+`UDPLogViewer*.dmg` und benennt das gewählte Artefakt vor dem Upload in
+`UDPLogViewer-<version>.dmg` um.
 
-Zusätzlich existiert:
+## 7. Windows-Buildpfade
 
-- [freeze_setup_dmg.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup_dmg.py)
+### 7.1 Generischer Frozen Build
 
-Dieses Skript ist funktional ähnlich, nutzt aber `run_udp_log_viewer.py` statt `freeze_entry.py`.
-
-Einordnung:
-
-- nicht offensichtlich der führende Pfad
-- wahrscheinlich älterer oder alternativer macOS-Buildansatz
-- für neue Dokumentation und künftige Builds sollte eher `freeze_setup.py` als Referenz gelten
-
-## 6. Windows-Build- und Packaging-Wege
-
-### 6.1 EXE-Build
-
-Es existieren mehrere Wege für einen Windows-Frozen-Build.
-
-Generischer Primärpfad:
+Der generische cx_Freeze-Pfad ist:
 
 ```bat
 python freeze_setup.py build
 ```
 
-Wrapper dafür:
+Vorhandene Wrapper:
 
 - [build_exe.bat](/Users/bernhardklein/workspace/python/udp-viewer/build_exe.bat)
 - [packaging/windows/build_exe.bat](/Users/bernhardklein/workspace/python/udp-viewer/packaging/windows/build_exe.bat)
 
-Zusätzlich existiert ein Windows-spezifischer Buildpfad:
+Dieser Weg erzeugt einen Frozen-Baum, aber noch keinen finalen
+Installer.
 
-- [freeze_setup_win.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup_win.py)
+### 7.2 Aktueller Installer-Build
 
-Einordnung:
-
-- `freeze_setup.py` ist der konsistentere allgemeine Hauptpfad
-- `freeze_setup_win.py` ist ein Windows-spezifischer Alternativpfad mit reduzierterem Optionssatz
-- beide beziehen die Version bereits zentral aus dem Paket
-
-### 6.2 Installer-Build mit Inno Setup
-
-Für einen Setup-Installer existieren:
+Der führende Windows-Installer-Pfad ist:
 
 - [build_windows_installer.bat](/Users/bernhardklein/workspace/python/udp-viewer/scripts/build_windows_installer.bat)
-- [installer.iss](/Users/bernhardklein/workspace/python/udp-viewer/packaging/windows/installer.iss)
 
-Der Batch-Ablauf ist konzeptionell:
+Dieses Skript macht aktuell:
 
-1. lokales `.venv` anlegen
-2. `cx_Freeze` installieren
-3. `python freeze_setup_win.py build_exe`
-4. Inno Setup per `ISCC.exe` ausführen
+1. `.venv` erzeugen oder wiederverwenden
+2. `cx-Freeze` plus Projekt installieren
+3. `build` und `dist` leeren
+4. `python freeze_setup_win.py build_exe` ausführen
+5. `build\exe.*` erkennen
+6. Inno Setup mit [installer.iss](/Users/bernhardklein/workspace/python/udp-viewer/packaging/windows/installer.iss) aufrufen
 
-## 7. Aktuelle Inkonsistenzen und Risiken
+Erwartete finale Installer-Benennung:
 
-Der Packaging-Bestand ist nutzbar, aber nicht vollständig konsolidiert.
+- `dist/UDPLogViewer-Setup-<version>.exe`
 
-Wichtige aktuelle Beobachtungen:
+Der GitHub-Windows-Workflow benennt dieses Artefakt vor dem Release-
+Upload in
 
-- der Installer-Build ist inzwischen auf [installer.iss](/Users/bernhardklein/workspace/python/udp-viewer/packaging/windows/installer.iss) vereinheitlicht.
-- Version und `build\exe.*`-Pfad werden beim Installer-Build dynamisch an Inno Setup übergeben.
-- [bootstrap_windows.bat](/Users/bernhardklein/workspace/python/udp-viewer/scripts/bootstrap_windows.bat) wirkt syntaktisch beschädigt und sollte im aktuellen Stand nicht als empfohlener Windows-Bootstrap gelten.
-- mit [freeze_setup.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup.py), [freeze_setup_win.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup_win.py) und [freeze_setup_dmg.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup_dmg.py) existieren mehrere sich teilweise überlappende Build-Einstiegspunkte.
+- `UDPLogViewer-<version>-Setup.exe`
 
-## 8. Empfohlene praktische Nutzung im aktuellen Stand
+um.
 
-Für Entwicklungsarbeit:
+## 8. GitHub-Release-Automation
+
+Im Repository liegen zwei Release-Workflows:
+
+- [macos-release.yml](/Users/bernhardklein/workspace/python/udp-viewer/.github/workflows/macos-release.yml)
+- [windows-release.yml](/Users/bernhardklein/workspace/python/udp-viewer/.github/workflows/windows-release.yml)
+
+Beide laufen in zwei Modi:
+
+- automatisch bei `release: published`
+- manuell per `workflow_dispatch` mit vorhandenem `tag_name`
+
+### 8.1 Empfohlenes Release-Verhalten
+
+Der sicherste Release-Ablauf ist:
+
+1. Release-Tag auf den gewünschten Commit setzen und pushen
+2. GitHub-Prerelease oder Release für genau diesen Tag anlegen
+3. die beiden Packaging-Workflows über das `release`-Event automatisch laufen lassen
+
+Dann bauen die Jobs im Kontext des veröffentlichten Tags und hängen die
+Artefakte an genau dieses Release.
+
+### 8.2 Wichtige Stolperfalle
+
+`workflow_dispatch` kann Artefakte an einen beliebigen vorhandenen Tag
+anhängen, aber der Workflow läuft trotzdem auf dem ausgewählten Git-Ref.
+
+Das bedeutet:
+
+- manueller Dispatch auf `main`
+- Upload auf ein RC-Release eines Feature-Branches
+
+kann dazu führen, dass Artefakte aus `main` gebaut, aber an das RC-
+Release angehängt werden. Dadurch entstehen falsche Versions-Artefakte.
+
+Praktische Regel:
+
+- bevorzugt das automatische `release`-Event verwenden
+- manuellen Dispatch nur nutzen, wenn ausgewählter Ref und Ziel-Tag
+  garantiert denselben Codezustand meinen
+
+## 9. Aktuelle praktische Empfehlung
+
+Für lokale Entwicklung:
 
 - macOS/Linux: [bootstrap_macos_linux.sh](/Users/bernhardklein/workspace/python/udp-viewer/scripts/bootstrap_macos_linux.sh), danach [dev_run.sh](/Users/bernhardklein/workspace/python/udp-viewer/scripts/dev_run.sh) und [dev_test.sh](/Users/bernhardklein/workspace/python/udp-viewer/scripts/dev_test.sh)
 - Windows: [bootstrap_windows.ps1](/Users/bernhardklein/workspace/python/udp-viewer/scripts/bootstrap_windows.ps1), danach [dev_run.ps1](/Users/bernhardklein/workspace/python/udp-viewer/scripts/dev_run.ps1) und [dev_test.ps1](/Users/bernhardklein/workspace/python/udp-viewer/scripts/dev_test.ps1)
 
-Für macOS-Packaging:
+Für lokales Packaging:
 
-- primär [freeze_setup.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup.py) mit `bdist_dmg`
-- alternativ [packaging/macos/build_dmg.sh](/Users/bernhardklein/workspace/python/udp-viewer/packaging/macos/build_dmg.sh), wenn ein `dmgbuild`-basierter Schritt bewusst gewünscht ist
+- macOS-DMG: `./build_dmg.sh`
+- Windows-Installer: `scripts\build_windows_installer.bat`
 
-Für Windows-Packaging:
+Für Release-Artefakte:
 
-- primär [freeze_setup.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup.py) oder bei explizitem Windows-Sonderpfad [freeze_setup_win.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup_win.py)
-- Installer-Generierung über [build_windows_installer.bat](/Users/bernhardklein/workspace/python/udp-viewer/scripts/build_windows_installer.bat)
+- GitHub-Release auf dem gewünschten Tag anlegen
+- DMG und Setup EXE über die Release-Workflows automatisch anhängen lassen
 
-Für Release-Attachments via GitHub Actions:
+## 10. Verbleibende Risiken
 
-- Windows Setup.exe über [windows-release.yml](/Users/bernhardklein/workspace/python/udp-viewer/.github/workflows/windows-release.yml)
-- macOS DMG über [macos-release.yml](/Users/bernhardklein/workspace/python/udp-viewer/.github/workflows/macos-release.yml)
+Das Build- und Release-System ist heute deutlich klarer, aber noch nicht
+vollständig fertig.
 
-## 9. Abgrenzung
+Offene Punkte:
 
-Diese Referenz beschreibt nur den Stand der vorhandenen Skripte im Repository. Sie garantiert nicht, dass jeder Packaging-Pfad in jeder Umgebung sofort reproduzierbar funktioniert.
-
-Für eine belastbare Release-Pipeline wären als nächster Schritt sinnvoll:
-
-- Konsolidierung auf einen führenden Windows-Buildpfad
-- Konsolidierung auf einen führenden macOS-DMG-Pfad
-- Vereinheitlichung des Inno-Setup-Skripts mit aktueller Version und flexiblem Build-Ausgabepfad
-- Entfernung oder Kennzeichnung beschädigter bzw. veralteter Hilfsskripte
+- `bootstrap_windows.bat` sollte repariert oder entfernt werden
+- `freeze_setup.py`, `freeze_setup_win.py` und `freeze_setup_dmg.py`
+  überlappen sich konzeptionell weiterhin
+- lokale macOS-Builds hängen vom aktiven Python-Environment und
+  `cx_Freeze` ab
+- Windows-Packaging braucht weiterhin eine echte Windows-Toolchain mit
+  Inno Setup

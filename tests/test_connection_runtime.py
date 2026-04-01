@@ -7,8 +7,10 @@ from udp_log_viewer.connection_runtime import (
     append_live_log_line,
     build_connection_status,
     close_live_log,
+    ensure_active_live_log,
     live_status_snippet,
     open_live_log,
+    reset_live_log_session,
 )
 
 
@@ -54,3 +56,30 @@ def test_live_status_snippet_for_existing_file(tmp_path: Path) -> None:
 
     assert "live.txt" in snippet
     assert "B" in snippet
+
+
+def test_ensure_active_live_log_reuses_existing_open_file(tmp_path: Path) -> None:
+    handle, path = open_live_log(tmp_path, "20260331_101500", filename="first.txt")
+    state = LiveLogState(active_path=path, handle=handle)
+
+    reused_path = ensure_active_live_log(state, tmp_path, "20260331_101501", filename="second.txt")
+
+    assert reused_path == path
+    assert state.active_path == path
+    assert state.handle is handle
+    close_live_log(state)
+
+
+def test_reset_live_log_session_rotates_and_preserves_previous_file(tmp_path: Path) -> None:
+    handle, old_path = open_live_log(tmp_path, "20260331_101500", filename="first.txt")
+    state = LiveLogState(active_path=old_path, handle=handle)
+    assert append_live_log_line(state, "hello") is True
+
+    new_path = reset_live_log_session(state, tmp_path, "20260331_101501", filename="second.txt")
+
+    assert state.last_session_path == old_path
+    assert old_path.read_text(encoding="utf-8").strip().endswith("hello")
+    assert new_path != old_path
+    assert state.active_path == new_path
+    assert new_path.name == "second.txt"
+    close_live_log(state)

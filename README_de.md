@@ -8,6 +8,7 @@ Vollständige deutsche Dokumentation:
 
 - [docs/DOKUMENTATION_de.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/DOKUMENTATION_de.md)
 - [docs/USER_GUIDE_de.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/USER_GUIDE_de.md)
+- [docs/RELEASE_0.16.0.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/RELEASE_0.16.0.md)
 
 Vollständige englische Dokumentation:
 
@@ -19,23 +20,27 @@ You have to set this command: `xattr -dr com.apple.quarantine /Applications/UDPL
 
 ## Screenshots
 
-Screenshot-Assets sollen künftig unter [assets/screenshots](/Users/bernhardklein/workspace/python/udp-viewer/assets/screenshots) liegen. Die folgenden Bilder verwenden aktuell noch die bestehenden GitHub-Asset-Links, bis lokale Dateien versioniert im Repository vorliegen.
+Die Screenshot-Assets liegen unter [assets/screenshots](/Users/bernhardklein/workspace/python/udp-viewer/assets/screenshots).
 
 ### Hauptansicht
 
-<img width="1100" height="785" alt="UDP Log Viewer Hauptansicht" src="https://github.com/user-attachments/assets/1d86de14-ef78-48fb-9b06-0868c29e1b72" />
+![UDP Log Viewer Hauptansicht mit aktiver Verbindung, Reset-Ablauf und Regel-Chips](assets/screenshots/udp_log_viewer_main_highlighted.png)
 
-### Highlighting
+### Regel-Konfiguration
 
-<img width="1100" height="785" alt="UDP Log Viewer Highlighting" src="https://github.com/user-attachments/assets/6423b809-f52e-462a-8957-b17a9840f6af" />
+![UDP Log Viewer Filter-Dialog über der Hauptansicht](assets/screenshots/udp_log_viewer_main_rule_config.png)
 
-### Filter-Anpassung
+### Projekt-Dialog
 
-<img width="232" height="387" alt="UDP Log Viewer Filter-Anpassung" src="https://github.com/user-attachments/assets/56fb3ab1-fdb6-46e6-98d6-4c1e933cd127" />
+![UDP Log Viewer Projekt-Dialog mit Markdown-Projektbeschreibung](assets/screenshots/udp_log_viewer_project_config.png)
 
-### Speichern und Laden von Logs
+### Plot-Visualizer mit Tooltip
 
-<img width="963" height="213" alt="UDP Log Viewer Speichern und Laden" src="https://github.com/user-attachments/assets/1dd140b2-8a6a-467e-9dd3-c9728ab3d86c" />
+![Plot-Visualizer mit Legende, Ziel-Linien und Tooltip-Werten](assets/screenshots/udp_log_viewer_plot_tooltip.png)
+
+### Logic-Messung
+
+![Logic-Visualizer mit Periodenmessung zwischen roter und blauer Markerlinie](assets/screenshots/udp_log_viewer_logic_period.png)
 
 ## Aktueller Umfang
 
@@ -44,10 +49,15 @@ Die aktuelle Codebasis enthält:
 - Echtzeit-UDP-Logempfang
 - Filter-, Exclude- und Highlight-Regeln
 - Live-Session-Logging
+- `RESET` im Hauptfenster für einen frischen Log-Start innerhalb derselben App-Session
+- Projektbeschreibungen als `README_<projectname>.md` direkt im Projektordner
 - Replay gespeicherter Logdateien
 - integrierte Simulation für Text-, Temperatur- und Logic-Traffic
 - CSV-basierte Datenvisualisierung
 - Logic-Kanal-Visualisierung
+- Flanken- und Periodenmessung direkt im Logic-Graphen
+- Legende per Laufzeit-Checkbox in Plot- und Logic-Fenstern ein-/ausblendbar
+- explizite `TAB`-Navigation sowie Tastaturkürzel für Save und Screenshot
 - Sliding-Window-Steuerung direkt im Graph-Fenster
 - Packaging-Skripte für macOS und Windows
 

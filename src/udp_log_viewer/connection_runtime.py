@@ -29,6 +29,30 @@ def open_live_log(logs_dir: str | Path, stamp: str, filename: str | None = None)
     return handle, path
 
 
+def ensure_active_live_log(
+    state: LiveLogState,
+    logs_dir: str | Path,
+    stamp: str,
+    filename: str | None = None,
+) -> Path:
+    if state.handle is not None and state.active_path is not None:
+        return state.active_path
+    handle, path = open_live_log(logs_dir, stamp, filename=filename)
+    state.handle = handle
+    state.active_path = path
+    return path
+
+
+def reset_live_log_session(
+    state: LiveLogState,
+    logs_dir: str | Path,
+    stamp: str,
+    filename: str | None = None,
+) -> Path:
+    close_live_log(state)
+    return ensure_active_live_log(state, logs_dir, stamp, filename=filename)
+
+
 def close_live_log(state: LiveLogState) -> None:
     try:
         if state.handle is not None:

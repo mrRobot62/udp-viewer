@@ -1,247 +1,113 @@
 # UDP Log Viewer — DMG Build Guide (macOS)
 
-This guide describes how to build a macOS `.dmg` installer for **UDP Log Viewer** using **cx_Freeze** + **dmgbuild**.
-It is intended to be re-used regularly (release builds and test builds).
+This guide describes the current local DMG build paths for UDP Log
+Viewer on macOS.
 
----
+## 1. Goal
 
-## 1) Prerequisites
+Two macOS paths currently exist:
 
-### macOS
-- Python 3.12 (recommended, matches current project)
-- A project virtual environment (venv)
-- Xcode Command Line Tools available
+- the main local DMG build via `./build_dmg.sh`
+- the alternative `dmgbuild`-based path under `packaging/macos/`
 
-Recommended working directory:
+For normal builds, the root helper script should be treated as the
+primary path.
+
+## 2. Prerequisites
+
+- macOS with Xcode Command Line Tools
+- Python `3.12`
+- active project environment with `cx_Freeze`
+
+Recommended start:
 
 ```bash
 cd /Users/bernhardklein/workspace/python/udp-viewer
-```
-
-### Python packages (inside your venv)
-Activate the project environment first:
-
-```bash
 source .venv/bin/activate
-```
-
-Install/update the packaging tools and the project itself:
-
-```bash
-python -m pip install -U pip
-python -m pip install -U cx_Freeze dmgbuild
+python -m pip install --upgrade pip setuptools wheel
+python -m pip install --upgrade cx-Freeze
 python -m pip install -e .[dev]
 ```
 
-Quick check:
+## 3. Primary Build Path
+
+The recommended local build is:
 
 ```bash
-python -m pip show cx_Freeze
-python -m pip show dmgbuild
-python -c "import udp_log_viewer; print('package-ok')"
-```
-
-Important:
-
-- `./build_dmg.sh` uses the currently active Python interpreter
-- if `cx_Freeze` is missing in that interpreter, the build stops with
-  `ModuleNotFoundError: No module named 'cx_Freeze'`
-- for this repository, installing only into `base` or another venv is
-  not sufficient
-
----
-
-## 2) Project layout assumptions
-
-This guide assumes:
-- Source package: `src/udp_log_viewer/`
-- Main entry module: `udp_log_viewer.main`
-- Packaging assets:
-  - `packaging/macos/app.icns`
-  - `packaging/macos/dmg_settings.py`
-- Build scripts:
-  - `build_dmg.sh`
-  - `freeze_setup.py`
-
----
-
-## 3) Versioning (PEP 440)
-
-Set the package version to a valid semantic version, e.g.:
-
-- ✅ `0.14.0`
-- ❌ `0.14-step10.3-bdist_dmg`  (invalid for packaging tools)
-
-Current source of truth:
-
-- `src/udp_log_viewer/__init__.py` → `__version__`
-- `pyproject.toml` → `version`
-
-`freeze_setup.py` reads the package version from `udp_log_viewer`.
-
----
-
-## 4) Clean old build outputs
-
-Before building a new DMG, remove old build artifacts:
-
-```bash
-rm -rf build dist
-```
-
-(Optional) also remove `__pycache__` if you want a super-clean tree:
-```bash
-find . -name "__pycache__" -type d -prune -exec rm -rf {} +
-```
-
----
-
-## 5) Build the app bundle / DMG
-
-### Option A: use the helper script
-```bash
-chmod +x ./build_dmg.sh
 ./build_dmg.sh
 ```
 
-### Option B: run cx_Freeze directly
+That wrapper currently executes:
+
 ```bash
 python freeze_setup.py bdist_dmg
 ```
 
-Expected outputs (typical):
-- `build/UDPLogViewer.app`
+Relevant files:
+
+- [build_dmg.sh](/Users/bernhardklein/workspace/python/udp-viewer/build_dmg.sh)
+- [freeze_setup.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup.py)
+- [freeze_entry.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_entry.py)
+
+## 4. Alternative `dmgbuild` Path
+
+An additional path exists:
+
+- [packaging/macos/build_dmg.sh](/Users/bernhardklein/workspace/python/udp-viewer/packaging/macos/build_dmg.sh)
+
+This path is useful when the DMG layout should be controlled explicitly
+through `dmgbuild`.
+
+Sequence:
+
+1. `python freeze_setup.py bdist_mac`
+2. `python -m dmgbuild -s packaging/macos/dmg_settings.py "UDPLogViewer" "dist/UDPLogViewer.dmg"`
+
+Relevant files:
+
+- [packaging/macos/build_dmg.sh](/Users/bernhardklein/workspace/python/udp-viewer/packaging/macos/build_dmg.sh)
+- [packaging/macos/dmg_settings.py](/Users/bernhardklein/workspace/python/udp-viewer/packaging/macos/dmg_settings.py)
+
+## 5. Typical Outputs
+
+Depending on tool version, typical outputs are:
+
 - `build/UDPLogViewer.dmg`
-- sometimes also `dist/UDPLogViewer.dmg` (depends on cx_Freeze version / settings)
+- `dist/UDPLogViewer.dmg`
+- `build/UDPLogViewer.app` or a bundle below `build/`
 
-### Recommended terminal workflow
+## 6. Practical Smoke Test
 
-If you want to build a DMG directly from Terminal, this is the expected
-sequence:
+After the build, verify at least:
 
-```bash
-cd /Users/bernhardklein/workspace/python/udp-viewer
-source .venv/bin/activate
-python -m pip install -U pip
-python -m pip install -U cx_Freeze dmgbuild
-python -m pip install -e .[dev]
-./build_dmg.sh
-```
+1. application launches
+2. window title shows the expected version
+3. `CONNECT` works
+4. a live log file is created
 
-Equivalent direct command:
+## 7. Common Problems
 
-```bash
-python freeze_setup.py bdist_dmg
-```
+### `ModuleNotFoundError: No module named 'cx_Freeze'`
 
----
+`cx_Freeze` is missing in the currently active interpreter.
 
-## 6) Test the built app
+### Old or wrong artifacts
 
-### Start the bundle directly
-```bash
-./build/UDPLogViewer.app/Contents/MacOS/UDPLogViewer
-```
+Before a fresh build, inspect or intentionally clear old `build` and
+`dist` outputs.
 
-If you start it from Finder, you can still inspect logs/errors via Console.app
-or start from Terminal to see stdout/stderr.
+### Different local and release file names
 
-### Basic functional smoke test
-1. App opens (title shows version).
-2. Click **CONNECT**.
-3. Verify it does not crash and receives UDP lines.
-4. Verify live log file is created at the configured log directory.
-   (See config file below.)
+Local file names may vary. The GitHub macOS workflow later renames the
+selected file to `UDPLogViewer-<version>.dmg` before uploading it to the
+release.
 
----
+## 8. Recommendation
 
-## 7) Log directory configuration (important for packaged apps)
+For normal local work:
 
-Packaged apps should not write logs into the current working directory.
-The recommended default locations are:
+- `./build_dmg.sh`
 
-- macOS:
-  `~/Library/Application Support/LocalTools/UdpLogViewer/logs/`
+Only when explicit `dmgbuild`-based Finder layout control is required:
 
-A small `config.ini` should exist under the same Application Support area:
-
-- macOS:
-  `~/Library/Application Support/LocalTools/UdpLogViewer/config.ini`
-
-Example:
-
-```ini
-[General]
-version = 0.14.0
-
-[Paths]
-log_dir = /Users/<you>/Library/Application Support/LocalTools/UdpLogViewer/logs
-```
-
-If directory creation fails:
-- show a MessageBox
-- also write `[UI/ERROR] ...` to the UI log (no crash)
-
----
-
-## 8) Common issues & fixes
-
-### A) `InvalidVersion: ...`
-Reason: version string is not PEP440 compatible.
-
-Fix: use `major.minor.patch` like `0.14.0`.
-
----
-
-### B) `bdist_mac has no such option 'bundle_identifier'`
-Reason: cx_Freeze versions differ; some options are not supported in your installed version.
-
-Fix:
-- remove unsupported keyword args from the `bdist_mac` options section in `freeze_setup.py`.
-- keep only options that your cx_Freeze accepts.
-
----
-
-### C) `ImportError: attempted relative import with no known parent package`
-Reason: wrong entrypoint (running a package module as a script).
-
-Fix:
-- entry point should be `udp_log_viewer.main` (module), not a direct file path
-- in `freeze_setup.py`, prefer a launcher entry that imports the package cleanly.
-
-(Your Step 10.2 fix already addressed this.)
-
----
-
-### D) First start is slow (6–10s), second start is fast
-This can be normal on macOS:
-- Gatekeeper / first-run verification
-- loading Qt frameworks / caches
-- cold filesystem caches
-
-If you want to improve this later:
-- strip unused Qt components
-- reduce included translations/plugins
-- enable build optimizations (later step)
-
----
-
-## 9) Release checklist (practical)
-
-Before tagging a release:
-- [ ] version updated (`APP_VERSION`, `freeze_setup.py`, config)
-- [ ] build clean (`rm -rf build dist`)
-- [ ] `python freeze_setup.py build` and run the app
-- [ ] `python freeze_setup.py bdist_dmg`
-- [ ] smoke test DMG install + CONNECT
-- [ ] attach `.dmg` + `source` archive to GitHub release
-
----
-
-## 10) Notes: signing / notarization (optional, later)
-
-For distribution outside your own machines, macOS may require:
-- code signing
-- notarization
-
-This guide intentionally skips it for now (we can add it as a later step when needed).
+- `packaging/macos/build_dmg.sh`
