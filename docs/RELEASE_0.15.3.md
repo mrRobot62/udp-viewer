@@ -41,6 +41,6 @@ The release was validated with the automated test suites used during the bugfix 
 
 ## Related Files
 
-- [CHANGELOG.md](/Users/bernhardklein/workspace/python/udp-viewer/CHANGELOG.md)
-- [BUILD_AND_PACKAGING_REFERENCE_en.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/BUILD_AND_PACKAGING_REFERENCE_en.md)
-- [BUILD_AND_PACKAGING_REFERENCE_de.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/BUILD_AND_PACKAGING_REFERENCE_de.md)
+- [CHANGELOG.md](../CHANGELOG.md)
+- [BUILD_AND_PACKAGING_REFERENCE_en.md](../docs/BUILD_AND_PACKAGING_REFERENCE_en.md)
+- [BUILD_AND_PACKAGING_REFERENCE_de.md](../docs/BUILD_AND_PACKAGING_REFERENCE_de.md)

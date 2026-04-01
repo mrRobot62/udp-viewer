@@ -51,10 +51,10 @@ handling, and project persistence, including:
 
 ## Related Files
 
-- [CHANGELOG.md](/Users/bernhardklein/workspace/python/udp-viewer/CHANGELOG.md)
-- [README.md](/Users/bernhardklein/workspace/python/udp-viewer/README.md)
-- [README_de.md](/Users/bernhardklein/workspace/python/udp-viewer/README_de.md)
-- [USER_GUIDE_en.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/USER_GUIDE_en.md)
-- [USER_GUIDE_de.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/USER_GUIDE_de.md)
-- [BUILD_AND_PACKAGING_REFERENCE_en.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/BUILD_AND_PACKAGING_REFERENCE_en.md)
-- [BUILD_AND_PACKAGING_REFERENCE_de.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/BUILD_AND_PACKAGING_REFERENCE_de.md)
+- [CHANGELOG.md](../CHANGELOG.md)
+- [README.md](../README.md)
+- [README_de.md](../README_de.md)
+- [USER_GUIDE_en.md](../docs/USER_GUIDE_en.md)
+- [USER_GUIDE_de.md](../docs/USER_GUIDE_de.md)
+- [BUILD_AND_PACKAGING_REFERENCE_en.md](../docs/BUILD_AND_PACKAGING_REFERENCE_en.md)
+- [BUILD_AND_PACKAGING_REFERENCE_de.md](../docs/BUILD_AND_PACKAGING_REFERENCE_de.md)

@@ -452,6 +452,6 @@ Important practical limits at the current state:
 
 ## 13. Further References
 
-- [DOCUMENTATION_en.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/DOCUMENTATION_en.md)
-- [BUILD_AND_PACKAGING_REFERENCE_en.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/BUILD_AND_PACKAGING_REFERENCE_en.md)
-- [DOKUMENTATION_de.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/DOKUMENTATION_de.md)
+- [DOCUMENTATION_en.md](../docs/DOCUMENTATION_en.md)
+- [BUILD_AND_PACKAGING_REFERENCE_en.md](../docs/BUILD_AND_PACKAGING_REFERENCE_en.md)
+- [DOKUMENTATION_de.md](../docs/DOKUMENTATION_de.md)

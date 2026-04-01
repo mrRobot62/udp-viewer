@@ -46,7 +46,7 @@ Die zentrale Laufzeitlogik aus dem großen Hauptmodul herauslösen und besser te
 
 Inhalt:
 
-- [main.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/main.py) schrittweise aufteilen
+- [main.py](../src/udp_log_viewer/main.py) schrittweise aufteilen
 - Zuständigkeiten klar trennen:
   - Connection/Listener
   - Replay/Simulation

@@ -194,7 +194,7 @@ The project-name character set is currently limited to:
 
 ## 12. Relevant Source Files
 
-- [config_manager.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/config_manager.py)
-- [preferences.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/preferences.py)
-- [project_runtime.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/project_runtime.py)
-- [config_store.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/data_visualizer/config_store.py)
+- [config_manager.py](../src/udp_log_viewer/config_manager.py)
+- [preferences.py](../src/udp_log_viewer/preferences.py)
+- [project_runtime.py](../src/udp_log_viewer/project_runtime.py)
+- [config_store.py](../src/udp_log_viewer/data_visualizer/config_store.py)

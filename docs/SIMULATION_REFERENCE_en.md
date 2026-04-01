@@ -6,7 +6,7 @@ UDP Viewer, with a special focus on the plot-temperature simulation.
 Current basis:
 
 - code line `0.16.0`
-- relevant implementation in [replay_simulation.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/replay_simulation.py)
+- relevant implementation in [replay_simulation.py](../src/udp_log_viewer/replay_simulation.py)
 
 ## 1. Purpose
 
@@ -138,7 +138,7 @@ These are simulation-side state codes, not a formal external protocol.
 ## 8. Tuning Areas
 
 The most important tuning values currently live directly inside
-[replay_simulation.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/replay_simulation.py).
+[replay_simulation.py](../src/udp_log_viewer/replay_simulation.py).
 
 Relevant categories:
 
@@ -152,6 +152,6 @@ Relevant categories:
 
 ## 9. Relevant Source Files
 
-- [replay_simulation.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/replay_simulation.py)
-- [main.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/main.py)
-- [config_store.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/data_visualizer/config_store.py)
+- [replay_simulation.py](../src/udp_log_viewer/replay_simulation.py)
+- [main.py](../src/udp_log_viewer/main.py)
+- [config_store.py](../src/udp_log_viewer/data_visualizer/config_store.py)

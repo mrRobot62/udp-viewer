@@ -19,8 +19,8 @@ This reference answers four practical questions:
 
 The currently relevant version sources are:
 
-- [__init__.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/__init__.py)
-- [pyproject.toml](/Users/bernhardklein/workspace/python/udp-viewer/pyproject.toml)
+- [__init__.py](../src/udp_log_viewer/__init__.py)
+- [pyproject.toml](../pyproject.toml)
 
 Important:
 
@@ -34,11 +34,11 @@ Important:
 
 The shared shell configuration is:
 
-- [common.env](/Users/bernhardklein/workspace/python/udp-viewer/scripts/common.env)
+- [common.env](../scripts/common.env)
 
 The main bootstrap path is:
 
-- [bootstrap_macos_linux.sh](/Users/bernhardklein/workspace/python/udp-viewer/scripts/bootstrap_macos_linux.sh)
+- [bootstrap_macos_linux.sh](../scripts/bootstrap_macos_linux.sh)
 
 That path currently assumes:
 
@@ -50,7 +50,7 @@ That path currently assumes:
 
 The preferred Windows bootstrap path is:
 
-- [bootstrap_windows.ps1](/Users/bernhardklein/workspace/python/udp-viewer/scripts/bootstrap_windows.ps1)
+- [bootstrap_windows.ps1](../scripts/bootstrap_windows.ps1)
 
 This script:
 
@@ -60,7 +60,7 @@ This script:
 
 The batch variant
 
-- [bootstrap_windows.bat](/Users/bernhardklein/workspace/python/udp-viewer/scripts/bootstrap_windows.bat)
+- [bootstrap_windows.bat](../scripts/bootstrap_windows.bat)
 
 is still malformed in the current repository state and should not be
 used as the recommended bootstrap path.
@@ -69,10 +69,10 @@ used as the recommended bootstrap path.
 
 Current helper scripts:
 
-- [dev_run.sh](/Users/bernhardklein/workspace/python/udp-viewer/scripts/dev_run.sh)
-- [dev_test.sh](/Users/bernhardklein/workspace/python/udp-viewer/scripts/dev_test.sh)
-- [dev_run.ps1](/Users/bernhardklein/workspace/python/udp-viewer/scripts/dev_run.ps1)
-- [dev_test.ps1](/Users/bernhardklein/workspace/python/udp-viewer/scripts/dev_test.ps1)
+- [dev_run.sh](../scripts/dev_run.sh)
+- [dev_test.sh](../scripts/dev_test.sh)
+- [dev_run.ps1](../scripts/dev_run.ps1)
+- [dev_test.ps1](../scripts/dev_test.ps1)
 
 Current behavior:
 
@@ -86,12 +86,12 @@ Current behavior:
 
 The main cross-platform packaging entry point is:
 
-- [freeze_setup.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup.py)
+- [freeze_setup.py](../freeze_setup.py)
 
 Reasons:
 
 - uses the current `src` layout correctly
-- uses [freeze_entry.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_entry.py)
+- uses [freeze_entry.py](../freeze_entry.py)
 - reads the version from `udp_log_viewer.__version__`
 - supports `build_exe`, `bdist_mac`, and `bdist_dmg`
 
@@ -99,7 +99,7 @@ Reasons:
 
 An additional Windows-specific entry point exists:
 
-- [freeze_setup_win.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup_win.py)
+- [freeze_setup_win.py](../freeze_setup_win.py)
 
 This is still relevant because the Windows installer script uses it.
 
@@ -107,7 +107,7 @@ This is still relevant because the Windows installer script uses it.
 
 An older alternative macOS path also exists:
 
-- [freeze_setup_dmg.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup_dmg.py)
+- [freeze_setup_dmg.py](../freeze_setup_dmg.py)
 
 This should currently be treated as a secondary or historical path, not
 the primary reference.
@@ -124,7 +124,7 @@ The leading local macOS build path is:
 
 The wrapper lives at:
 
-- [build_dmg.sh](/Users/bernhardklein/workspace/python/udp-viewer/build_dmg.sh)
+- [build_dmg.sh](../build_dmg.sh)
 
 Internally this runs:
 
@@ -138,7 +138,7 @@ This is the current primary local DMG path.
 
 An alternative path also exists:
 
-- [packaging/macos/build_dmg.sh](/Users/bernhardklein/workspace/python/udp-viewer/packaging/macos/build_dmg.sh)
+- [packaging/macos/build_dmg.sh](../packaging/macos/build_dmg.sh)
 
 This path:
 
@@ -146,7 +146,7 @@ This path:
 2. then builds a DMG via `python -m dmgbuild`
 
 Use this path only when Finder layout control through
-[dmg_settings.py](/Users/bernhardklein/workspace/python/udp-viewer/packaging/macos/dmg_settings.py)
+[dmg_settings.py](../packaging/macos/dmg_settings.py)
 is explicitly needed.
 
 ### 6.3 Typical outputs
@@ -173,8 +173,8 @@ python freeze_setup.py build
 
 Wrappers currently present:
 
-- [build_exe.bat](/Users/bernhardklein/workspace/python/udp-viewer/build_exe.bat)
-- [packaging/windows/build_exe.bat](/Users/bernhardklein/workspace/python/udp-viewer/packaging/windows/build_exe.bat)
+- [build_exe.bat](../build_exe.bat)
+- [packaging/windows/build_exe.bat](../packaging/windows/build_exe.bat)
 
 This produces a frozen build tree, but not a final installer.
 
@@ -182,7 +182,7 @@ This produces a frozen build tree, but not a final installer.
 
 The leading Windows installer path is:
 
-- [build_windows_installer.bat](/Users/bernhardklein/workspace/python/udp-viewer/scripts/build_windows_installer.bat)
+- [build_windows_installer.bat](../scripts/build_windows_installer.bat)
 
 This script currently:
 
@@ -191,7 +191,7 @@ This script currently:
 3. clears `build` and `dist`
 4. runs `python freeze_setup_win.py build_exe`
 5. detects `build\exe.*`
-6. invokes Inno Setup with [installer.iss](/Users/bernhardklein/workspace/python/udp-viewer/packaging/windows/installer.iss)
+6. invokes Inno Setup with [installer.iss](../packaging/windows/installer.iss)
 
 Expected final installer naming:
 
@@ -207,8 +207,8 @@ before attaching it to a GitHub release.
 
 The repository contains two release workflows:
 
-- [macos-release.yml](/Users/bernhardklein/workspace/python/udp-viewer/.github/workflows/macos-release.yml)
-- [windows-release.yml](/Users/bernhardklein/workspace/python/udp-viewer/.github/workflows/windows-release.yml)
+- [macos-release.yml](../.github/workflows/macos-release.yml)
+- [windows-release.yml](../.github/workflows/windows-release.yml)
 
 Both can run in two modes:
 
@@ -249,8 +249,8 @@ Practical rule:
 
 For local development:
 
-- macOS/Linux: [bootstrap_macos_linux.sh](/Users/bernhardklein/workspace/python/udp-viewer/scripts/bootstrap_macos_linux.sh), then [dev_run.sh](/Users/bernhardklein/workspace/python/udp-viewer/scripts/dev_run.sh) and [dev_test.sh](/Users/bernhardklein/workspace/python/udp-viewer/scripts/dev_test.sh)
-- Windows: [bootstrap_windows.ps1](/Users/bernhardklein/workspace/python/udp-viewer/scripts/bootstrap_windows.ps1), then [dev_run.ps1](/Users/bernhardklein/workspace/python/udp-viewer/scripts/dev_run.ps1) and [dev_test.ps1](/Users/bernhardklein/workspace/python/udp-viewer/scripts/dev_test.ps1)
+- macOS/Linux: [bootstrap_macos_linux.sh](../scripts/bootstrap_macos_linux.sh), then [dev_run.sh](../scripts/dev_run.sh) and [dev_test.sh](../scripts/dev_test.sh)
+- Windows: [bootstrap_windows.ps1](../scripts/bootstrap_windows.ps1), then [dev_run.ps1](../scripts/dev_run.ps1) and [dev_test.ps1](../scripts/dev_test.ps1)
 
 For local packaging:
 

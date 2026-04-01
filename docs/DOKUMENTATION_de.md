@@ -499,20 +499,20 @@ Sinnvolle nächste Verbesserungen im Repository:
 
 ## 16. Weiterführende Referenzen
 
-- [USER_GUIDE_de.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/USER_GUIDE_de.md)
-- [SUPPORTED_CSV_INPUT_FORMATS_de.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/SUPPORTED_CSV_INPUT_FORMATS_de.md)
-- [CONFIGURATION_REFERENCE_de.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/CONFIGURATION_REFERENCE_de.md)
-- [BUILD_AND_PACKAGING_REFERENCE_de.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/BUILD_AND_PACKAGING_REFERENCE_de.md)
+- [USER_GUIDE_de.md](../docs/USER_GUIDE_de.md)
+- [SUPPORTED_CSV_INPUT_FORMATS_de.md](../docs/SUPPORTED_CSV_INPUT_FORMATS_de.md)
+- [CONFIGURATION_REFERENCE_de.md](../docs/CONFIGURATION_REFERENCE_de.md)
+- [BUILD_AND_PACKAGING_REFERENCE_de.md](../docs/BUILD_AND_PACKAGING_REFERENCE_de.md)
 
 ## 17. Dateiverweise
 
 Zentrale Dateien zur weiteren Analyse:
 
-- [main.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/main.py)
-- [udp_listener.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/udp_listener.py)
-- [highlighter.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/highlighter.py)
-- [udp_log_utils.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/udp_log_utils.py)
-- [app_paths.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/app_paths.py)
-- [visualizer_manager.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/data_visualizer/visualizer_manager.py)
-- [csv_log_parser.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/data_visualizer/csv_log_parser.py)
-- [config_store.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/data_visualizer/config_store.py)
+- [main.py](../src/udp_log_viewer/main.py)
+- [udp_listener.py](../src/udp_log_viewer/udp_listener.py)
+- [highlighter.py](../src/udp_log_viewer/highlighter.py)
+- [udp_log_utils.py](../src/udp_log_viewer/udp_log_utils.py)
+- [app_paths.py](../src/udp_log_viewer/app_paths.py)
+- [visualizer_manager.py](../src/udp_log_viewer/data_visualizer/visualizer_manager.py)
+- [csv_log_parser.py](../src/udp_log_viewer/data_visualizer/csv_log_parser.py)
+- [config_store.py](../src/udp_log_viewer/data_visualizer/config_store.py)

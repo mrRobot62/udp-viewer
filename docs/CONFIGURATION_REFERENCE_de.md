@@ -273,10 +273,10 @@ Wichtig für den Betrieb:
 
 ## 15. Relevante Quelldateien
 
-- [settings_store.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/settings_store.py)
-- [preferences.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/preferences.py)
-- [preferences_dialog.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/preferences_dialog.py)
-- [config_runtime.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/config_runtime.py)
-- [app_paths.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/app_paths.py)
-- [config_store.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/data_visualizer/config_store.py)
-- [main.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/main.py)
+- [settings_store.py](../src/udp_log_viewer/settings_store.py)
+- [preferences.py](../src/udp_log_viewer/preferences.py)
+- [preferences_dialog.py](../src/udp_log_viewer/preferences_dialog.py)
+- [config_runtime.py](../src/udp_log_viewer/config_runtime.py)
+- [app_paths.py](../src/udp_log_viewer/app_paths.py)
+- [config_store.py](../src/udp_log_viewer/data_visualizer/config_store.py)
+- [main.py](../src/udp_log_viewer/main.py)

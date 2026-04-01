@@ -45,15 +45,15 @@ python freeze_setup.py bdist_dmg
 
 Relevant files:
 
-- [build_dmg.sh](/Users/bernhardklein/workspace/python/udp-viewer/build_dmg.sh)
-- [freeze_setup.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_setup.py)
-- [freeze_entry.py](/Users/bernhardklein/workspace/python/udp-viewer/freeze_entry.py)
+- [build_dmg.sh](../build_dmg.sh)
+- [freeze_setup.py](../freeze_setup.py)
+- [freeze_entry.py](../freeze_entry.py)
 
 ## 4. Alternative `dmgbuild` Path
 
 An additional path exists:
 
-- [packaging/macos/build_dmg.sh](/Users/bernhardklein/workspace/python/udp-viewer/packaging/macos/build_dmg.sh)
+- [packaging/macos/build_dmg.sh](../packaging/macos/build_dmg.sh)
 
 This path is useful when the DMG layout should be controlled explicitly
 through `dmgbuild`.
@@ -65,8 +65,8 @@ Sequence:
 
 Relevant files:
 
-- [packaging/macos/build_dmg.sh](/Users/bernhardklein/workspace/python/udp-viewer/packaging/macos/build_dmg.sh)
-- [packaging/macos/dmg_settings.py](/Users/bernhardklein/workspace/python/udp-viewer/packaging/macos/dmg_settings.py)
+- [packaging/macos/build_dmg.sh](../packaging/macos/build_dmg.sh)
+- [packaging/macos/dmg_settings.py](../packaging/macos/dmg_settings.py)
 
 ## 5. Typical Outputs
 

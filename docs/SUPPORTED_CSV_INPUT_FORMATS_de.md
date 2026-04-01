@@ -196,8 +196,8 @@ Praktisch bedeutet das:
 
 ## 11. Relevante Quelldateien
 
-- [csv_log_parser.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/data_visualizer/csv_log_parser.py)
-- [config_store.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/data_visualizer/config_store.py)
-- [visualizer_config.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/data_visualizer/visualizer_config.py)
-- [visualizer_field_config.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/data_visualizer/visualizer_field_config.py)
+- [csv_log_parser.py](../src/udp_log_viewer/data_visualizer/csv_log_parser.py)
+- [config_store.py](../src/udp_log_viewer/data_visualizer/config_store.py)
+- [visualizer_config.py](../src/udp_log_viewer/data_visualizer/visualizer_config.py)
+- [visualizer_field_config.py](../src/udp_log_viewer/data_visualizer/visualizer_field_config.py)
 

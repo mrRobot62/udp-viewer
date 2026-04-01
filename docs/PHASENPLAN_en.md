@@ -47,7 +47,7 @@ testable.
 
 Content:
 
-- split [main.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/main.py) incrementally
+- split [main.py](../src/udp_log_viewer/main.py) incrementally
 - separate responsibilities for connection, replay, rules, settings,
   and visualizer integration
 - separate UI-adjacent logic from domain logic

@@ -518,7 +518,7 @@ Wichtige praktische Grenzen im aktuellen Stand:
 
 ## 13. Weiterführende Referenzen
 
-- [DOKUMENTATION_de.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/DOKUMENTATION_de.md)
-- [CONFIGURATION_REFERENCE_de.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/CONFIGURATION_REFERENCE_de.md)
-- [SUPPORTED_CSV_INPUT_FORMATS_de.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/SUPPORTED_CSV_INPUT_FORMATS_de.md)
-- [BUILD_AND_PACKAGING_REFERENCE_de.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/BUILD_AND_PACKAGING_REFERENCE_de.md)
+- [DOKUMENTATION_de.md](../docs/DOKUMENTATION_de.md)
+- [CONFIGURATION_REFERENCE_de.md](../docs/CONFIGURATION_REFERENCE_de.md)
+- [SUPPORTED_CSV_INPUT_FORMATS_de.md](../docs/SUPPORTED_CSV_INPUT_FORMATS_de.md)
+- [BUILD_AND_PACKAGING_REFERENCE_de.md](../docs/BUILD_AND_PACKAGING_REFERENCE_de.md)

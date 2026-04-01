@@ -5,7 +5,7 @@ Dieses Dokument beschreibt die aktuell implementierte Simulationslogik des UDP-V
 Stand der Beschreibung:
 
 - Codebasis `0.16.0`
-- relevante Implementierung in [replay_simulation.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/replay_simulation.py)
+- relevante Implementierung in [replay_simulation.py](../src/udp_log_viewer/replay_simulation.py)
 
 ## 1. Zweck
 
@@ -27,11 +27,11 @@ Fuer die Temperatursimulation ist das Ziel ausdruecklich nicht ein physikalisch 
 
 ## 2. Relevante Code-Stellen
 
-- [replay_simulation.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/replay_simulation.py)
+- [replay_simulation.py](../src/udp_log_viewer/replay_simulation.py)
   enthaelt Replay-Beispiele und die eigentliche Simulationslogik
-- [main.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/main.py)
+- [main.py](../src/udp_log_viewer/main.py)
   startet die Timer und injiziert die erzeugten Simulationszeilen in den normalen Verarbeitungsweg
-- [config_store.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/data_visualizer/config_store.py)
+- [config_store.py](../src/udp_log_viewer/data_visualizer/config_store.py)
   liefert passende Default-Konfigurationen fuer `CSV_CLIENT_PLOT` und `CSV_HOST_PLOT`
 
 ## 3. Simulationsarten
@@ -105,7 +105,7 @@ Aktuelle Felder:
 
 Die Hauptlogik liegt in:
 
-- [replay_simulation.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/replay_simulation.py#L121)
+- [replay_simulation.py](../src/udp_log_viewer/replay_simulation.py#L121)
 
 Ein Tick durchlaeuft vereinfacht diese Schritte:
 
@@ -202,7 +202,7 @@ Diese Werte sind einfache Simulationszustände, keine dokumentierte externe Prot
 ## 9. Tuning-Parameter
 
 Die wichtigsten Stellwerte sind momentan lokale Variablen direkt in
-[replay_simulation.py](/Users/bernhardklein/workspace/python/udp-viewer/src/udp_log_viewer/replay_simulation.py#L121).
+[replay_simulation.py](../src/udp_log_viewer/replay_simulation.py#L121).
 
 ### 9.1 Grundparameter
 

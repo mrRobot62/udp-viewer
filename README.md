@@ -6,13 +6,13 @@ Cross-platform UDP log viewer for ESP32 and other embedded systems, built with P
 
 Complete English documentation:
 
-- [docs/DOCUMENTATION_en.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/DOCUMENTATION_en.md)
-- [docs/USER_GUIDE_en.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/USER_GUIDE_en.md)
-- [docs/RELEASE_0.16.0.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/RELEASE_0.16.0.md)
+- [docs/DOCUMENTATION_en.md](docs/DOCUMENTATION_en.md)
+- [docs/USER_GUIDE_en.md](docs/USER_GUIDE_en.md)
+- [docs/RELEASE_0.16.0.md](docs/RELEASE_0.16.0.md)
 
 Complete German documentation:
 
-- [docs/DOKUMENTATION_de.md](/Users/bernhardklein/workspace/python/udp-viewer/docs/DOKUMENTATION_de.md)
+- [docs/DOKUMENTATION_de.md](docs/DOKUMENTATION_de.md)
 
 ## Windows-User
 please use setup.exe to install this viewer
@@ -23,7 +23,7 @@ You have to set this command: `xattr -dr com.apple.quarantine /Applications/UDPL
 
 ## Screenshots
 
-Screenshot assets are stored under [assets/screenshots](/Users/bernhardklein/workspace/python/udp-viewer/assets/screenshots).
+Screenshot assets are stored under [assets/screenshots](assets/screenshots).
 
 ### Main Screen
 
