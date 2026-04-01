@@ -2,6 +2,11 @@
 
 Cross-platform UDP log viewer for ESP32 and other embedded systems, built with Python and PyQt5.
 
+## Why using this tool?
+
+Debugging embedded devices over UDP is painful.
+This tool makes it simple and visual. Not only viewing data, visualizing data as well.
+
 ## Documentation
 
 Complete English documentation:
