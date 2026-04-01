@@ -4,19 +4,28 @@ title: "[BUG] "
 labels: ["bug"]
 
 body:
+  - type: markdown
+    attributes:
+      value: "## Debug Information"
+  - type: input
+    id: version
+    attributes:
+      label: Firmware Version
+      placeholder: 0.15.3 / 0.16.0 / ...
   - type: textarea
     id: description
     attributes:
-      label: Relase
-      description: Found in version?
       label: What happened?
       description: Describe the bug clearly
     validations:
       required: true
 
-  - type: textarea
-    id: steps
+  - type: dropdown
+    id: component
     attributes:
-      label: Steps to reproduce (if needed)
-    validations:
-      required: true
+      label: Affected Component
+      options:
+        - Main log screen
+        - PLOT visualization/config
+        - LOGIC visualization/config
+        - Preferences
