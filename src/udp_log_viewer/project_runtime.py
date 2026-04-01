@@ -68,6 +68,11 @@ def write_project_readme(project: RuntimeProject, content: str) -> Path:
     return path
 
 
+def initialize_project(project: RuntimeProject, readme_content: str) -> Path:
+    project.output_dir.mkdir(parents=True, exist_ok=True)
+    return write_project_readme(project, readme_content)
+
+
 def load_project_readme(project: RuntimeProject) -> str | None:
     path = project_readme_path(project)
     if not path.exists():

@@ -27,7 +27,13 @@ from .project_runtime import (
 
 
 class ProjectDialog(QDialog):
-    def __init__(self, current_project: RuntimeProject | None = None, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        current_project: RuntimeProject | None = None,
+        *,
+        default_root_dir: Path | None = None,
+        parent: QWidget | None = None,
+    ) -> None:
         super().__init__(parent)
         self.setWindowTitle("Project")
         self.setModal(True)
@@ -107,6 +113,8 @@ class ProjectDialog(QDialog):
             if existing_notes is not None:
                 self._notes.setPlainText(normalize_project_notes(existing_notes))
                 self._notes_uses_default = False
+        elif default_root_dir is not None:
+            self._root_dir.setText(str(default_root_dir.expanduser()))
         if not self._notes.toPlainText().strip():
             self._set_default_notes_text(self.project_name())
         self._update_preview()

@@ -17,6 +17,7 @@ from udp_log_viewer.rule_slots import (
     find_first_free_slot,
     match_exclude_slots,
     match_include_slots,
+    strip_slot_colors,
     slots_from_json,
     slots_to_json,
 )
@@ -39,6 +40,22 @@ def test_rule_slot_json_roundtrip_and_matching() -> None:
     exclude_compiled = compile_slot_patterns([PatternSlot(pattern="ERROR")])
     assert match_exclude_slots("[HOST/ERROR] fail", exclude_compiled) is True
     assert build_highlight_rules(loaded)[0].color_name == "Red"
+
+
+def test_strip_slot_colors_clears_non_highlight_colors() -> None:
+    slots = [
+        PatternSlot(pattern="WARN", mode="Substring", color="Orange"),
+        PatternSlot(pattern="INFO", mode="Regex", color="None"),
+    ]
+
+    normalized = strip_slot_colors(slots)
+
+    assert normalized[0].pattern == "WARN"
+    assert normalized[0].mode == "Substring"
+    assert normalized[0].color == "None"
+    assert normalized[1].pattern == "INFO"
+    assert normalized[1].mode == "Regex"
+    assert normalized[1].color == "None"
 
 
 def test_replay_batch_drains_expected_queue() -> None:

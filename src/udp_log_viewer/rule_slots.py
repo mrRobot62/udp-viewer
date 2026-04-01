@@ -42,6 +42,10 @@ def slots_to_json(slots: List[PatternSlot]) -> str:
     return json.dumps(items, ensure_ascii=False)
 
 
+def strip_slot_colors(slots: List[PatternSlot]) -> List[PatternSlot]:
+    return [PatternSlot(pattern=slot.pattern, mode=slot.mode, color="None") for slot in slots]
+
+
 def compile_slot_patterns(slots: List[PatternSlot]) -> List[List[object]]:
     compiled: List[List[object]] = []
     for slot in slots:

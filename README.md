@@ -8,7 +8,7 @@ Complete English documentation:
 
 - [docs/DOCUMENTATION_en.md](docs/DOCUMENTATION_en.md)
 - [docs/USER_GUIDE_en.md](docs/USER_GUIDE_en.md)
-- [docs/RELEASE_0.16.0.md](docs/RELEASE_0.16.0.md)
+- [docs/RELEASE_0.16.1.md](docs/RELEASE_0.16.1.md)
 
 Complete German documentation:
 

@@ -28,6 +28,7 @@ class AppPathsConfig:
     app_support_dir: Path
     config_path: Path
     logs_dir: Path
+    project_root: Path
     version: str
 
 
@@ -41,12 +42,23 @@ def _get_app_support_dir(org: str, app: str) -> Path:
     return Path.home() / ".local" / "share" / org / app
 
 
+def _get_default_documents_dir() -> Path:
+    if sys.platform.startswith("win"):
+        base = os.environ.get("USERPROFILE") or str(Path.home())
+        return Path(base) / "Documents"
+    return Path.home() / "Documents"
+
+
 def get_default_app_support_dir(org: str, app: str) -> Path:
     return _get_app_support_dir(org, app)
 
 
 def get_default_config_path(org: str, app: str) -> Path:
     return get_default_app_support_dir(org, app) / "config.ini"
+
+
+def get_default_project_root_dir() -> Path:
+    return _get_default_documents_dir()
 
 
 def load_or_create_config(
@@ -65,6 +77,7 @@ def load_or_create_config(
     root.mkdir(parents=True, exist_ok=True)
 
     logs_dir_default = root / "logs"
+    project_root_default = get_default_project_root_dir()
 
     cp = configparser.ConfigParser()
     if cfg_path.exists():
@@ -88,6 +101,8 @@ def load_or_create_config(
         cp.add_section("paths")
     if not cp.has_option("paths", "logs_dir"):
         cp.set("paths", "logs_dir", str(logs_dir_default))
+    if not cp.has_option("paths", "project_root"):
+        cp.set("paths", "project_root", str(project_root_default))
 
     # Persist any missing defaults
     try:
@@ -98,4 +113,11 @@ def load_or_create_config(
         pass
 
     logs_dir = Path(cp.get("paths", "logs_dir", fallback=str(logs_dir_default))).expanduser()
-    return AppPathsConfig(app_support_dir=root, config_path=cfg_path, logs_dir=logs_dir, version=version)
+    project_root = Path(cp.get("paths", "project_root", fallback=str(project_root_default))).expanduser()
+    return AppPathsConfig(
+        app_support_dir=root,
+        config_path=cfg_path,
+        logs_dir=logs_dir,
+        project_root=project_root,
+        version=version,
+    )
