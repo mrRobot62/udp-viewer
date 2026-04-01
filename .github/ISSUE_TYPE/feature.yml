@@ -1,1 +1,31 @@
+name: New feature
+description: Describe this new feature
+title: "[FEATURE] "
+labels: ["feature"]
 
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Which release do you use?
+      description: Version
+      label: Feature description
+      description: Discribe your feature as good as you can
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: More infos around you feature
+      description: 
+    validations:
+      required: true
+  - 
+  - type: textarea
+    id: description
+    attributes:
+      label: More infos around you feature
+      description: 
+    validations:
+      required: true
