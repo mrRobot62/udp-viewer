@@ -1,1 +1,22 @@
+name: Bug report
+description: Report a bug in the system
+title: "[BUG] "
+labels: ["bug"]
 
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Relase
+      description: Found in version?
+      label: What happened?
+      description: Describe the bug clearly
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce (if needed)
+    validations:
+      required: true
