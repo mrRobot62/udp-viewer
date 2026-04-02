@@ -6,7 +6,7 @@ from pathlib import Path
 import re
 
 
-_PROJECT_NAME_RE = re.compile(r"^[A-Za-z0-9_-]{1,20}$")
+_PROJECT_NAME_RE = re.compile(r"^[A-Za-z0-9_-]{1,50}$")
 PROJECT_README_MAX_CHARS = 1024
 
 
@@ -66,6 +66,11 @@ def write_project_readme(project: RuntimeProject, content: str) -> Path:
     normalized = normalize_project_notes(content)
     path.write_text(normalized, encoding="utf-8", newline="\n")
     return path
+
+
+def initialize_project(project: RuntimeProject, readme_content: str) -> Path:
+    project.output_dir.mkdir(parents=True, exist_ok=True)
+    return write_project_readme(project, readme_content)
 
 
 def load_project_readme(project: RuntimeProject) -> str | None:

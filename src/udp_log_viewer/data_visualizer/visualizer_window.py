@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -41,11 +42,13 @@ try:
     from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
     from matplotlib.figure import Figure
     from matplotlib.ticker import MultipleLocator
+    from matplotlib import transforms
     _MATPLOTLIB_AVAILABLE = True
 except Exception:  # pragma: no cover - fallback for non-GUI test environments
     FigureCanvas = None
     Figure = None
     MultipleLocator = None
+    transforms = None
     _MATPLOTLIB_AVAILABLE = False
 
 if TYPE_CHECKING:
@@ -56,6 +59,46 @@ WINDOW_SIZE_MIN = 1
 WINDOW_SIZE_MAX = 5000
 WINDOW_SIZE_TOOLTIP = f"Sliding window size. Minimum: {WINDOW_SIZE_MIN}, Maximum: {WINDOW_SIZE_MAX}."
 SCREENSHOT_SHORTCUT_TIPS = "Screenshot shortcuts: Ctrl+Shift+S, Cmd+Shift+S, or F12."
+
+
+@dataclass(slots=True, frozen=True)
+class PlotMeasurement:
+    start_index: int
+    end_index: int | None
+
+
+def parse_plot_timestamp(timestamp_raw: str) -> datetime | None:
+    value = (timestamp_raw or "").strip()
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value.split(" ")[0], "%Y%m%d-%H:%M:%S.%f")
+    except ValueError:
+        return None
+
+
+def format_plot_measurement_duration(start_time: datetime | None, end_time: datetime | None) -> str:
+    if start_time is None or end_time is None:
+        return "--:--.--"
+    delta_ms = max(0, int(round((end_time - start_time).total_seconds() * 1000.0)))
+    minutes, remainder_ms = divmod(delta_ms, 60_000)
+    seconds, milliseconds = divmod(remainder_ms, 1000)
+    hundredths = milliseconds // 10
+    return f"{minutes:02d}:{seconds:02d}.{hundredths:02d}"
+
+
+def advance_plot_measurement(measurement: PlotMeasurement | None, clicked_index: int) -> PlotMeasurement:
+    if measurement is None or measurement.end_index is not None:
+        return PlotMeasurement(start_index=clicked_index, end_index=None)
+    return PlotMeasurement(start_index=measurement.start_index, end_index=clicked_index)
+
+
+def choose_plot_measurement_label_anchor(start_x: int, end_x: int, label_text: str) -> tuple[float, str]:
+    span = abs(end_x - start_x)
+    min_span_for_center = max(4, len(label_text) // 2)
+    if span >= min_span_for_center:
+        return (start_x + end_x) / 2.0, "center"
+    return max(start_x, end_x) + 0.35, "left"
 
 
 class VisualizerWindow:
@@ -220,6 +263,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
 
             self.setWindowTitle(self._build_window_title())
             self.resize(980, 560)
+            self.setFocusPolicy(Qt.StrongFocus)
 
             self._figure = Figure(figsize=(8, 4))
             self._canvas = FigureCanvas(self._figure)
@@ -231,8 +275,10 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._hover_line_y1 = self._axes_y1.axhline(y=0, color="#666666", linestyle=":", linewidth=0.9, visible=False)
             self._hover_line_y2 = self._axes_y2.axhline(y=0, color="#666666", linestyle=":", linewidth=0.9, visible=False)
             self._series_metadata: list[dict[str, object]] = []
+            self._measurement: PlotMeasurement | None = None
             self._canvas.mpl_connect("motion_notify_event", self._on_mouse_move)
             self._canvas.mpl_connect("axes_leave_event", self._on_mouse_leave)
+            self._canvas.mpl_connect("button_press_event", self._on_mouse_click)
 
             self._auto_refresh_checkbox = QCheckBox("Auto Refresh")
             self._auto_refresh_checkbox.setFocusPolicy(Qt.StrongFocus)
@@ -301,6 +347,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             layout.addWidget(self._canvas)
             self.setLayout(layout)
             self._screenshot_shortcuts = self._build_screenshot_shortcuts()
+            self._measurement_shortcuts = self._build_measurement_shortcuts()
             self._configure_tab_order()
 
             self.rebuild_plot()
@@ -377,6 +424,19 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
                 shortcuts.append(shortcut)
             return shortcuts
 
+        def _build_measurement_shortcuts(self) -> list[QShortcut]:
+            shortcuts: list[QShortcut] = []
+            if QShortcut is None or QKeySequence is None:
+                return shortcuts
+            space_shortcut = QShortcut(QKeySequence("Space"), self)
+            space_shortcut.activated.connect(self._on_space_shortcut)
+            shortcuts.append(space_shortcut)
+
+            escape_shortcut = QShortcut(QKeySequence("Esc"), self)
+            escape_shortcut.activated.connect(self._on_escape_shortcut)
+            shortcuts.append(escape_shortcut)
+            return shortcuts
+
         def _configure_tab_order(self) -> None:
             tab_widgets = [
                 self._auto_refresh_checkbox,
@@ -401,6 +461,17 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
                     self._move_focus(forward=event.key() == Qt.Key_Tab)
                     return True
             return super().eventFilter(watched, event)
+
+        def keyPressEvent(self, event) -> None:
+            if event.key() == Qt.Key_Space:
+                self._on_space_shortcut()
+                event.accept()
+                return
+            if event.key() == Qt.Key_Escape:
+                self._on_escape_shortcut()
+                event.accept()
+                return
+            super().keyPressEvent(event)
 
         def _move_focus(self, *, forward: bool) -> None:
             widgets = [widget for widget in getattr(self, "_tab_widgets", []) if widget.isVisible() and widget.isEnabled()]
@@ -433,6 +504,9 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
 
         def _on_auto_refresh_changed(self, state: int) -> None:
             enabled = state == Qt.Checked
+            if enabled and self._measurement is not None:
+                self._clear_measurement(resume=True)
+                return
             self._controller.set_auto_refresh(enabled)
 
         def _on_refresh_clicked(self) -> None:
@@ -456,10 +530,20 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
         def _on_screenshot_clicked(self) -> None:
             self.save_screenshot()
 
+        def _on_space_shortcut(self) -> None:
+            self._auto_refresh_checkbox.setChecked(not self._auto_refresh_checkbox.isChecked())
+
+        def _on_escape_shortcut(self) -> None:
+            if self._measurement is None:
+                return
+            self._clear_measurement(resume=True)
+
         def _sync_runtime_controls(self) -> None:
+            self._auto_refresh_checkbox.blockSignals(True)
             self._sliding_window_checkbox.blockSignals(True)
             self._legend_checkbox.blockSignals(True)
             self._window_size_spin.blockSignals(True)
+            self._auto_refresh_checkbox.setChecked(self._controller.auto_refresh_enabled)
             self._sliding_window_checkbox.setChecked(self._controller.runtime_sliding_window_enabled)
             self._legend_checkbox.setChecked(self._controller.runtime_show_legend)
             self._window_size_spin.setRange(
@@ -468,6 +552,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             )
             self._window_size_spin.setValue(self._controller.runtime_window_size)
             self._window_size_spin.setEnabled(self._controller.runtime_sliding_window_enabled)
+            self._auto_refresh_checkbox.blockSignals(False)
             self._sliding_window_checkbox.blockSignals(False)
             self._legend_checkbox.blockSignals(False)
             self._window_size_spin.blockSignals(False)
@@ -545,6 +630,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             if plotted_y2 and self._controller.runtime_show_legend:
                 self._axes_y2.legend(loc="upper right")
 
+            self._draw_measurement_overlay(samples)
             self._figure.subplots_adjust(bottom=0.24)
             self._canvas.draw_idle()
 
@@ -738,6 +824,25 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
         def _on_mouse_leave(self, event) -> None:
             self._hide_annotation()
 
+        def _on_mouse_click(self, event) -> None:
+            if event.inaxes not in (self._axes_y1, self._axes_y2) or event.button != 1:
+                return
+            if event.xdata is None:
+                return
+
+            visible_samples = self._get_visible_samples()
+            if not visible_samples:
+                return
+
+            self.setFocus(Qt.MouseFocusReason)
+            clicked_index = max(0, min(int(round(event.xdata)), len(visible_samples) - 1))
+            next_measurement = advance_plot_measurement(self._measurement, clicked_index)
+            if self._measurement is None or self._measurement.end_index is not None:
+                self._pause_for_measurement()
+            self._measurement = next_measurement
+            self._status_label.setText(self._build_measurement_label(visible_samples, next_measurement))
+            self._render_plot()
+
         def _hide_annotation(self) -> None:
             if self._annotation is not None:
                 self._annotation.set_visible(False)
@@ -756,6 +861,26 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
         def _hide_hover_lines(self) -> None:
             self._hover_line_y1.set_visible(False)
             self._hover_line_y2.set_visible(False)
+
+        def _pause_for_measurement(self) -> None:
+            self._controller.set_auto_refresh(False)
+            self._set_auto_refresh_checkbox_state(False)
+
+        def _clear_measurement(self, *, resume: bool) -> None:
+            self._measurement = None
+
+            if not resume:
+                self._set_auto_refresh_checkbox_state(self._controller.auto_refresh_enabled)
+                self._render_plot()
+                return
+
+            self._controller.set_auto_refresh(True)
+            self._set_auto_refresh_checkbox_state(True)
+
+        def _set_auto_refresh_checkbox_state(self, enabled: bool) -> None:
+            self._auto_refresh_checkbox.blockSignals(True)
+            self._auto_refresh_checkbox.setChecked(enabled)
+            self._auto_refresh_checkbox.blockSignals(False)
 
         def _find_hover_match(self, event) -> dict[str, object] | None:
             best_match = None
@@ -792,6 +917,89 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
                         "y": float(y_value),
                     }
             return best_match
+
+        def _draw_measurement_overlay(self, visible_samples: list[VisualizerSample]) -> None:
+            measurement = self._measurement
+            if measurement is None or measurement.start_index >= len(visible_samples):
+                if measurement is not None:
+                    self._measurement = None
+                return
+
+            start_x = measurement.start_index
+            self._axes_y1.axvline(start_x, color="#d62728", linestyle="--", linewidth=1.6, zorder=6)
+            self._axes_y1.text(
+                start_x,
+                1.03,
+                "A",
+                transform=self._axes_y1.get_xaxis_transform(),
+                ha="center",
+                va="bottom",
+                fontsize=10,
+                color="#d62728",
+                fontweight="bold",
+                zorder=8,
+            )
+
+            if measurement.end_index is None or measurement.end_index >= len(visible_samples):
+                return
+
+            end_x = measurement.end_index
+            left_x = min(start_x, end_x)
+            right_x = max(start_x, end_x)
+            self._axes_y1.axvline(end_x, color="#1f77b4", linestyle="--", linewidth=1.6, zorder=6)
+            self._axes_y1.text(
+                end_x,
+                1.03,
+                "B",
+                transform=self._axes_y1.get_xaxis_transform(),
+                ha="center",
+                va="bottom",
+                fontsize=10,
+                color="#1f77b4",
+                fontweight="bold",
+                zorder=8,
+            )
+            self._axes_y1.annotate(
+                "",
+                xy=(right_x, 1.01),
+                xytext=(left_x, 1.01),
+                xycoords=self._axes_y1.get_xaxis_transform(),
+                textcoords=self._axes_y1.get_xaxis_transform(),
+                arrowprops={"arrowstyle": "<->", "linestyle": ":", "color": "#444444", "linewidth": 1.2},
+                zorder=7,
+            )
+            label_text = self._build_measurement_label(visible_samples, measurement)
+            label_x, label_align = choose_plot_measurement_label_anchor(start_x, end_x, label_text)
+            text_transform = transforms.blended_transform_factory(self._axes_y1.transData, self._axes_y1.transAxes)
+            self._axes_y1.text(
+                label_x,
+                1.07,
+                label_text,
+                transform=text_transform,
+                ha=label_align,
+                va="bottom",
+                fontsize=9,
+                color="#222222",
+                bbox={"boxstyle": "round,pad=0.2", "facecolor": "#ffffff", "edgecolor": "#cccccc", "alpha": 0.92},
+                zorder=8,
+            )
+
+        def _build_measurement_label(self, visible_samples: list[VisualizerSample], measurement: PlotMeasurement) -> str:
+            if measurement.end_index is None:
+                return f"A {self._format_measurement_timestamp(visible_samples[measurement.start_index].timestamp_raw)}"
+
+            start_time = parse_plot_timestamp(visible_samples[measurement.start_index].timestamp_raw)
+            end_time = parse_plot_timestamp(visible_samples[measurement.end_index].timestamp_raw)
+            return f"A-B {format_plot_measurement_duration(start_time, end_time)}"
+
+        @staticmethod
+        def _format_measurement_timestamp(timestamp_raw: str) -> str:
+            if not timestamp_raw:
+                return "--:--:--.--"
+            value = timestamp_raw.split(" ")[0]
+            if "-" in value:
+                value = value.split("-", 1)[1]
+            return value[:-1] if "." in value and len(value.split(".", 1)[1]) >= 3 else value
 
         def set_initial_position(self, *, slot_index: int, group_offset: int = 0) -> None:
             if self._initial_position_applied:

@@ -75,6 +75,7 @@ from .rule_slots import (
     find_first_free_slot,
     match_exclude_slots,
     match_include_slots,
+    strip_slot_colors,
     slots_from_json,
     slots_to_json,
 )
@@ -87,8 +88,8 @@ from .project_runtime import (
     RuntimeProject,
     build_project_filename,
     build_project_title_suffix,
+    initialize_project,
     is_valid_project_name,
-    write_project_readme,
 )
 from .udp_listener import UdpListenerThread
 from .udp_log_utils import drain_queue
@@ -114,13 +115,23 @@ class PatternEditDialog(QDialog):
     - Slot: 1..5
     - Pattern: text
     - Mode: Substring / Regex
-    - Color: None / ... (Filter & Exclude: chip-only; Highlight: chip + log coloring)
+    - Color: Highlight only
     """
 
-    def __init__(self, parent: QWidget, title: str, slot_index: int, slot: PatternSlot, suggested_index: int) -> None:
+    def __init__(
+        self,
+        parent: QWidget,
+        title: str,
+        slot_index: int,
+        slot: PatternSlot,
+        suggested_index: int,
+        *,
+        show_color: bool,
+    ) -> None:
         super().__init__(parent)
         self.setWindowTitle(title)
         self.setModal(True)
+        self._show_color = show_color
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(12, 12, 12, 12)
@@ -148,11 +159,13 @@ class PatternEditDialog(QDialog):
         self.cb_mode.setCurrentText(slot.mode or "Substring")
         grid.addWidget(self.cb_mode, 2, 1)
 
-        grid.addWidget(QLabel("Color:"), 3, 0)
-        self.cb_color = QComboBox()
-        self.cb_color.addItems(["None", "Red", "Green", "Blue", "Orange", "Purple", "Gray"])
-        self.cb_color.setCurrentText(slot.color or "None")
-        grid.addWidget(self.cb_color, 3, 1)
+        self.cb_color: QComboBox | None = None
+        if self._show_color:
+            grid.addWidget(QLabel("Color:"), 3, 0)
+            self.cb_color = QComboBox()
+            self.cb_color.addItems(["None", "Red", "Green", "Blue", "Orange", "Purple", "Gray"])
+            self.cb_color.setCurrentText(slot.color or "None")
+            grid.addWidget(self.cb_color, 3, 1)
 
         layout.addLayout(grid)
 
@@ -167,7 +180,7 @@ class PatternEditDialog(QDialog):
         slot = PatternSlot(
             pattern=self.ed_pattern.text().strip(),
             mode=self.cb_mode.currentText().strip() or "Substring",
-            color=self.cb_color.currentText().strip() or "None",
+            color=(self.cb_color.currentText().strip() if self.cb_color is not None else "None") or "None",
         )
         return idx, slot
 
@@ -262,6 +275,7 @@ class MainWindow(QMainWindow):
         self._replay_timer.timeout.connect(self._replay_tick)
         self._replay_lines: Deque[str] = deque()
         self._replay_active = False
+        self._replay_requires_connection = False
 
         # Replay CSV Temperature lines (inject without UDP)
         self._replay_timer_temperature = QTimer(self)
@@ -269,6 +283,7 @@ class MainWindow(QMainWindow):
         self._replay_timer_temperature.timeout.connect(self._replay_tick_temperature)
         self._replay_lines_temperature: Deque[str] = deque()
         self._replay_active_temperature = False
+        self._replay_temperature_requires_connection = False
 
         # Slot-based Filter / Exclude / Highlight
         self._filter_slots: List[PatternSlot] = [PatternSlot() for _ in range(SLOT_COUNT)]
@@ -373,6 +388,12 @@ class MainWindow(QMainWindow):
             return Path(configured).expanduser()
         return self._default_logs_dir
 
+    def _preferred_project_root_dir(self) -> Path:
+        configured = (self._preferences.project_root or "").strip()
+        if configured:
+            return Path(configured).expanduser()
+        return Path(self._paths_cfg.project_root)
+
     def _default_save_path(self) -> Path:
         return self._preferred_log_dir() / self._default_save_name()
 
@@ -425,6 +446,29 @@ class MainWindow(QMainWindow):
 
     def _close_live_log(self) -> None:
         close_live_log(self._connection_state)
+
+    def _is_connected(self) -> bool:
+        return self._listener is not None
+
+    def _set_action_checked_without_signal(self, action: QAction | None, checked: bool) -> None:
+        if action is None:
+            return
+        action.blockSignals(True)
+        action.setChecked(checked)
+        action.blockSignals(False)
+
+    def _require_connected_for_generated_data(self, action: QAction | None = None) -> bool:
+        if self._is_connected():
+            return True
+        self._set_action_checked_without_signal(action, False)
+        self.statusBar().showMessage("Simulation requires CONNECTED (start listener first).", 2500)
+        return False
+
+    def _set_generated_data_actions_enabled(self, enabled: bool) -> None:
+        for action_name in ("act_simulate", "act_simulate_temperature", "act_simulate_logic"):
+            action = getattr(self, action_name, None)
+            if action is not None:
+                action.setEnabled(enabled)
 
     def _append_to_live_log(self, line: str) -> None:
         if self._connection_state.handle is None:
@@ -880,7 +924,9 @@ class MainWindow(QMainWindow):
         self._preferences = preferences
         self._settings_store.save_preferences(self._preferences)
         self._settings_store.ini_set("paths", "logs_dir", str(self._preferred_log_dir()))
+        self._settings_store.ini_set("paths", "project_root", str(self._preferred_project_root_dir()))
         self._paths_cfg.logs_dir = self._preferred_log_dir()
+        self._paths_cfg.project_root = self._preferred_project_root_dir()
         self._ui_state.autoscroll = self._preferences.autoscroll_default
         self._ui_state.timestamp_enabled = self._preferences.timestamp_default
         self._ui_state.max_lines = self._preferences.max_lines_default
@@ -898,14 +944,15 @@ class MainWindow(QMainWindow):
         return slots_to_json(slots)
 
     def _load_filter_slots(self) -> None:
-        self._filter_slots = self._settings_store.load_rule_slots(
+        self._filter_slots = strip_slot_colors(self._settings_store.load_rule_slots(
             ini_section=self._INI_SECTION_RULES,
             ini_key=self._INI_KEY_FILTER,
             qsettings_key="filter/slots_json",
             slot_count=SLOT_COUNT,
-        )
+        ))
 
     def _save_filter_slots(self) -> None:
+        self._filter_slots = strip_slot_colors(self._filter_slots)
         self._settings_store.save_rule_slots(
             self._filter_slots,
             ini_section=self._INI_SECTION_RULES,
@@ -914,14 +961,15 @@ class MainWindow(QMainWindow):
         )
 
     def _load_exclude_slots(self) -> None:
-        self._exclude_slots = self._settings_store.load_rule_slots(
+        self._exclude_slots = strip_slot_colors(self._settings_store.load_rule_slots(
             ini_section=self._INI_SECTION_RULES,
             ini_key=self._INI_KEY_EXCLUDE,
             qsettings_key="exclude/slots_json",
             slot_count=SLOT_COUNT,
-        )
+        ))
 
     def _save_exclude_slots(self) -> None:
+        self._exclude_slots = strip_slot_colors(self._exclude_slots)
         self._settings_store.save_rule_slots(
             self._exclude_slots,
             ini_section=self._INI_SECTION_RULES,
@@ -974,7 +1022,7 @@ class MainWindow(QMainWindow):
     def _find_first_free_slot(self, slots: List[PatternSlot]) -> Optional[int]:
         return find_first_free_slot(slots)
 
-    def _refresh_chips(self, layout: QHBoxLayout, slots: List[PatternSlot], on_edit, on_remove) -> None:
+    def _refresh_chips(self, layout: QHBoxLayout, slots: List[PatternSlot], on_edit, on_remove, *, show_color: bool) -> None:
         while layout.count():
             item = layout.takeAt(0)
             w = item.widget()
@@ -993,11 +1041,11 @@ class MainWindow(QMainWindow):
         for idx in active:
             s = slots[idx]
             txt = f"{s.pattern}"
-            if s.color.strip().lower() != "none":
+            if show_color and s.color.strip().lower() != "none":
                 txt = f"{txt} ({s.color})"
             btn = QToolButton()
             btn.setText(txt)
-            btn.setStyleSheet(self._chip_style(s.color))
+            btn.setStyleSheet(self._chip_style(s.color if show_color else "None"))
             btn.setToolTip(f"Slot {idx+1} — click to edit; right-click to remove")
             btn.clicked.connect(lambda _checked=False, i=idx: on_edit(i))
             btn.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -1007,27 +1055,60 @@ class MainWindow(QMainWindow):
         layout.addStretch(1)
 
     def _refresh_filter_chips(self) -> None:
-        self._refresh_chips(self._filter_chips_layout, self._filter_slots, self.on_filter_edit_clicked, self.on_filter_remove_clicked)
+        self._refresh_chips(
+            self._filter_chips_layout,
+            self._filter_slots,
+            self.on_filter_edit_clicked,
+            self.on_filter_remove_clicked,
+            show_color=False,
+        )
 
     def _refresh_exclude_chips(self) -> None:
-        self._refresh_chips(self._exclude_chips_layout, self._exclude_slots, self.on_exclude_edit_clicked, self.on_exclude_remove_clicked)
+        self._refresh_chips(
+            self._exclude_chips_layout,
+            self._exclude_slots,
+            self.on_exclude_edit_clicked,
+            self.on_exclude_remove_clicked,
+            show_color=False,
+        )
 
     def _refresh_highlight_chips(self) -> None:
-        self._refresh_chips(self._hl_chips_layout, self._hl_slots, self.on_hl_edit_clicked, self.on_hl_remove_clicked)
+        self._refresh_chips(
+            self._hl_chips_layout,
+            self._hl_slots,
+            self.on_hl_edit_clicked,
+            self.on_hl_remove_clicked,
+            show_color=True,
+        )
 
     # ---------------- Dialog actions ----------------
 
     def _open_slot_dialog(self, title: str, slots: List[PatternSlot], slot_index: int) -> Optional[Tuple[int, PatternSlot]]:
+        show_color = title == "Highlight"
         if slot_index < 0:
             free = self._find_first_free_slot(slots)
             if free is None:
                 QMessageBox.information(self, title, f"All {SLOT_COUNT} slots are used.\nEdit an existing chip or RESET.")
                 return None
-            dlg = PatternEditDialog(self, f"Edit {title} Rule", slot_index=-1, slot=PatternSlot(), suggested_index=free)
+            dlg = PatternEditDialog(
+                self,
+                f"Edit {title} Rule",
+                slot_index=-1,
+                slot=PatternSlot(),
+                suggested_index=free,
+                show_color=show_color,
+            )
         else:
             if not (0 <= slot_index < SLOT_COUNT):
                 return None
-            dlg = PatternEditDialog(self, f"Edit {title} Rule", slot_index=slot_index, slot=slots[slot_index], suggested_index=slot_index)
+            dlg = PatternEditDialog(
+                self,
+                f"Edit {title} Rule",
+                slot_index=slot_index,
+                slot=slots[slot_index],
+                suggested_index=slot_index,
+                show_color=show_color,
+            )
 
         if dlg.exec_() != QDialog.Accepted:
             return None
@@ -1199,6 +1280,9 @@ class MainWindow(QMainWindow):
         self._dispatch_log_line(line, is_live_source=False)
 
     def _replay_tick(self) -> None:
+        if self._replay_requires_connection and not self._is_connected():
+            self.on_stop_replay_clicked()
+            return
         if not self._replay_lines:
             self._replay_timer.stop()
             self._replay_active = False
@@ -1209,6 +1293,9 @@ class MainWindow(QMainWindow):
             self._ingest_line(line)
 
     def _replay_tick_temperature(self) -> None:
+        if self._replay_temperature_requires_connection and not self._is_connected():
+            self.on_stop_replay_temperature_clicked()
+            return
         if not self._replay_lines_temperature:
             self._replay_timer_temperature.stop()
             self._replay_active_temperature = False
@@ -1239,6 +1326,7 @@ class MainWindow(QMainWindow):
         self.on_stop_replay_clicked()
         self._replay_lines = deque([ln for ln in lines if ln.strip() and not ln.startswith("#")])
         self._replay_active = True
+        self._replay_requires_connection = False
         self._replay_timer.start()
         self.statusBar().showMessage(f"Replay: {os.path.basename(path)} ({len(self._replay_lines)} lines)", 3000)
 
@@ -1246,9 +1334,12 @@ class MainWindow(QMainWindow):
     # simulation CSV Temperature lines
     # -------------------------------------------------------
     def on_replay_sample_temperature_clicked(self) -> None:
+        if not self._require_connected_for_generated_data():
+            return
         self.on_stop_replay_temperature_clicked()
         self._replay_lines_temperature = deque(build_temperature_replay_sample())
         self._replay_active_temperature = True
+        self._replay_temperature_requires_connection = True
         self._replay_timer_temperature.start()
         self.statusBar().showMessage("Replay: plot sample", 2000)
 
@@ -1257,15 +1348,19 @@ class MainWindow(QMainWindow):
             self._replay_timer_temperature.stop()
         self._replay_lines_temperature.clear()
         self._replay_active_temperature = False
+        self._replay_temperature_requires_connection = False
         self.statusBar().showMessage("Replay plot stopped", 1500)
 
     # -------------------------------------------------------
     # simulation user friendly log entries
     # -------------------------------------------------------
     def on_replay_sample_clicked(self) -> None:
+        if not self._require_connected_for_generated_data():
+            return
         self.on_stop_replay_clicked()
         self._replay_lines = deque(build_text_replay_sample())
         self._replay_active = True
+        self._replay_requires_connection = True
         self._replay_timer.start()
         self.statusBar().showMessage("Replay: sample", 2000)
 
@@ -1274,6 +1369,7 @@ class MainWindow(QMainWindow):
             self._replay_timer.stop()
         self._replay_lines.clear()
         self._replay_active = False
+        self._replay_requires_connection = False
         self.statusBar().showMessage("Replay stopped", 1500)
 
     # ---------------- Simulation (Tools menu) ----------------
@@ -1300,11 +1396,7 @@ class MainWindow(QMainWindow):
 
     def on_simulate_toggled(self, checked: bool) -> None:
         if checked:
-            if self._listener is None:
-                self.act_simulate.blockSignals(True)
-                self.act_simulate.setChecked(False)
-                self.act_simulate.blockSignals(False)
-                self.statusBar().showMessage("Simulation requires CONNECTED (start listener first).", 2500)
+            if not self._require_connected_for_generated_data(self.act_simulate):
                 return
             self._start_simulation()
         else:
@@ -1312,21 +1404,22 @@ class MainWindow(QMainWindow):
 
     def on_simulate_toggled_temperature(self, checked: bool) -> None:
         if checked:
-            if self._listener is None:
-                self.act_simulate_temperature.blockSignals(True)
-                self.act_simulate_temperature.setChecked(False)
-                self.act_simulate_temperature.blockSignals(False)
-                self.statusBar().showMessage("Simulation requires CONNECTED (start listener first).", 2500)
+            if not self._require_connected_for_generated_data(self.act_simulate_temperature):
                 return
             self._start_simulation_temperature()
         else:
             self._stop_simulation_temperature()
 
     def on_simulate_logic_toggled(self, checked: bool) -> None:
-        self._sim_logic_enabled = checked
         if checked:
+            if not self._require_connected_for_generated_data(self.act_simulate_logic):
+                self._sim_logic_enabled = False
+                self._sim_logic_timer.stop()
+                return
+            self._sim_logic_enabled = True
             self._sim_logic_timer.start()
         else:
+            self._sim_logic_enabled = False
             self._sim_logic_timer.stop()
 
     def _start_simulation(self) -> None:
@@ -1360,7 +1453,7 @@ class MainWindow(QMainWindow):
 
 
     def _on_sim_tick(self) -> None:
-        if not self._sim_enabled or self._listener is None:
+        if not self._sim_enabled or not self._is_connected():
             return
         line = self._sim_next_line()
         self._on_line_received(line)
@@ -1371,13 +1464,15 @@ class MainWindow(QMainWindow):
 
 
     def _on_sim_temperature_tick(self) -> None:
-        if not self._sim_temperature_enabled or self._listener is None:
+        if not self._sim_temperature_enabled or not self._is_connected():
             return
         for line in next_temperature_plot_simulation_lines(self._sim_temperature_state):
             self._on_line_received(line)
 
 
     def _on_sim_logic_tick(self) -> None:
+        if not self._sim_logic_enabled or not self._is_connected():
+            return
         self._ingest_line(next_client_logic_simulation_line(self._sim_logic_state))
 
 
@@ -1618,7 +1713,11 @@ class MainWindow(QMainWindow):
             return None
 
     def on_project_clicked(self) -> None:
-        dialog = ProjectDialog(self._active_project, self)
+        dialog = ProjectDialog(
+            self._active_project,
+            default_root_dir=self._preferred_project_root_dir(),
+            parent=self,
+        )
         if dialog.exec_() != QDialog.Accepted:
             return
 
@@ -1627,7 +1726,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(
                 self,
                 "Invalid Project Name",
-                "Project name must contain 1 to 20 characters using letters, digits, underscores, or hyphens.",
+                "Project name must contain 1 to 50 characters using letters, digits, underscores, or hyphens.",
             )
             return
 
@@ -1637,8 +1736,19 @@ class MainWindow(QMainWindow):
             return
 
         project = RuntimeProject(name=project_name, root_dir=root_dir)
-        project.output_dir.mkdir(parents=True, exist_ok=True)
-        write_project_readme(project, dialog.project_notes())
+        try:
+            initialize_project(project, dialog.project_notes())
+        except OSError as exc:
+            QMessageBox.critical(
+                self,
+                "Project Creation Failed",
+                f"Could not create the project folder or README:\n{exc}",
+            )
+            return
+        self._preferences.project_root = str(root_dir)
+        self._settings_store.save_preferences(self._preferences)
+        self._settings_store.ini_set("paths", "project_root", str(root_dir))
+        self._paths_cfg.project_root = root_dir
         self._active_project = project
         self._sync_runtime_context()
         self.statusBar().showMessage(f"Project active: {project.output_dir}", 4000)
@@ -1713,8 +1823,10 @@ class MainWindow(QMainWindow):
             self._stop_listener()
 
             try:
-                if hasattr(self, "act_simulate") and self.act_simulate.isChecked():
-                    self.act_simulate.setChecked(False)
+                for action_name in ("act_simulate", "act_simulate_temperature", "act_simulate_logic"):
+                    action = getattr(self, action_name, None)
+                    if action is not None and action.isChecked():
+                        action.setChecked(False)
             except Exception:
                 pass
 
@@ -1778,6 +1890,7 @@ class MainWindow(QMainWindow):
 
     def _update_connection_ui(self) -> None:
         connected = self._listener is not None
+        self._set_generated_data_actions_enabled(connected)
 
         if connected:
             self.chk_timestamp.setEnabled(False)

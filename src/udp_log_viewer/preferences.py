@@ -13,6 +13,7 @@ class AppPreferences:
     timestamp_default: bool = True
     max_lines_default: int = 20000
     log_path: str = ""
+    project_root: str = ""
     visualizer_presets: tuple[int, int, int, int] = DEFAULT_VISUALIZER_PRESETS
     plot_sliding_window_default: bool = True
     plot_window_size_default: int = 200
@@ -23,6 +24,7 @@ class AppPreferences:
         self.language = (self.language or "de").strip().lower() or "de"
         self.max_lines_default = self._normalize_positive_int(self.max_lines_default, fallback=20000, minimum=1000)
         self.log_path = self._normalize_log_path(self.log_path)
+        self.project_root = self._normalize_log_path(self.project_root)
         self.visualizer_presets = self._normalize_presets(self.visualizer_presets)
         self.plot_window_size_default = self._normalize_positive_int(
             self.plot_window_size_default,

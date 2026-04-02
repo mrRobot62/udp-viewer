@@ -27,7 +27,13 @@ from .project_runtime import (
 
 
 class ProjectDialog(QDialog):
-    def __init__(self, current_project: RuntimeProject | None = None, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        current_project: RuntimeProject | None = None,
+        *,
+        default_root_dir: Path | None = None,
+        parent: QWidget | None = None,
+    ) -> None:
         super().__init__(parent)
         self.setWindowTitle("Project")
         self.setModal(True)
@@ -40,13 +46,13 @@ class ProjectDialog(QDialog):
         form = QFormLayout()
 
         self._name = QLineEdit(self)
-        self._name.setMaxLength(20)
+        self._name.setMaxLength(50)
         self._name.setMinimumWidth(260)
         self._name.setPlaceholderText("Project name")
         self._name.setToolTip(
-            "Use 1 to 20 characters with letters, digits, underscores, or hyphens. The name is used for the project folder, file names, and window titles."
+            "Use 1 to 50 characters with letters, digits, underscores, or hyphens. The name is used for the project folder, file names, and window titles."
         )
-        self._name.setValidator(QRegularExpressionValidator(QRegularExpression(r"[A-Za-z0-9_-]{0,20}"), self._name))
+        self._name.setValidator(QRegularExpressionValidator(QRegularExpression(r"[A-Za-z0-9_-]{0,50}"), self._name))
         self._name.textChanged.connect(self._update_preview)
 
         self._root_dir = QLineEdit(self)
@@ -107,6 +113,8 @@ class ProjectDialog(QDialog):
             if existing_notes is not None:
                 self._notes.setPlainText(normalize_project_notes(existing_notes))
                 self._notes_uses_default = False
+        elif default_root_dir is not None:
+            self._root_dir.setText(str(default_root_dir.expanduser()))
         if not self._notes.toPlainText().strip():
             self._set_default_notes_text(self.project_name())
         self._update_preview()

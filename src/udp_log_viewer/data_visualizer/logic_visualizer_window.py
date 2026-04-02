@@ -176,7 +176,6 @@ class LogicVisualizerWindow:
         self.runtime_window_size = self._normalize_runtime_window_size(config.default_window_size)
         self.runtime_show_legend = bool(getattr(config, "show_legend", True))
         self._widget: _LogicVisualizerWindowWidget | None = None
-        self._measurement_restore_state: tuple[bool, int | None] | None = None
 
         self._ensure_widget()
 
@@ -402,6 +401,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             layout.addWidget(self._canvas)
             self.setLayout(layout)
             self._screenshot_shortcuts = self._build_screenshot_shortcuts()
+            self._measurement_shortcuts = self._build_measurement_shortcuts()
             self._configure_tab_order()
 
             self.rebuild_plot()
@@ -478,6 +478,19 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
                 shortcuts.append(shortcut)
             return shortcuts
 
+        def _build_measurement_shortcuts(self) -> list[QShortcut]:
+            shortcuts: list[QShortcut] = []
+            if QShortcut is None or QKeySequence is None:
+                return shortcuts
+            space_shortcut = QShortcut(QKeySequence("Space"), self)
+            space_shortcut.activated.connect(self._on_space_shortcut)
+            shortcuts.append(space_shortcut)
+
+            escape_shortcut = QShortcut(QKeySequence("Esc"), self)
+            escape_shortcut.activated.connect(self._on_escape_shortcut)
+            shortcuts.append(escape_shortcut)
+            return shortcuts
+
         def _configure_tab_order(self) -> None:
             tab_widgets = [
                 self._auto_refresh_checkbox,
@@ -502,6 +515,17 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
                     self._move_focus(forward=event.key() == Qt.Key_Tab)
                     return True
             return super().eventFilter(watched, event)
+
+        def keyPressEvent(self, event) -> None:
+            if event.key() == Qt.Key_Space:
+                self._on_space_shortcut()
+                event.accept()
+                return
+            if event.key() == Qt.Key_Escape:
+                self._on_escape_shortcut()
+                event.accept()
+                return
+            super().keyPressEvent(event)
 
         def _move_focus(self, *, forward: bool) -> None:
             widgets = [widget for widget in getattr(self, "_tab_widgets", []) if widget.isVisible() and widget.isEnabled()]
@@ -533,7 +557,11 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             return f"{self._controller.config.title or 'Logic Visualizer'}{build_project_title_suffix(self._controller.project_name)}"
 
         def _on_auto_refresh_changed(self, state: int) -> None:
-            self._controller.set_auto_refresh(state == Qt.Checked)
+            enabled = state == Qt.Checked
+            if enabled and self._measurement is not None:
+                self._clear_measurement(resume=True)
+                return
+            self._controller.set_auto_refresh(enabled)
 
         def _on_refresh_clicked(self) -> None:
             self._controller.clear_samples()
@@ -556,10 +584,20 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
         def _on_screenshot_clicked(self) -> None:
             self.save_screenshot()
 
+        def _on_space_shortcut(self) -> None:
+            self._auto_refresh_checkbox.setChecked(not self._auto_refresh_checkbox.isChecked())
+
+        def _on_escape_shortcut(self) -> None:
+            if self._measurement is None:
+                return
+            self._clear_measurement(resume=True)
+
         def _sync_runtime_controls(self) -> None:
+            self._auto_refresh_checkbox.blockSignals(True)
             self._sliding_window_checkbox.blockSignals(True)
             self._legend_checkbox.blockSignals(True)
             self._window_size_spin.blockSignals(True)
+            self._auto_refresh_checkbox.setChecked(self._controller.auto_refresh_enabled)
             self._sliding_window_checkbox.setChecked(self._controller.runtime_sliding_window_enabled)
             self._legend_checkbox.setChecked(self._controller.runtime_show_legend)
             self._window_size_spin.setRange(
@@ -568,6 +606,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             )
             self._window_size_spin.setValue(self._controller.runtime_window_size)
             self._window_size_spin.setEnabled(self._controller.runtime_sliding_window_enabled)
+            self._auto_refresh_checkbox.blockSignals(False)
             self._sliding_window_checkbox.blockSignals(False)
             self._legend_checkbox.blockSignals(False)
             self._window_size_spin.blockSignals(False)
@@ -621,13 +660,6 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             else:
                 self._status_label.setText(self._build_measurement_label(visible_samples, measurement))
             self._render_plot()
-
-        def keyPressEvent(self, event) -> None:
-            if event.key() in (Qt.Key_Space, Qt.Key_Escape):
-                self._clear_measurement(resume=True)
-                event.accept()
-                return
-            super().keyPressEvent(event)
 
         def _render_plot(self) -> None:
             self.setWindowTitle(self._build_window_title())
@@ -802,33 +834,24 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             return bool(QApplication.keyboardModifiers() & Qt.ShiftModifier)
 
         def _pause_for_measurement(self) -> None:
-            if self._controller._measurement_restore_state is None:
-                self._controller._measurement_restore_state = (
-                    self._controller.auto_refresh_enabled,
-                    self._controller.freeze_sample_index,
-                )
-            if self._controller.auto_refresh_enabled:
-                self._controller.set_auto_refresh(False)
+            self._controller.set_auto_refresh(False)
+            self._set_auto_refresh_checkbox_state(False)
 
         def _clear_measurement(self, *, resume: bool) -> None:
             self._measurement = None
-            restore_state = self._controller._measurement_restore_state
-            self._controller._measurement_restore_state = None
 
-            if not resume or restore_state is None:
+            if not resume:
+                self._set_auto_refresh_checkbox_state(self._controller.auto_refresh_enabled)
                 self._render_plot()
                 return
 
-            auto_refresh_enabled, freeze_sample_index = restore_state
-            self._controller.auto_refresh_enabled = auto_refresh_enabled
-            self._controller.freeze_sample_index = freeze_sample_index
-            if auto_refresh_enabled:
-                self._controller.rebuild_plot()
-            else:
-                self._status_label.setText(
-                    f"Samples: {len(self._get_visible_samples())} visible / {len(self._controller.samples)} total"
-                )
-                self._render_plot()
+            self._controller.set_auto_refresh(True)
+            self._set_auto_refresh_checkbox_state(True)
+
+        def _set_auto_refresh_checkbox_state(self, enabled: bool) -> None:
+            self._auto_refresh_checkbox.blockSignals(True)
+            self._auto_refresh_checkbox.setChecked(enabled)
+            self._auto_refresh_checkbox.blockSignals(False)
 
         def _draw_measurement_overlay(self, visible_samples: list[VisualizerSample], active_fields) -> None:
             measurement = self._measurement
