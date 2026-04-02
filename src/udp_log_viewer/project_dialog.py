@@ -46,7 +46,7 @@ class ProjectDialog(QDialog):
         form = QFormLayout()
 
         self._name = QLineEdit(self)
-        self._name.setMaxLength(20)
+        self._name.setMaxLength(50)
         self._name.setMinimumWidth(260)
         self._name.setPlaceholderText("Project name")
         self._name.setToolTip(

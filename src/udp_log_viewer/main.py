@@ -1726,7 +1726,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(
                 self,
                 "Invalid Project Name",
-                "Project name must contain 1 to 20 characters using letters, digits, underscores, or hyphens.",
+                "Project name must contain 1 to 50 characters using letters, digits, underscores, or hyphens.",
             )
             return
 

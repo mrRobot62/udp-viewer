@@ -14,6 +14,7 @@ Projekt-Workflow und den Regel-Editor im Hauptfenster.
   abzustuerzen
 - die `PROJECT`-Aktion zeigt einen klaren Fehlerdialog, wenn
   Projektordner oder README nicht angelegt werden koennen
+- Projektnamen unterstuetzen jetzt bis zu `50` Zeichen
 - die Farbauswahl wurde fuer `Filter` und `Exclude` im Hauptfenster
   entfernt, weil diese Regeltypen keine Farbbedeutung haben
 - alte gespeicherte Farben fuer `Filter` und `Exclude` werden beim

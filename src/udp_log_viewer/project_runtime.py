@@ -6,7 +6,7 @@ from pathlib import Path
 import re
 
 
-_PROJECT_NAME_RE = re.compile(r"^[A-Za-z0-9_-]{1,20}$")
+_PROJECT_NAME_RE = re.compile(r"^[A-Za-z0-9_-]{1,50}$")
 PROJECT_README_MAX_CHARS = 1024
 
 

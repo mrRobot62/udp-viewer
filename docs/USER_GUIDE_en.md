@@ -2,6 +2,12 @@
 
 This document describes the visible usage of UDP Viewer from an end-user perspective. It is intentionally workflow-oriented and complements the technical references for configuration, CSV input formats, and build/packaging.
 
+For scenario-based examples with realistic IoT and diagnostics use
+cases, see:
+
+- [UDP Viewer Scenarios](SCENARIOS_en.md)
+- [Scenario Figures](SCENARIO_IMAGES_en.md)
+
 ## 1. What the Application Is For
 
 UDP Viewer is used to receive UDP-based text and telemetry data, display it, filter it, highlight it with colors, persist it locally, and visualize structured values in graphs.
