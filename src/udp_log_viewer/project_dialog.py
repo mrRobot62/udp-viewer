@@ -50,9 +50,9 @@ class ProjectDialog(QDialog):
         self._name.setMinimumWidth(260)
         self._name.setPlaceholderText("Project name")
         self._name.setToolTip(
-            "Use 1 to 20 characters with letters, digits, underscores, or hyphens. The name is used for the project folder, file names, and window titles."
+            "Use 1 to 50 characters with letters, digits, underscores, or hyphens. The name is used for the project folder, file names, and window titles."
         )
-        self._name.setValidator(QRegularExpressionValidator(QRegularExpression(r"[A-Za-z0-9_-]{0,20}"), self._name))
+        self._name.setValidator(QRegularExpressionValidator(QRegularExpression(r"[A-Za-z0-9_-]{0,50}"), self._name))
         self._name.textChanged.connect(self._update_preview)
 
         self._root_dir = QLineEdit(self)
