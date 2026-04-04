@@ -36,7 +36,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from .app_paths import AppPathsConfig, get_default_config_path, load_or_create_config
+from .app_paths import AppPathsConfig, get_default_config_path, get_default_project_root_dir, load_or_create_config
 from . import __display_version__
 from .config_runtime import normalize_config_selection, resolve_config_path
 from .connection_runtime import (
@@ -145,18 +145,21 @@ class PatternEditDialog(QDialog):
         self.sb_slot = QSpinBox()
         self.sb_slot.setRange(1, SLOT_COUNT)
         self.sb_slot.setValue((slot_index + 1) if slot_index >= 0 else (suggested_index + 1))
+        self.sb_slot.setToolTip("Select which slot should store this rule.")
         grid.addWidget(self.sb_slot, 0, 1)
 
         grid.addWidget(QLabel("Pattern:"), 1, 0)
         self.ed_pattern = QLineEdit()
         self.ed_pattern.setText(slot.pattern)
         self.ed_pattern.setPlaceholderText('e.g. "[OVEN/INFO] [T11]" or "STATUS received"')
+        self.ed_pattern.setToolTip("Enter the text or regular expression used to match log lines.")
         grid.addWidget(self.ed_pattern, 1, 1)
 
         grid.addWidget(QLabel("Mode:"), 2, 0)
         self.cb_mode = QComboBox()
         self.cb_mode.addItems(["Substring", "Regex"])
         self.cb_mode.setCurrentText(slot.mode or "Substring")
+        self.cb_mode.setToolTip("Choose whether the pattern is matched as plain text or as a regular expression.")
         grid.addWidget(self.cb_mode, 2, 1)
 
         self.cb_color: QComboBox | None = None
@@ -165,12 +168,15 @@ class PatternEditDialog(QDialog):
             self.cb_color = QComboBox()
             self.cb_color.addItems(["None", "Red", "Green", "Blue", "Orange", "Purple", "Gray"])
             self.cb_color.setCurrentText(slot.color or "None")
+            self.cb_color.setToolTip("Choose the highlight color used for matching log lines.")
             grid.addWidget(self.cb_color, 3, 1)
 
         layout.addLayout(grid)
 
         btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, parent=self)
         btns.button(QDialogButtonBox.Ok).setText("SET")
+        btns.button(QDialogButtonBox.Ok).setToolTip("Apply this rule to the selected slot.")
+        btns.button(QDialogButtonBox.Cancel).setToolTip("Close the dialog without changing the selected slot.")
         btns.accepted.connect(self.accept)
         btns.rejected.connect(self.reject)
         layout.addWidget(btns)
@@ -408,6 +414,15 @@ class MainWindow(QMainWindow):
             output_dir=self._project_output_dir(),
         )
         self._update_window_title()
+
+    def _reset_active_project(self) -> None:
+        self._active_project = None
+        self._preferences.project_root = ""
+        default_root = get_default_project_root_dir()
+        self._settings_store.save_preferences(self._preferences)
+        self._settings_store.ini_set("paths", "project_root", str(default_root))
+        self._paths_cfg.project_root = default_root
+        self._sync_runtime_context()
 
     def _ensure_logs_dir(self) -> Path:
         return ensure_logs_dir(self._preferred_log_dir())
@@ -675,6 +690,7 @@ class MainWindow(QMainWindow):
 
         self.btn_project = QPushButton("PROJECT")
         self.btn_project.setFocusPolicy(Qt.StrongFocus)
+        self.btn_project.setToolTip("Open the project dialog to create or edit the active project.")
         self.btn_project.clicked.connect(self.on_project_clicked)
 
         self.btn_save = QPushButton("SAVE")
@@ -684,20 +700,24 @@ class MainWindow(QMainWindow):
 
         self.btn_reset = QPushButton("RESET")
         self.btn_reset.setFocusPolicy(Qt.StrongFocus)
+        self.btn_reset.setToolTip("Start a new session: stop the listener, clear buffers, and reset the active project.")
         self.btn_reset.clicked.connect(self.on_reset_clicked)
 
         self.btn_clear = QPushButton("CLEAR")
         self.btn_clear.setFocusPolicy(Qt.StrongFocus)
+        self.btn_clear.setToolTip("Clear the visible log output without touching the live session file.")
         self.btn_clear.clicked.connect(self.on_clear_clicked)
 
         self.btn_copy = QPushButton("COPY")
         self.btn_copy.setFocusPolicy(Qt.StrongFocus)
+        self.btn_copy.setToolTip("Copy the selected log text, or the full log if nothing is selected.")
         self.btn_copy.clicked.connect(self.on_copy_clicked)
 
         self.btn_connect = QToolButton()
         self.btn_connect.setText("CONNECT")
         self.btn_connect.setFocusPolicy(Qt.StrongFocus)
         self.btn_connect.setCheckable(True)
+        self.btn_connect.setToolTip("Start or stop the UDP listener for the configured bind IP and port.")
         self.btn_connect.clicked.connect(self.on_connect_toggled)
 
         self.btn_pause = QToolButton()
@@ -705,14 +725,17 @@ class MainWindow(QMainWindow):
         self.btn_pause.setFocusPolicy(Qt.StrongFocus)
         self.btn_pause.setCheckable(True)
         self.btn_pause.setEnabled(False)
+        self.btn_pause.setToolTip("Pause or resume updates in the log view while logging continues in the background.")
         self.btn_pause.clicked.connect(self.on_pause_toggled)
 
         self.chk_autoscroll = QCheckBox("Auto-Scroll")
         self.chk_autoscroll.setFocusPolicy(Qt.StrongFocus)
+        self.chk_autoscroll.setToolTip("Automatically keep the newest received log lines visible.")
         self.chk_autoscroll.stateChanged.connect(self.on_autoscroll_changed)
 
         self.chk_timestamp = QCheckBox("Timestamp")
         self.chk_timestamp.setFocusPolicy(Qt.StrongFocus)
+        self.chk_timestamp.setToolTip("Prefix displayed log lines with a local timestamp. Applies on the next connect.")
         self.chk_timestamp.stateChanged.connect(self.on_timestamp_changed)
 
         top_row.addWidget(self.btn_project)
@@ -745,6 +768,7 @@ class MainWindow(QMainWindow):
         self.ed_bind_ip = QLineEdit()
         self.ed_bind_ip.setFocusPolicy(Qt.StrongFocus)
         self.ed_bind_ip.setPlaceholderText("0.0.0.0")
+        self.ed_bind_ip.setToolTip("UDP bind address. Use 0.0.0.0 to listen on all local network interfaces.")
         self.ed_bind_ip.editingFinished.connect(self.on_settings_edited)
 
         lbl_port = QLabel("Port:")
@@ -752,6 +776,7 @@ class MainWindow(QMainWindow):
         self.ed_port.setFocusPolicy(Qt.StrongFocus)
         self.ed_port.setValidator(QIntValidator(1, 65535, self))
         self.ed_port.setPlaceholderText("10514")
+        self.ed_port.setToolTip("UDP port used by the listener.")
         self.ed_port.editingFinished.connect(self.on_settings_edited)
 
         lbl_max = QLabel("Max lines:")
@@ -759,6 +784,7 @@ class MainWindow(QMainWindow):
         self.ed_max_lines.setFocusPolicy(Qt.StrongFocus)
         self.ed_max_lines.setValidator(QIntValidator(1000, 500000, self))
         self.ed_max_lines.setPlaceholderText(str(DEFAULT_MAX_LINES))
+        self.ed_max_lines.setToolTip("Maximum number of log lines kept in the visible UI before older lines are trimmed.")
         self.ed_max_lines.editingFinished.connect(self.on_settings_edited)
 
         settings_layout.addWidget(lbl_bind, 0, 0)
@@ -783,6 +809,7 @@ class MainWindow(QMainWindow):
         self.btn_filter_add = QToolButton()
         self.btn_filter_add.setText("FILTER")
         self.btn_filter_add.setFocusPolicy(Qt.StrongFocus)
+        self.btn_filter_add.setToolTip("Add or edit a filter rule. Only matching log lines stay visible.")
         self.btn_filter_add.clicked.connect(self.on_filter_add_clicked)
         fx_row.addWidget(self.btn_filter_add)
 
@@ -794,6 +821,7 @@ class MainWindow(QMainWindow):
 
         self.btn_filter_reset = QPushButton("RESET")
         self.btn_filter_reset.setFocusPolicy(Qt.StrongFocus)
+        self.btn_filter_reset.setToolTip("Remove all filter rules.")
         self.btn_filter_reset.clicked.connect(self.on_filter_reset_clicked)
         fx_row.addWidget(self.btn_filter_reset)
 
@@ -804,6 +832,7 @@ class MainWindow(QMainWindow):
         self.btn_exclude_add = QToolButton()
         self.btn_exclude_add.setText("EXCLUDE")
         self.btn_exclude_add.setFocusPolicy(Qt.StrongFocus)
+        self.btn_exclude_add.setToolTip("Add or edit an exclude rule. Matching log lines are hidden.")
         self.btn_exclude_add.clicked.connect(self.on_exclude_add_clicked)
         fx_row.addWidget(self.btn_exclude_add)
 
@@ -815,6 +844,7 @@ class MainWindow(QMainWindow):
 
         self.btn_exclude_reset = QPushButton("RESET")
         self.btn_exclude_reset.setFocusPolicy(Qt.StrongFocus)
+        self.btn_exclude_reset.setToolTip("Remove all exclude rules.")
         self.btn_exclude_reset.clicked.connect(self.on_exclude_reset_clicked)
         fx_row.addWidget(self.btn_exclude_reset)
 
@@ -832,6 +862,7 @@ class MainWindow(QMainWindow):
         self.btn_hl_add = QToolButton()
         self.btn_hl_add.setText("HIGHLIGHT")
         self.btn_hl_add.setFocusPolicy(Qt.StrongFocus)
+        self.btn_hl_add.setToolTip("Add or edit a highlight rule for matching log lines.")
         self.btn_hl_add.clicked.connect(self.on_hl_add_clicked)
         hl_row.addWidget(self.btn_hl_add)
 
@@ -843,6 +874,7 @@ class MainWindow(QMainWindow):
 
         self.btn_hl_reset = QPushButton("RESET")
         self.btn_hl_reset.setFocusPolicy(Qt.StrongFocus)
+        self.btn_hl_reset.setToolTip("Remove all highlight rules.")
         self.btn_hl_reset.clicked.connect(self.on_hl_reset_clicked)
         hl_row.addWidget(self.btn_hl_reset)
 
@@ -853,6 +885,7 @@ class MainWindow(QMainWindow):
         self.log.setFocusPolicy(Qt.StrongFocus)
         self.log.setReadOnly(True)
         self.log.setLineWrapMode(QPlainTextEdit.NoWrap)
+        self.log.setToolTip("Shows the received log lines for the current session.")
 
         mono = QFont("Menlo")
         mono.setStyleHint(QFont.Monospace)
@@ -1760,6 +1793,7 @@ class MainWindow(QMainWindow):
 
     def on_reset_clicked(self) -> None:
         new_live_log = self._reset_session()
+        self._reset_active_project()
         if new_live_log is not None:
             self.statusBar().showMessage(f"Session reset. Listener OFF. New live log: {new_live_log}", 5000)
         else:
@@ -1774,6 +1808,28 @@ class MainWindow(QMainWindow):
         else:
             QApplication.clipboard().setText(self.log.toPlainText())
             self.statusBar().showMessage("Copied all", 2000)
+
+    def _confirm_save_logs_before_exit(self) -> bool:
+        if self._listener is None or self._connection_state.rx_lines <= 0:
+            return True
+
+        mb = QMessageBox(self)
+        mb.setWindowTitle("Exit")
+        mb.setIcon(QMessageBox.Question)
+        mb.setText("Save logs before exit?")
+        mb.setInformativeText("The current session is still connected and contains received log data.")
+        yes = mb.addButton("Save…", QMessageBox.YesRole)
+        no = mb.addButton("No", QMessageBox.NoRole)
+        cancel = mb.addButton("Cancel", QMessageBox.RejectRole)
+        mb.setDefaultButton(yes)
+        mb.exec_()
+
+        clicked = mb.clickedButton()
+        if clicked == cancel:
+            return False
+        if clicked == yes:
+            return self.on_save_clicked() is not None
+        return True
 
     def on_connect_toggled(self) -> None:
         requested = self.btn_connect.isChecked()
@@ -1973,6 +2029,9 @@ class MainWindow(QMainWindow):
     # ---------------- Qt overrides ----------------
 
     def closeEvent(self, event) -> None:
+        if not self._confirm_save_logs_before_exit():
+            event.ignore()
+            return
         try:
             self.on_stop_replay_clicked()
         except Exception:

@@ -65,6 +65,11 @@ class UdpListenerThread(QThread):
             self._sock = sock
 
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            if hasattr(socket, "SO_REUSEPORT"):
+                try:
+                    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+                except OSError:
+                    pass
             sock.bind((self._bind_ip, self._port))
             sock.setblocking(False)
 

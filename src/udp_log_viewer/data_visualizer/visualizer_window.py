@@ -57,7 +57,11 @@ if TYPE_CHECKING:
 
 WINDOW_SIZE_MIN = 1
 WINDOW_SIZE_MAX = 5000
-WINDOW_SIZE_TOOLTIP = f"Sliding window size. Minimum: {WINDOW_SIZE_MIN}, Maximum: {WINDOW_SIZE_MAX}."
+def _build_window_size_tooltip(max_samples: int) -> str:
+    return f"Number of most recent samples shown when the sliding window is enabled. Allowed range: {WINDOW_SIZE_MIN} to {max(WINDOW_SIZE_MIN, min(max_samples, WINDOW_SIZE_MAX))}."
+
+
+WINDOW_SIZE_TOOLTIP = _build_window_size_tooltip(WINDOW_SIZE_MAX)
 SCREENSHOT_SHORTCUT_TIPS = "Screenshot shortcuts: Ctrl+Shift+S, Cmd+Shift+S, or F12."
 
 
@@ -85,6 +89,44 @@ def format_plot_measurement_duration(start_time: datetime | None, end_time: date
     seconds, milliseconds = divmod(remainder_ms, 1000)
     hundredths = milliseconds // 10
     return f"{minutes:02d}:{seconds:02d}.{hundredths:02d}"
+
+
+def _format_status_time(value: datetime | None) -> str:
+    if value is None:
+        return "--:--:--"
+    return value.strftime("%H:%M:%S")
+
+
+def _format_status_duration(start_time: datetime | None, end_time: datetime | None) -> str:
+    if start_time is None or end_time is None:
+        return "--:--:--"
+    total_seconds = max(0, int((end_time - start_time).total_seconds()))
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+
+def build_plot_footer_status(samples: list[VisualizerSample], series_metadata: list[dict[str, object]]) -> str:
+    first_time = parse_plot_timestamp(samples[0].timestamp_raw) if samples else None
+    last_time = parse_plot_timestamp(samples[-1].timestamp_raw) if samples else None
+    parts = [
+        f"Start: {_format_status_time(first_time)}",
+        f"Duration: {_format_status_duration(first_time, last_time)}",
+    ]
+    for meta in series_metadata:
+        field_name = str(meta.get("field_name", "")).strip()
+        if not field_name:
+            continue
+        render_style = str(meta.get("render_style", "") or "").strip().lower()
+        if render_style != "line":
+            continue
+        if not bool(meta.get("statistic", True)):
+            continue
+        unit = str(meta.get("unit", "") or "")
+        parts.append(
+            f"{field_name} MAX/Mean/Current:{_format_plot_value(meta.get('max'), unit)}/{_format_plot_value(meta.get('mean'), unit)}/{_format_plot_value(meta.get('latest'), unit)}"
+        )
+    return " - ".join(parts)
 
 
 def advance_plot_measurement(measurement: PlotMeasurement | None, clicked_index: int) -> PlotMeasurement:
@@ -181,6 +223,12 @@ class VisualizerWindow:
             widget.show()
             widget.raise_()
             widget.activateWindow()
+
+    def update_runtime_context(self, *, project_name: str | None, output_dir: str | Path | None) -> None:
+        self.project_name = (project_name or "").strip() or None
+        self.output_dir = Path(output_dir) if output_dir is not None else None
+        if self._widget is not None:
+            self._widget.setWindowTitle(self._widget._build_window_title())
 
     def set_initial_position(self, *, slot_index: int, group_offset: int = 0) -> None:
         widget = self._ensure_widget()
@@ -283,20 +331,24 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._auto_refresh_checkbox = QCheckBox("Auto Refresh")
             self._auto_refresh_checkbox.setFocusPolicy(Qt.StrongFocus)
             self._auto_refresh_checkbox.setChecked(True)
+            self._auto_refresh_checkbox.setToolTip("Refresh the plot automatically whenever a new sample arrives.")
             self._auto_refresh_checkbox.stateChanged.connect(self._on_auto_refresh_changed)
 
             self._refresh_button = QPushButton("Refresh")
             self._refresh_button.setFocusPolicy(Qt.StrongFocus)
+            self._refresh_button.setToolTip("Clear all currently buffered samples and start the plot from an empty buffer.")
             self._refresh_button.clicked.connect(self._on_refresh_clicked)
 
             self._sliding_window_checkbox = QCheckBox("Sliding Window")
             self._sliding_window_checkbox.setFocusPolicy(Qt.StrongFocus)
             self._sliding_window_checkbox.setChecked(self._controller.runtime_sliding_window_enabled)
+            self._sliding_window_checkbox.setToolTip("Limit the plot to the most recent samples instead of showing the full buffer.")
             self._sliding_window_checkbox.stateChanged.connect(self._on_sliding_window_changed)
 
             self._legend_checkbox = QCheckBox("Legend")
             self._legend_checkbox.setFocusPolicy(Qt.StrongFocus)
             self._legend_checkbox.setChecked(self._controller.runtime_show_legend)
+            self._legend_checkbox.setToolTip("Show or hide the plot legend.")
             self._legend_checkbox.stateChanged.connect(self._on_legend_changed)
 
             self._window_size_spin = QSpinBox()
@@ -304,7 +356,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._window_size_spin.setSingleStep(50)
             self._window_size_spin.setKeyboardTracking(False)
             self._window_size_spin.setMinimumWidth(88)
-            self._window_size_spin.setToolTip(WINDOW_SIZE_TOOLTIP)
+            self._window_size_spin.setToolTip(_build_window_size_tooltip(self._controller.config.max_samples))
             self._window_size_spin.setValue(self._controller.runtime_window_size)
             self._window_size_spin.valueChanged.connect(self._on_window_size_changed)
 
@@ -312,11 +364,13 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             for preset in self._controller.window_size_presets:
                 button = QPushButton(str(preset))
                 button.setFocusPolicy(Qt.StrongFocus)
+                button.setToolTip(f"Set the sliding window size to {preset} samples.")
                 button.clicked.connect(lambda _checked=False, value=preset: self._set_window_preset(value))
                 self._preset_buttons.append(button)
 
             self._reset_button = QPushButton("Reset")
             self._reset_button.setFocusPolicy(Qt.StrongFocus)
+            self._reset_button.setToolTip("Restore the runtime window settings from the slot defaults.")
             self._reset_button.clicked.connect(self._on_reset_window_clicked)
 
             self._screenshot_button = QPushButton("Screenshot")
@@ -324,7 +378,9 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._screenshot_button.clicked.connect(self._on_screenshot_clicked)
             self._screenshot_button.setToolTip(SCREENSHOT_SHORTCUT_TIPS)
 
-            self._status_label = QLabel("Samples: 0 visible / 0 total")
+            self._status_label = QLabel("")
+            self._footer_label = QLabel(build_plot_footer_status([], []))
+            self._footer_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
             top_bar = QHBoxLayout()
             top_bar.addWidget(self._auto_refresh_checkbox)
@@ -334,7 +390,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             for button in self._preset_buttons:
                 top_bar.addWidget(button)
             window_size_label = QLabel("Window Size")
-            window_size_label.setToolTip(WINDOW_SIZE_TOOLTIP)
+            window_size_label.setToolTip(_build_window_size_tooltip(self._controller.config.max_samples))
             top_bar.addWidget(window_size_label)
             top_bar.addWidget(self._window_size_spin)
             top_bar.addWidget(self._reset_button)
@@ -345,6 +401,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             layout = QVBoxLayout()
             layout.addLayout(top_bar)
             layout.addWidget(self._canvas)
+            layout.addWidget(self._footer_label)
             self.setLayout(layout)
             self._screenshot_shortcuts = self._build_screenshot_shortcuts()
             self._measurement_shortcuts = self._build_measurement_shortcuts()
@@ -604,10 +661,13 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
                             "axis": target_axis,
                             "field_name": field.field_name,
                             "unit": field.unit,
+                            "statistic": getattr(field, "statistic", True),
+                            "render_style": field.render_style,
                             "color": line.get_color(),
                             "x_values": list(x_values),
                             "y_values": list(y_values),
                             "latest": numeric_values[-1],
+                            "mean": sum(numeric_values) / len(numeric_values),
                             "max": max(numeric_values),
                             "latest_index": max(i for i, value in enumerate(y_values) if value is not None),
                         }
@@ -620,9 +680,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
 
             self._apply_axis_settings(samples)
 
-            visible_count = len(samples)
-            total_count = len(self._controller.samples)
-            self._status_label.setText(f"Samples: {visible_count} visible / {total_count} total")
+            self._footer_label.setText(build_plot_footer_status(self._controller.samples, self._series_metadata))
 
             self._draw_end_labels()
             if plotted_y1 and self._controller.runtime_show_legend:
@@ -1091,7 +1149,7 @@ def _to_matplotlib_linestyle(value: str | None) -> str:
 def _format_plot_value(value: float | int | None, unit: str = "") -> str:
     if value is None:
         return "-"
-    formatted = f"{float(value):.3f}".rstrip("0").rstrip(".")
+    formatted = f"{float(value):.1f}".rstrip("0").rstrip(".")
     if unit:
         return f"{formatted} {unit}"
     return formatted

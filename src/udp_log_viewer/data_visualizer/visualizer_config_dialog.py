@@ -46,23 +46,32 @@ class VisualizerConfigDialog(QDialog):
         self._slot_spin = QSpinBox()
         self._slot_spin.setRange(1, SLOT_COUNT)
         self._slot_spin.setValue(self._current_slot + 1)
+        self._slot_spin.setToolTip("Choose which visualizer slot you want to configure.")
         self._slot_spin.valueChanged.connect(self._on_slot_changed)
         self._copy_button = QPushButton("COPY")
+        self._copy_button.setToolTip("Copy another slot configuration into the selected slot.")
         self._copy_button.clicked.connect(self._on_copy)
         self._clear_button = QPushButton("CLEAR")
+        self._clear_button.setToolTip("Reset the selected slot to its default plot visualizer configuration.")
         self._clear_button.clicked.connect(self._on_clear)
 
         self._enabled = QCheckBox("Slot Active")
+        self._enabled.setToolTip("Enable this slot so matching data can be routed into the visualizer window.")
         self._title = QLineEdit()
+        self._title.setToolTip("Window title shown for this plot visualizer slot.")
         self._filter = QLineEdit()
         self._filter.setMinimumWidth(420)
+        self._filter.setToolTip("Only log lines matching this filter are routed into this visualizer slot.")
         self._show_legend = QCheckBox("Show Legend")
+        self._show_legend.setToolTip("Show or hide the plot legend by default.")
         self._max_samples = QSpinBox()
         self._max_samples.setRange(50, 100000)
+        self._max_samples.setToolTip("Maximum number of samples retained in memory for this slot.")
         self._sliding_window_enabled = QCheckBox("Sliding Window Enabled by Default")
+        self._sliding_window_enabled.setToolTip("Enable the sliding window by default when the plot window opens.")
         self._default_window_size = QSpinBox()
         self._default_window_size.setRange(1, 5000)
-        self._default_window_size.setToolTip("Minimum: 1, Maximum: 5000.")
+        self._default_window_size.setToolTip("Number of samples shown by default when the sliding window is enabled.")
 
         slot_row = QHBoxLayout()
         slot_row.addWidget(QLabel("Slot"))
@@ -93,16 +102,21 @@ class VisualizerConfigDialog(QDialog):
         axes_layout = QGridLayout()
 
         self._x_label = QLineEdit()
+        self._x_label.setToolTip("Label shown on the X axis.")
 
         self._y1_label = QLineEdit()
+        self._y1_label.setToolTip("Label shown on the primary Y axis.")
         self._y1_log = QCheckBox("Y1 Logarithmic")
+        self._y1_log.setToolTip("Use logarithmic scaling for the primary Y axis.")
         self._y1_min = self._build_float_spin(None)
         self._y1_max = self._build_float_spin(None)
         self._y1_major_tick_step = self._build_float_spin(None)
         self._y1_max.valueChanged.connect(self._sync_tick_step_ranges)
 
         self._y2_label = QLineEdit()
+        self._y2_label.setToolTip("Label shown on the secondary Y axis.")
         self._y2_log = QCheckBox("Y2 Logarithmic")
+        self._y2_log.setToolTip("Use logarithmic scaling for the secondary Y axis.")
         self._y2_min = self._build_float_spin(None)
         self._y2_max = self._build_float_spin(None)
         self._y2_major_tick_step = self._build_float_spin(None)
@@ -132,20 +146,29 @@ class VisualizerConfigDialog(QDialog):
 
         root.addLayout(axes_layout)
 
-        self._table = QTableWidget(0, 10)
+        self._table = QTableWidget(0, 11)
         self._table.setHorizontalHeaderLabels(
-            ["Field Name", "Active", "Numeric", "Scale", "Plot", "Axis", "Render", "Color", "Line Style", "Unit"]
+            ["Field Name", "Active", "Numeric", "Scale", "Plot", "Statistic", "Axis", "Render", "Color", "Line Style", "Unit"]
         )
         self._table.verticalHeader().setVisible(False)
         self._table.setSelectionBehavior(self._table.SelectRows)
         self._table.setSelectionMode(self._table.SingleSelection)
         self._table.horizontalHeader().setStretchLastSection(True)
+        self._table.setToolTip("Configure the routed fields, axes, styles, and units for this plot visualizer slot.")
         root.addWidget(self._table, 1)
 
         buttons_row = QHBoxLayout()
         for text, handler in (("ADD", self._on_add), ("UP", self._on_up), ("DOWN", self._on_down), ("DEL", self._on_delete)):
             button = QPushButton(text)
             button.clicked.connect(handler)
+            if text == "ADD":
+                button.setToolTip("Add a new field row to this slot.")
+            elif text == "UP":
+                button.setToolTip("Move the selected field row up.")
+            elif text == "DOWN":
+                button.setToolTip("Move the selected field row down.")
+            else:
+                button.setToolTip("Delete the selected field row.")
             buttons_row.addWidget(button)
         buttons_row.addStretch(1)
         root.addLayout(buttons_row)
@@ -153,10 +176,13 @@ class VisualizerConfigDialog(QDialog):
         buttons_row = QHBoxLayout()
         buttons_row.addStretch(1)
         self._cancel_button = QPushButton("CANCEL")
+        self._cancel_button.setToolTip("Close the dialog without saving the current changes.")
         self._cancel_button.clicked.connect(self.reject)
         self._apply_button = QPushButton("APPLY")
+        self._apply_button.setToolTip("Apply the current slot changes without closing the dialog.")
         self._apply_button.clicked.connect(self._on_apply_clicked)
         self._save_button = QPushButton("SAVE")
+        self._save_button.setToolTip("Save the current slot changes and close the dialog.")
         self._save_button.clicked.connect(self._on_save_clicked)
         buttons_row.addWidget(self._cancel_button)
         buttons_row.addWidget(self._apply_button)
@@ -196,6 +222,10 @@ class VisualizerConfigDialog(QDialog):
         self._max_samples.setValue(config.max_samples)
         self._sliding_window_enabled.setChecked(config.sliding_window_enabled)
         self._default_window_size.setValue(config.default_window_size)
+        self._default_window_size.setRange(1, max(1, config.max_samples))
+        self._default_window_size.setToolTip(
+            f"Number of samples shown by default when the sliding window is enabled. Allowed range: 1 to {max(1, config.max_samples)}."
+        )
         self._x_label.setText(config.x_axis.label)
         self._y1_label.setText(config.y1_axis.label)
         self._y1_log.setChecked(config.y1_axis.logarithmic)
@@ -231,11 +261,12 @@ class VisualizerConfigDialog(QDialog):
                     numeric=self._combo_text(row, 2).lower() == "yes",
                     scale=int(self._combo_text(row, 3) or "10"),
                     plot=self._combo_text(row, 4).lower() == "yes",
-                    axis=self._combo_text(row, 5),
-                    render_style=self._combo_text(row, 6),
-                    color=self._combo_text(row, 7),
-                    line_style=self._combo_text(row, 8),
-                    unit=self._table.item(row, 9).text().strip() if self._table.item(row, 9) else "",
+                    statistic=self._combo_text(row, 5).lower() == "yes",
+                    axis=self._combo_text(row, 6),
+                    render_style=self._combo_text(row, 7),
+                    color=self._combo_text(row, 8),
+                    line_style=self._combo_text(row, 9),
+                    unit=self._table.item(row, 10).text().strip() if self._table.item(row, 10) else "",
                 )
             )
 
@@ -337,16 +368,18 @@ class VisualizerConfigDialog(QDialog):
         self._table.setCellWidget(row, 2, self._build_combo(("yes", "no"), "yes" if field.numeric else "no"))
         self._table.setCellWidget(row, 3, self._build_combo(self.SCALE_OPTIONS, str(field.scale)))
         self._table.setCellWidget(row, 4, self._build_combo(("yes", "no"), "yes" if field.plot else "no"))
-        self._table.setCellWidget(row, 5, self._build_combo(self.AXIS_OPTIONS, field.axis))
-        self._table.setCellWidget(row, 6, self._build_combo(self.RENDER_STYLE_OPTIONS, field.render_style))
-        self._table.setCellWidget(row, 7, self._build_combo(self.COLOR_OPTIONS, field.color))
-        self._table.setCellWidget(row, 8, self._build_combo(self.LINESTYLE_OPTIONS, field.line_style))
-        self._table.setItem(row, 9, QTableWidgetItem(field.unit))
+        self._table.setCellWidget(row, 5, self._build_combo(("yes", "no"), "yes" if field.statistic else "no"))
+        self._table.setCellWidget(row, 6, self._build_combo(self.AXIS_OPTIONS, field.axis))
+        self._table.setCellWidget(row, 7, self._build_combo(self.RENDER_STYLE_OPTIONS, field.render_style))
+        self._table.setCellWidget(row, 8, self._build_combo(self.COLOR_OPTIONS, field.color))
+        self._table.setCellWidget(row, 9, self._build_combo(self.LINESTYLE_OPTIONS, field.line_style))
+        self._table.setItem(row, 10, QTableWidgetItem(field.unit))
 
     def _build_combo(self, values: tuple[str, ...], current: str) -> QComboBox:
         combo = QComboBox()
         combo.addItems(list(values))
         combo.setCurrentText(current if current in values else values[0])
+        combo.setToolTip("Select the value for the current field setting.")
         return combo
 
     def _build_float_spin(self, value: float | None) -> QDoubleSpinBox:
@@ -355,6 +388,7 @@ class VisualizerConfigDialog(QDialog):
         spin.setDecimals(2)
         spin.setSpecialValueText("")
         spin.setValue(value if value is not None else 0)
+        spin.setToolTip("Leave empty to use automatic axis scaling, or enter a fixed numeric value.")
         return spin
 
     @staticmethod
@@ -388,7 +422,21 @@ class VisualizerConfigDialog(QDialog):
         return combo.currentText().strip() if combo is not None else ""
 
     def _on_add(self) -> None:
-        self._append_row(VisualizerFieldConfig("new_field", True, True, 10, False, "Y1", "Line", "gray", "solid", ""))
+        self._append_row(
+            VisualizerFieldConfig(
+                "new_field",
+                numeric=True,
+                scale=10,
+                plot=False,
+                statistic=True,
+                active=True,
+                axis="Y1",
+                render_style="Line",
+                color="gray",
+                line_style="solid",
+                unit="",
+            )
+        )
 
     def _on_copy(self) -> None:
         self._configs[self._current_slot] = self._read_form_config()
@@ -435,11 +483,12 @@ class VisualizerConfigDialog(QDialog):
             "numeric": self._combo_text(row, 2),
             "scale": self._combo_text(row, 3),
             "plot": self._combo_text(row, 4),
-            "axis": self._combo_text(row, 5),
-            "render_style": self._combo_text(row, 6),
-            "color": self._combo_text(row, 7),
-            "line_style": self._combo_text(row, 8),
-            "unit": self._table.item(row, 9).text() if self._table.item(row, 9) else "",
+            "statistic": self._combo_text(row, 5),
+            "axis": self._combo_text(row, 6),
+            "render_style": self._combo_text(row, 7),
+            "color": self._combo_text(row, 8),
+            "line_style": self._combo_text(row, 9),
+            "unit": self._table.item(row, 10).text() if self._table.item(row, 10) else "",
         }
 
     def _set_row_values(self, row: int, values: dict[str, str]) -> None:
@@ -448,8 +497,9 @@ class VisualizerConfigDialog(QDialog):
         self._table.cellWidget(row, 2).setCurrentText(values["numeric"])
         self._table.cellWidget(row, 3).setCurrentText(values["scale"])
         self._table.cellWidget(row, 4).setCurrentText(values["plot"])
-        self._table.cellWidget(row, 5).setCurrentText(values["axis"])
-        self._table.cellWidget(row, 6).setCurrentText(values["render_style"])
-        self._table.cellWidget(row, 7).setCurrentText(values["color"])
-        self._table.cellWidget(row, 8).setCurrentText(values["line_style"])
-        self._table.item(row, 9).setText(values["unit"])
+        self._table.cellWidget(row, 5).setCurrentText(values["statistic"])
+        self._table.cellWidget(row, 6).setCurrentText(values["axis"])
+        self._table.cellWidget(row, 7).setCurrentText(values["render_style"])
+        self._table.cellWidget(row, 8).setCurrentText(values["color"])
+        self._table.cellWidget(row, 9).setCurrentText(values["line_style"])
+        self._table.item(row, 10).setText(values["unit"])

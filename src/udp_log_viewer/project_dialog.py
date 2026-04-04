@@ -41,6 +41,7 @@ class ProjectDialog(QDialog):
         self._notes_max_chars = PROJECT_README_MAX_CHARS
         self._default_notes_text = ""
         self._notes_uses_default = False
+        self._default_root_dir = default_root_dir.expanduser() if default_root_dir is not None else None
 
         layout = QVBoxLayout(self)
         form = QFormLayout()
@@ -64,6 +65,7 @@ class ProjectDialog(QDialog):
         self._root_dir.textChanged.connect(self._update_preview)
 
         self._browse = QPushButton("Browse…", self)
+        self._browse.setToolTip("Choose the parent folder in which the project folder will be created.")
         self._browse.clicked.connect(self._browse_root_dir)
         root_row = QHBoxLayout()
         root_row.setContentsMargins(0, 0, 0, 0)
@@ -76,6 +78,7 @@ class ProjectDialog(QDialog):
         self._preview.setReadOnly(True)
         self._preview.setMinimumWidth(440)
         self._preview.setAlignment(Qt.AlignRight)
+        self._preview.setToolTip("Preview of the project folder that will be created when you save.")
 
         form.addRow("Project name", self._name)
         form.addRow("Root folder", root_widget)
@@ -88,6 +91,7 @@ class ProjectDialog(QDialog):
         self._notes.setLineWrapMode(QTextEdit.WidgetWidth)
         self._notes.setPlaceholderText("Project description")
         self._notes.setMinimumHeight(self.fontMetrics().lineSpacing() * 10 + 24)
+        self._notes.setToolTip("Markdown description stored in the project README file.")
         self._notes.textChanged.connect(self._enforce_notes_limit)
         layout.addWidget(self._notes, 1)
 
@@ -95,12 +99,18 @@ class ProjectDialog(QDialog):
         layout.addWidget(self._notes_info)
 
         buttons = QHBoxLayout()
+        self._new = QPushButton("NEW", self)
+        self._new.setToolTip("Reset the dialog to a new project with default folder and default description.")
+        self._new.clicked.connect(self._reset_to_defaults)
+        buttons.addWidget(self._new)
         buttons.addStretch(1)
         self._cancel = QPushButton("CANCEL", self)
+        self._cancel.setToolTip("Close the dialog without changing the active project.")
         self._cancel.clicked.connect(self.reject)
         self._save = QPushButton("SAVE", self)
         self._save.setDefault(True)
         self._save.setAutoDefault(True)
+        self._save.setToolTip("Create or update the project folder and save the project description.")
         self._save.clicked.connect(self.accept)
         buttons.addWidget(self._cancel)
         buttons.addWidget(self._save)
@@ -113,8 +123,8 @@ class ProjectDialog(QDialog):
             if existing_notes is not None:
                 self._notes.setPlainText(normalize_project_notes(existing_notes))
                 self._notes_uses_default = False
-        elif default_root_dir is not None:
-            self._root_dir.setText(str(default_root_dir.expanduser()))
+        elif self._default_root_dir is not None:
+            self._root_dir.setText(str(self._default_root_dir))
         if not self._notes.toPlainText().strip():
             self._set_default_notes_text(self.project_name())
         self._update_preview()
@@ -176,3 +186,9 @@ class ProjectDialog(QDialog):
         self._notes.blockSignals(False)
         self._notes_uses_default = True
         self._update_notes_info()
+
+    def _reset_to_defaults(self) -> None:
+        self._name.clear()
+        self._root_dir.setText(str(self._default_root_dir) if self._default_root_dir is not None else "")
+        self._set_default_notes_text("project")
+        self._update_preview()

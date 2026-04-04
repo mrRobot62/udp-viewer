@@ -35,6 +35,8 @@ def reset_pause_state(pause_buffer: Deque[str], *, maxlen: int = 2000) -> tuple[
 def stop_listener_thread(listener, *, wait_ms: int = 800) -> None:
     try:
         listener.stop()
-        listener.wait(wait_ms)
+        if listener.wait(wait_ms):
+            return
+        listener.wait(max(wait_ms, 2000))
     except Exception:
         pass

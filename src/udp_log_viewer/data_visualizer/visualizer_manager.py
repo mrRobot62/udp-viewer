@@ -55,7 +55,11 @@ class VisualizerManager:
     def set_runtime_context(self, *, project_name: str | None, output_dir: str | Path | None) -> None:
         self.project_name = project_name.strip() if project_name else None
         self.output_dir = Path(output_dir) if output_dir is not None else None
-        self.close_all_windows()
+        for window in self.windows_by_slot.values():
+            window.update_runtime_context(
+                project_name=self.project_name,
+                output_dir=self.output_dir,
+            )
 
     def process_log_line(self, line: str) -> int:
         accepted_samples = 0

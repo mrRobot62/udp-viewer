@@ -53,27 +53,37 @@ class LogicVisualizerConfigDialog(QDialog):
         self.sb_slot = QSpinBox()
         self.sb_slot.setRange(1, SLOT_COUNT)
         self.sb_slot.setValue(self._current_slot + 1)
+        self.sb_slot.setToolTip("Choose which logic visualizer slot you want to configure.")
         self.sb_slot.valueChanged.connect(self._on_slot_changed)
         self.btn_copy = QPushButton("COPY")
         self.btn_clear = QPushButton("CLEAR")
+        self.btn_copy.setToolTip("Copy another slot configuration into the selected logic slot.")
+        self.btn_clear.setToolTip("Reset the selected logic slot to its default configuration.")
         self.btn_copy.clicked.connect(self._on_copy)
         self.btn_clear.clicked.connect(self._on_clear)
 
         self.chk_enabled = QCheckBox("Slot Active")
+        self.chk_enabled.setToolTip("Enable this slot so matching data can be routed into the logic visualizer.")
 
         self.ed_title = QLineEdit()
+        self.ed_title.setToolTip("Window title shown for this logic visualizer slot.")
         self.ed_filter = QLineEdit()
         self.ed_filter.setMinimumWidth(420)
+        self.ed_filter.setToolTip("Only log lines matching this filter are routed into this logic slot.")
         self.chk_show_legend = QCheckBox()
+        self.chk_show_legend.setToolTip("Show or hide the legend by default in the logic visualizer window.")
 
         self.sb_max = QSpinBox()
         self.sb_max.setRange(100, 100000)
+        self.sb_max.setToolTip("Maximum number of samples retained in memory for this slot.")
         self.chk_sliding_default = QCheckBox()
+        self.chk_sliding_default.setToolTip("Enable the sliding window by default when the logic window opens.")
         self.sb_window_default = QSpinBox()
         self.sb_window_default.setRange(1, 5000)
-        self.sb_window_default.setToolTip("Minimum: 1, Maximum: 5000.")
+        self.sb_window_default.setToolTip("Number of samples shown by default when the sliding window is enabled.")
 
         self.ed_x_label = QLineEdit()
+        self.ed_x_label.setToolTip("Label shown on the X axis of the logic visualizer.")
 
         slot_row = QHBoxLayout()
         slot_row.addWidget(QLabel("Slot"))
@@ -114,6 +124,7 @@ class LogicVisualizerConfigDialog(QDialog):
         ])
         self.table.verticalHeader().setVisible(False)
         self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.setToolTip("Configure the logic channels, activation state, plotting, and colors for this slot.")
 
         layout.addWidget(QLabel("Logic Channels (max 8)"))
         layout.addWidget(self.table)
@@ -122,6 +133,8 @@ class LogicVisualizerConfigDialog(QDialog):
 
         self.btn_up = QPushButton("UP")
         self.btn_down = QPushButton("DOWN")
+        self.btn_up.setToolTip("Move the selected logic channel row up.")
+        self.btn_down.setToolTip("Move the selected logic channel row down.")
 
         self.btn_up.clicked.connect(self._move_up)
         self.btn_down.clicked.connect(self._move_down)
@@ -135,10 +148,13 @@ class LogicVisualizerConfigDialog(QDialog):
         buttons_row = QHBoxLayout()
         buttons_row.addStretch(1)
         self._cancel_button = QPushButton("CANCEL")
+        self._cancel_button.setToolTip("Close the dialog without saving the current changes.")
         self._cancel_button.clicked.connect(self.reject)
         self._apply_button = QPushButton("APPLY")
+        self._apply_button.setToolTip("Apply the current slot changes without closing the dialog.")
         self._apply_button.clicked.connect(self._on_apply_clicked)
         self._save_button = QPushButton("SAVE")
+        self._save_button.setToolTip("Save the current slot changes and close the dialog.")
         self._save_button.clicked.connect(self._on_save_clicked)
         buttons_row.addWidget(self._cancel_button)
         buttons_row.addWidget(self._apply_button)
@@ -179,6 +195,10 @@ class LogicVisualizerConfigDialog(QDialog):
         self.sb_max.setValue(config.max_samples)
         self.chk_sliding_default.setChecked(config.sliding_window_enabled)
         self.sb_window_default.setValue(config.default_window_size)
+        self.sb_window_default.setRange(1, max(1, config.max_samples))
+        self.sb_window_default.setToolTip(
+            f"Number of samples shown by default when the sliding window is enabled. Allowed range: 1 to {max(1, config.max_samples)}."
+        )
         self.ed_x_label.setText(config.x_axis.label)
         self.table.setRowCount(0)
         for field in config.fields[:8]:
@@ -301,16 +321,19 @@ class LogicVisualizerConfigDialog(QDialog):
         active_combo = QComboBox()
         active_combo.addItems(["yes", "no"])
         active_combo.setCurrentText("yes" if active else "no")
+        active_combo.setToolTip("Choose whether this logic channel is active.")
         self.table.setCellWidget(row, 1, active_combo)
 
         plot_combo = QComboBox()
         plot_combo.addItems(["yes", "no"])
         plot_combo.setCurrentText("yes" if plot else "no")
+        plot_combo.setToolTip("Choose whether this logic channel is drawn in the logic visualizer.")
         self.table.setCellWidget(row, 2, plot_combo)
 
         color_combo = QComboBox()
         color_combo.addItems(list(self.COLOR_OPTIONS))
         color_combo.setCurrentText(color if color in self.COLOR_OPTIONS else "gray")
+        color_combo.setToolTip("Choose the display color used for this logic channel.")
         self.table.setCellWidget(row, 3, color_combo)
 
     def _on_copy(self) -> None:

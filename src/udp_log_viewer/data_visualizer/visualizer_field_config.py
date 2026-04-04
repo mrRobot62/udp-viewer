@@ -7,6 +7,7 @@ class VisualizerFieldConfig:
     numeric: bool = True
     scale: int = 10
     plot: bool = True
+    statistic: bool = True
     active: bool = True
     axis: str = "Y1"
     render_style: str = "Line"

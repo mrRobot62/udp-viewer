@@ -179,6 +179,7 @@ class ConfigStore:
             parser.set(section, f"{prefix}numeric", str(bool(field.numeric)).lower())
             parser.set(section, f"{prefix}scale", str(field.scale))
             parser.set(section, f"{prefix}plot", str(bool(field.plot)).lower())
+            parser.set(section, f"{prefix}statistic", str(bool(field.statistic)).lower())
             parser.set(section, f"{prefix}axis", field.axis)
             parser.set(section, f"{prefix}render_style", field.render_style)
             parser.set(section, f"{prefix}color", field.color)
@@ -207,6 +208,7 @@ class ConfigStore:
                     numeric=self._get_bool(parser, section, f"{prefix}numeric", default=True),
                     scale=self._get_int(parser, section, f"{prefix}scale", default=10),
                     plot=self._get_bool(parser, section, f"{prefix}plot", default=True),
+                    statistic=self._get_bool(parser, section, f"{prefix}statistic", default=True),
                     axis=parser.get(section, f"{prefix}axis", fallback="Y1"),
                     render_style=parser.get(section, f"{prefix}render_style", fallback="Line"),
                     color=parser.get(section, f"{prefix}color", fallback="blue"),

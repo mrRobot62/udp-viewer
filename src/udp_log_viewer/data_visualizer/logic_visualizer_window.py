@@ -55,7 +55,11 @@ if TYPE_CHECKING:
 
 WINDOW_SIZE_MIN = 1
 WINDOW_SIZE_MAX = 5000
-WINDOW_SIZE_TOOLTIP = f"Sliding window size. Minimum: {WINDOW_SIZE_MIN}, Maximum: {WINDOW_SIZE_MAX}."
+def _build_window_size_tooltip(max_samples: int) -> str:
+    return f"Number of most recent samples shown when the sliding window is enabled. Allowed range: {WINDOW_SIZE_MIN} to {max(WINDOW_SIZE_MIN, min(max_samples, WINDOW_SIZE_MAX))}."
+
+
+WINDOW_SIZE_TOOLTIP = _build_window_size_tooltip(WINDOW_SIZE_MAX)
 SCREENSHOT_SHORTCUT_TIPS = "Screenshot shortcuts: Ctrl+Shift+S, Cmd+Shift+S, or F12."
 
 
@@ -86,6 +90,32 @@ def format_measurement_duration(start_time: datetime | None, end_time: datetime 
     minutes, remainder_ms = divmod(delta_ms, 60_000)
     seconds, milliseconds = divmod(remainder_ms, 1000)
     return f"{minutes:02d}:{seconds:02d}.{milliseconds:03d}"
+
+
+def _format_status_time(value: datetime | None) -> str:
+    if value is None:
+        return "--:--:--"
+    return value.strftime("%H:%M:%S")
+
+
+def _format_status_duration(start_time: datetime | None, end_time: datetime | None) -> str:
+    if start_time is None or end_time is None:
+        return "--:--:--"
+    total_seconds = max(0, int((end_time - start_time).total_seconds()))
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+
+def build_logic_footer_status(samples: list[VisualizerSample]) -> str:
+    first_time = parse_visualizer_timestamp(samples[0].timestamp_raw) if samples else None
+    last_time = parse_visualizer_timestamp(samples[-1].timestamp_raw) if samples else None
+    return " - ".join(
+        [
+            f"Start: {_format_status_time(first_time)}",
+            f"Duration: {_format_status_duration(first_time, last_time)}",
+        ]
+    )
 
 
 def choose_measurement_label_anchor(start_x: int, end_x: int, label_text: str) -> tuple[float, str]:
@@ -233,6 +263,12 @@ class LogicVisualizerWindow:
             widget.raise_()
             widget.activateWindow()
 
+    def update_runtime_context(self, *, project_name: str | None, output_dir: str | Path | None) -> None:
+        self.project_name = (project_name or "").strip() or None
+        self.output_dir = Path(output_dir) if output_dir is not None else None
+        if self._widget is not None:
+            self._widget.setWindowTitle(self._widget._build_window_title())
+
     def set_initial_position(self, *, slot_index: int, group_offset: int = 0) -> None:
         widget = self._ensure_widget()
         if widget is not None and hasattr(widget, "set_initial_position"):
@@ -337,20 +373,24 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._auto_refresh_checkbox = QCheckBox("Auto Refresh")
             self._auto_refresh_checkbox.setFocusPolicy(Qt.StrongFocus)
             self._auto_refresh_checkbox.setChecked(True)
+            self._auto_refresh_checkbox.setToolTip("Refresh the logic diagram automatically whenever a new sample arrives.")
             self._auto_refresh_checkbox.stateChanged.connect(self._on_auto_refresh_changed)
 
             self._refresh_button = QPushButton("Refresh")
             self._refresh_button.setFocusPolicy(Qt.StrongFocus)
+            self._refresh_button.setToolTip("Clear all currently buffered samples and start the logic diagram from an empty buffer.")
             self._refresh_button.clicked.connect(self._on_refresh_clicked)
 
             self._sliding_window_checkbox = QCheckBox("Sliding Window")
             self._sliding_window_checkbox.setFocusPolicy(Qt.StrongFocus)
             self._sliding_window_checkbox.setChecked(self._controller.runtime_sliding_window_enabled)
+            self._sliding_window_checkbox.setToolTip("Limit the logic diagram to the most recent samples instead of showing the full buffer.")
             self._sliding_window_checkbox.stateChanged.connect(self._on_sliding_window_changed)
 
             self._legend_checkbox = QCheckBox("Legend")
             self._legend_checkbox.setFocusPolicy(Qt.StrongFocus)
             self._legend_checkbox.setChecked(self._controller.runtime_show_legend)
+            self._legend_checkbox.setToolTip("Show or hide the legend.")
             self._legend_checkbox.stateChanged.connect(self._on_legend_changed)
 
             self._window_size_spin = QSpinBox()
@@ -358,7 +398,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._window_size_spin.setSingleStep(50)
             self._window_size_spin.setKeyboardTracking(False)
             self._window_size_spin.setMinimumWidth(88)
-            self._window_size_spin.setToolTip(WINDOW_SIZE_TOOLTIP)
+            self._window_size_spin.setToolTip(_build_window_size_tooltip(self._controller.config.max_samples))
             self._window_size_spin.setValue(self._controller.runtime_window_size)
             self._window_size_spin.valueChanged.connect(self._on_window_size_changed)
 
@@ -366,11 +406,13 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             for preset in self._controller.window_size_presets:
                 button = QPushButton(str(preset))
                 button.setFocusPolicy(Qt.StrongFocus)
+                button.setToolTip(f"Set the sliding window size to {preset} samples.")
                 button.clicked.connect(lambda _checked=False, value=preset: self._set_window_preset(value))
                 self._preset_buttons.append(button)
 
             self._reset_button = QPushButton("Reset")
             self._reset_button.setFocusPolicy(Qt.StrongFocus)
+            self._reset_button.setToolTip("Restore the runtime window settings from the slot defaults.")
             self._reset_button.clicked.connect(self._on_reset_window_clicked)
 
             self._screenshot_button = QPushButton("Screenshot")
@@ -378,7 +420,9 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._screenshot_button.clicked.connect(self._on_screenshot_clicked)
             self._screenshot_button.setToolTip(SCREENSHOT_SHORTCUT_TIPS)
 
-            self._status_label = QLabel("Samples: 0 visible / 0 total")
+            self._status_label = QLabel("")
+            self._footer_label = QLabel(build_logic_footer_status([]))
+            self._footer_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
             top_bar = QHBoxLayout()
             top_bar.addWidget(self._auto_refresh_checkbox)
@@ -388,7 +432,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             for button in self._preset_buttons:
                 top_bar.addWidget(button)
             window_size_label = QLabel("Window Size")
-            window_size_label.setToolTip(WINDOW_SIZE_TOOLTIP)
+            window_size_label.setToolTip(_build_window_size_tooltip(self._controller.config.max_samples))
             top_bar.addWidget(window_size_label)
             top_bar.addWidget(self._window_size_spin)
             top_bar.addWidget(self._reset_button)
@@ -399,6 +443,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             layout = QVBoxLayout()
             layout.addLayout(top_bar)
             layout.addWidget(self._canvas)
+            layout.addWidget(self._footer_label)
             self.setLayout(layout)
             self._screenshot_shortcuts = self._build_screenshot_shortcuts()
             self._measurement_shortcuts = self._build_measurement_shortcuts()
@@ -734,9 +779,7 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
                 plotted_count += 1
 
             self._apply_axis_settings(active_fields, len(visible_samples))
-            self._status_label.setText(
-                f"Samples: {len(visible_samples)} visible / {len(self._controller.samples)} total"
-            )
+            self._footer_label.setText(build_logic_footer_status(self._controller.samples))
 
             if plotted_count > 0 and self._controller.runtime_show_legend:
                 self._axes.legend(loc="upper right")
