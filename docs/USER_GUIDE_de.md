@@ -82,6 +82,21 @@ Erwartetes Verhalten:
 - die App kehrt in den getrennten Zustand zurück
 - die letzte Session kann weiter gespeichert werden
 
+### 3.4 Verhalten beim Beenden mit aktiven Live-Daten
+
+Wenn die Anwendung beendet wird, waehrend noch eine Verbindung aktiv ist
+und fuer die aktuelle Session bereits Logzeilen empfangen wurden,
+erscheint ein Bestaetigungsdialog.
+
+Auswahl:
+
+- `Save…`
+  oeffnet vor dem Beenden den normalen Save-Dialog
+- `No`
+  beendet die Anwendung ohne zusaetzlichen Export
+- `Cancel`
+  laesst die Anwendung geoeffnet
+
 ## 4. Laufende Bedienung während einer Session
 
 ### 4.1 `PAUSE`
@@ -160,13 +175,13 @@ Dabei passiert im aktuellen Verhalten:
 - `CONNECT` geht auf `OFF`
 - das laufende Live-Log wird sauber abgeschlossen
 - sofort wird eine neue Live-Logdatei mit aktuellem Zeitstempel vorbereitet
-- ein aktives `PROJECT` bleibt erhalten
+- ein aktives `PROJECT` wird auf den Default-Zustand zurueckgesetzt
 
 Praktischer Nutzen:
 
 - neue Testphase beginnen, ohne die Anwendung neu zu starten
 - neue Logdatei mit sauberem Anfang erzeugen
-- weiterhin im gleichen Projektordner weiterarbeiten
+- den naechsten Projektablauf wieder aus einem sauberen Default-Zustand starten
 
 ### 5.4 `COPY`
 
@@ -207,6 +222,8 @@ Verhalten:
   Zeitstempel
 - die Beschreibung ist auf `1024` Zeichen begrenzt
 - erlaubte Zeichen im Projektnamen sind `A-Za-z`, `0-9`, `_` und `-`
+- `NEW` setzt den Dialog auf leeren Projektnamen, Default-Ordner und
+  Standard-README-Text zurueck
 
 ![Projekt-Dialog mit mehrzeiliger Markdown-Beschreibung](../assets/screenshots/udp_log_viewer_project_config.png)
 
@@ -391,7 +408,8 @@ Bedeutung:
   zeigt immer nur die letzten `N` Samples
 - `Window Size`
   bestimmt die aktuell sichtbare Fenstergröße
-  gültiger Bereich im aktuellen Stand: `1..5000`
+  der gueltige Laufzeitbereich ergibt sich aus der jeweiligen
+  Slot-Konfiguration
 - `Legend`
   blendet die Legende im geöffneten Graph-Fenster zur Laufzeit ein oder aus
 - Presets
@@ -414,6 +432,25 @@ Zusätzliche Screenshot-Kürzel im Graph-Fenster:
 
 Auch die Graph-Fenster besitzen eine explizite `TAB`-Navigation über die
 sichtbaren Bedienelemente.
+
+Am unteren Rand jedes Graph-Fensters wird eine persistente
+Statuszeile angezeigt.
+
+Sie zeigt fuer Plot und Logic:
+
+- `Start`
+  Zeitstempel des ersten empfangenen Samples
+- `Duration`
+  Zeitspanne vom ersten bis zum zuletzt empfangenen Sample
+
+Im Plot-Fenster koennen zusaetzlich kompakte Serienstatistiken
+angezeigt werden:
+
+- `MAX/Mean/Current`
+
+Diese Statistik wird im Plot-Konfigurationsdialog ueber die Spalte
+`Statistic` pro Feld gesteuert. Nur Zeilen mit `Statistic=yes` werden in
+der Footer-Zeile beruecksichtigt.
 
 ### 9.2 Messung im Logic-Graphen
 

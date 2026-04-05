@@ -77,6 +77,21 @@ Expected behavior:
 - the application returns to the disconnected state
 - the last session can still be saved
 
+### 3.4 Exit behavior with active live data
+
+When the application is closed while it is still connected and the
+current session has already received log lines, a confirmation dialog is
+shown.
+
+Choices:
+
+- `Save…`
+  opens the normal save dialog before exit
+- `No`
+  closes the application without exporting an extra copy
+- `Cancel`
+  keeps the application open
+
 ## 4. Working During a Live Session
 
 ### 4.1 `PAUSE`
@@ -155,13 +170,13 @@ At the current behavior it:
 - switches `CONNECT` back to `OFF`
 - closes the current live log cleanly
 - immediately prepares a new live log file with a fresh timestamp
-- keeps an active `PROJECT` context
+- resets the active `PROJECT` context back to the default state
 
 This is useful to:
 
 - begin a new test phase without restarting the application
 - generate a fresh log file with a clean beginning
-- continue working in the same project folder
+- start the next project flow from a clean default state
 
 ### 5.4 `COPY`
 
@@ -202,6 +217,8 @@ Behavior:
   and the current timestamp
 - the description is limited to `1024` characters
 - allowed project-name characters are `A-Za-z`, `0-9`, `_`, and `-`
+- `NEW` resets the dialog to an empty project name, the default root
+  folder, and the default README text
 
 ![Project dialog with multi-line Markdown description](../assets/screenshots/udp_log_viewer_project_config.png)
 
@@ -340,7 +357,7 @@ Meaning:
   shows only the latest `N` samples
 - `Window Size`
   controls the currently visible window size
-  valid runtime range: `1..5000`
+  valid runtime range depends on the slot configuration
 - `Legend`
   toggles the legend in the open graph window at runtime
 - presets
@@ -364,6 +381,24 @@ Additional screenshot shortcuts in graph windows:
 
 The graph windows also provide explicit `TAB` navigation across the
 visible controls.
+
+At the bottom of each graph window a footer status line is shown.
+
+For both plot and logic windows it contains:
+
+- `Start`
+  timestamp of the first received sample
+- `Duration`
+  elapsed time from the first to the most recent received sample
+
+For plot windows it can additionally contain compact per-series
+statistics for selected `Line` series:
+
+- `MAX/Mean/Current`
+
+Those statistics are controlled in the plot configuration dialog via the
+`Statistic` column. Only rows with `Statistic=yes` are included in the
+footer.
 
 ### 9.2 Measuring in the logic graph
 

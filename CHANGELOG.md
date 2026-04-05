@@ -7,6 +7,44 @@ The format is based on Keep a Changelog and follows semantic versioning
 principles where applicable.
 
 ------------------------------------------------------------------------
+## 0.16.2 -- 2026-04-05
+### Fixed
+
+-   Prevented open plot and logic visualizer windows from closing when
+    the `PROJECT` dialog is saved
+-   Reset the active project context correctly on main-window `RESET`
+    so the next `PROJECT` dialog starts with empty project name, default
+    root folder, and default description
+-   Added a `NEW` action in the `PROJECT` dialog to restore the same
+    default project state without leaving the dialog
+-   Improved UDP listener restart robustness so follow-up runs can bind
+    and receive client logs more reliably after disconnect/reset cycles
+-   Added save confirmation on application exit when a live session is
+    still connected and has already received log data
+
+### Improved
+
+-   Added meaningful tooltips to the relevant dialog actions, check
+    boxes, and input widgets across the main window, project dialog,
+    preferences dialog, slot-copy dialog, and visualizer dialogs
+-   Replaced the static `Window Size` tooltip with a tooltip derived
+    from the actual slot configuration so the displayed max value is no
+    longer misleading
+-   Added a persistent footer status line to plot and logic graph
+    windows showing session start time and duration
+-   Extended plot footer statistics to support compact
+    `MAX/Mean/Current` output with at most one decimal place
+-   Added a per-field `Statistic` switch to the plot configuration so
+    only selected `Line` series appear in the footer statistics
+
+### Technical
+
+-   Bumped application and package version metadata to `0.16.2`
+-   Expanded automated coverage for exit-save behavior, project reset,
+    footer status rendering, statistic persistence, tooltip helpers, and
+    visualizer window context handling
+
+------------------------------------------------------------------------
 ## 0.16.0 -- 2026-04-01
 ### Added
 
