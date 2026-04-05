@@ -44,7 +44,12 @@ Screenshot assets are stored under [assets/screenshots](assets/screenshots).
 
 ### Plot Visualizer Tooltip
 
+**Timebased visualizing**
 ![Plot visualizer with legend, target lines, and tooltip values](assets/screenshots/udp_log_viewer_plot_tooltip.png)
+
+**Measuring time**
+
+![Measure timing](assets/screenshots/udp_log_viewer_plot_measure3.png)
 
 ### Logic Measurement
 
