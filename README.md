@@ -49,7 +49,7 @@ Screenshot assets are stored under [assets/screenshots](assets/screenshots).
 ### Logic Measurement
 
 **Measuring HIGH/LOW phase**
-![Logic visualizer signal measurement with red and blue markers]assets/screenshots/udp_log_viewer_logic_signal.png)
+![Logic visualizer signal measurement with red and blue markers](assets/screenshots/udp_log_viewer_logic_signal.png)
 
 **Measuring signal period**
 ![Logic visualizer period measurement with red and blue markers](assets/screenshots/udp_log_viewer_logic_period.png)
