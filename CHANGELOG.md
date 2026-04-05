@@ -7,6 +7,14 @@ The format is based on Keep a Changelog and follows semantic versioning
 principles where applicable.
 
 ------------------------------------------------------------------------
+## 0.16.3 -- Unreleased
+### Fixed
+
+-   Show the exit save dialog whenever the current session already
+    contains log data, even after the listener has been disconnected or
+    the main window is closed via the window close action
+
+------------------------------------------------------------------------
 ## 0.16.2 -- 2026-04-05
 ### Fixed
 

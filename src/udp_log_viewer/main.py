@@ -1809,15 +1809,39 @@ class MainWindow(QMainWindow):
             QApplication.clipboard().setText(self.log.toPlainText())
             self.statusBar().showMessage("Copied all", 2000)
 
+    def _current_session_log_path(self) -> Path | None:
+        if self._connection_state.active_path is not None:
+            return self._connection_state.active_path
+        if self._connection_state.last_session_path is not None and self._connection_state.last_session_path.exists():
+            return self._connection_state.last_session_path
+        return None
+
+    def _has_session_logs_to_save(self) -> bool:
+        if self._connection_state.rx_lines > 0:
+            return True
+
+        session_log_path = MainWindow._current_session_log_path(self)
+        if session_log_path is None:
+            return False
+
+        try:
+            with session_log_path.open("r", encoding="utf-8", errors="replace") as handle:
+                for line in handle:
+                    if line.strip() and not line.startswith("#"):
+                        return True
+        except Exception:
+            return True
+        return False
+
     def _confirm_save_logs_before_exit(self) -> bool:
-        if self._listener is None or self._connection_state.rx_lines <= 0:
+        if not MainWindow._has_session_logs_to_save(self):
             return True
 
         mb = QMessageBox(self)
         mb.setWindowTitle("Exit")
         mb.setIcon(QMessageBox.Question)
         mb.setText("Save logs before exit?")
-        mb.setInformativeText("The current session is still connected and contains received log data.")
+        mb.setInformativeText("The current session contains received log data.")
         yes = mb.addButton("Save…", QMessageBox.YesRole)
         no = mb.addButton("No", QMessageBox.NoRole)
         cancel = mb.addButton("Cancel", QMessageBox.RejectRole)
