@@ -14,7 +14,7 @@ from udp_log_viewer.udp_log_utils import compile_patterns, match_exclude, match_
 
 
 def test_package_version_is_consistent() -> None:
-    assert __version__ == "0.16.1"
+    assert __version__ == "0.16.2"
     assert __display_version__.startswith(__version__)
 
 
