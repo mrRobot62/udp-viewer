@@ -496,17 +496,17 @@ class MainWindow(QMainWindow):
 
     # ---------------- INI helpers (config.ini) ----------------
 
-    def _ini_read(self) -> dict:
-        return self._settings_store.ini_read()
+    # def _ini_read(self) -> dict:
+    #     return self._settings_store.ini_read()
 
-    def _ini_get(self, section: str, key: str, default: str = "") -> str:
-        return self._settings_store.ini_get(section, key, default)
+    # def _ini_get(self, section: str, key: str, default: str = "") -> str:
+    #     return self._settings_store.ini_get(section, key, default)
 
-    def _ini_set(self, section: str, key: str, value: str) -> None:
-        try:
-            self._settings_store.ini_set(section, key, value)
-        except Exception as e:
-            self.log.appendPlainText(f"[UI/WARN] config.ini write failed: {e}")
+    # def _ini_set(self, section: str, key: str, value: str) -> None:
+    #     try:
+    #         self._settings_store.ini_set(section, key, value)
+    #     except Exception as e:
+    #         self.log.appendPlainText(f"[UI/WARN] config.ini write failed: {e}")
 
     # ---------------- UI ----------------
 
@@ -970,11 +970,11 @@ class MainWindow(QMainWindow):
 
     # ---------------- Slot persistence ----------------
 
-    def _load_slot_list_from_json(self, raw: str) -> List[PatternSlot]:
-        return slots_from_json(raw, SLOT_COUNT)
+    # def _load_slot_list_from_json(self, raw: str) -> List[PatternSlot]:
+    #     return slots_from_json(raw, SLOT_COUNT)
 
-    def _save_slot_list_to_json(self, slots: List[PatternSlot]) -> str:
-        return slots_to_json(slots)
+    # def _save_slot_list_to_json(self, slots: List[PatternSlot]) -> str:
+    #     return slots_to_json(slots)
 
     def _load_filter_slots(self) -> None:
         self._filter_slots = strip_slot_colors(self._settings_store.load_rule_slots(
@@ -2023,9 +2023,9 @@ class MainWindow(QMainWindow):
             )
 
     # --- Live logfile status ---
-    @staticmethod
-    def _format_bytes(n: int) -> str:
-        return format_bytes(n)
+    # @staticmethod
+    # def _format_bytes(n: int) -> str:
+    #     return format_bytes(n)
 
     @staticmethod
     def _format_timestamp_prefix(dt: datetime) -> str:
