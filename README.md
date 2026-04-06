@@ -20,7 +20,8 @@ Complete German documentation:
 - [docs/DOKUMENTATION_de.md](docs/DOKUMENTATION_de.md)
 
 ## HowTo use UDP on EPS32 Demo project
-please take a look here: https://github.com/mrRobot62/esp-udp-logging.git
+If you want to play around with an ESP32 & logging, please visit this demo repository
+https://github.com/mrRobot62/esp-udp-logging.git
 
 ## Windows-User
 please use setup.exe to install this viewer
