@@ -43,11 +43,32 @@ def test_stop_listener_thread_invokes_stop_and_wait() -> None:
         def stop(self) -> None:
             self.stopped = True
 
-        def wait(self, timeout: int) -> None:
+        def wait(self, timeout: int) -> bool:
             self.waited = timeout
+            return True
 
     fake = FakeListener()
     stop_listener_thread(fake, wait_ms=123)
 
     assert fake.stopped is True
     assert fake.waited == 123
+
+
+def test_stop_listener_thread_retries_with_longer_timeout_when_wait_fails() -> None:
+    class FakeListener:
+        def __init__(self) -> None:
+            self.stopped = False
+            self.wait_calls = []
+
+        def stop(self) -> None:
+            self.stopped = True
+
+        def wait(self, timeout: int) -> bool:
+            self.wait_calls.append(timeout)
+            return False
+
+    fake = FakeListener()
+    stop_listener_thread(fake, wait_ms=123)
+
+    assert fake.stopped is True
+    assert fake.wait_calls == [123, 2000]

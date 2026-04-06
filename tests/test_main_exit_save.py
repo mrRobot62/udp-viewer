@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from pathlib import Path
 
 from udp_log_viewer.main import MainWindow
 
@@ -49,9 +50,21 @@ class _DummyMessageBox:
 
 
 class _DummyExitWindow:
-    def __init__(self, *, connected: bool, rx_lines: int, save_result="saved") -> None:
+    def __init__(
+        self,
+        *,
+        connected: bool,
+        rx_lines: int,
+        save_result="saved",
+        active_path: Path | None = None,
+        last_session_path: Path | None = None,
+    ) -> None:
         self._listener = object() if connected else None
-        self._connection_state = SimpleNamespace(rx_lines=rx_lines)
+        self._connection_state = SimpleNamespace(
+            rx_lines=rx_lines,
+            active_path=active_path,
+            last_session_path=last_session_path,
+        )
         self.save_calls = 0
         self.save_result = save_result
 
@@ -60,13 +73,44 @@ class _DummyExitWindow:
         return self.save_result
 
 
-def test_exit_save_prompt_is_skipped_without_connection() -> None:
+def test_exit_save_prompt_is_shown_without_connection_when_session_has_received_data(monkeypatch) -> None:
+    _DummyMessageBox.instances.clear()
+    _DummyMessageBox.clicked = "No"
+    monkeypatch.setattr("udp_log_viewer.main.QMessageBox", _DummyMessageBox)
     window = _DummyExitWindow(connected=False, rx_lines=10)
 
     allowed = MainWindow._confirm_save_logs_before_exit(window)
 
     assert allowed is True
     assert window.save_calls == 0
+    assert len(_DummyMessageBox.instances) == 1
+
+
+def test_exit_yes_without_connection_still_uses_regular_save_flow(monkeypatch) -> None:
+    _DummyMessageBox.instances.clear()
+    _DummyMessageBox.clicked = "Save…"
+    monkeypatch.setattr("udp_log_viewer.main.QMessageBox", _DummyMessageBox)
+    window = _DummyExitWindow(connected=False, rx_lines=10, save_result="/tmp/udp_log_20260405_120000.txt")
+
+    allowed = MainWindow._confirm_save_logs_before_exit(window)
+
+    assert allowed is True
+    assert window.save_calls == 1
+
+
+def test_exit_save_prompt_is_shown_for_disconnected_session_with_saved_live_log(monkeypatch, tmp_path: Path) -> None:
+    _DummyMessageBox.instances.clear()
+    _DummyMessageBox.clicked = "No"
+    monkeypatch.setattr("udp_log_viewer.main.QMessageBox", _DummyMessageBox)
+    live_log = tmp_path / "udp_live_20260405_120000.txt"
+    live_log.write_text("# UDP Log Viewer live session\n20260405-12:00:00.000 line 1\n", encoding="utf-8")
+    window = _DummyExitWindow(connected=False, rx_lines=0, last_session_path=live_log)
+
+    allowed = MainWindow._confirm_save_logs_before_exit(window)
+
+    assert allowed is True
+    assert window.save_calls == 0
+    assert len(_DummyMessageBox.instances) == 1
 
 
 def test_exit_save_prompt_is_skipped_without_received_data() -> None:
@@ -124,4 +168,3 @@ def test_exit_no_allows_exit_without_save(monkeypatch) -> None:
 
     assert allowed is True
     assert window.save_calls == 0
-

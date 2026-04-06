@@ -496,17 +496,17 @@ class MainWindow(QMainWindow):
 
     # ---------------- INI helpers (config.ini) ----------------
 
-    def _ini_read(self) -> dict:
-        return self._settings_store.ini_read()
+    # def _ini_read(self) -> dict:
+    #     return self._settings_store.ini_read()
 
-    def _ini_get(self, section: str, key: str, default: str = "") -> str:
-        return self._settings_store.ini_get(section, key, default)
+    # def _ini_get(self, section: str, key: str, default: str = "") -> str:
+    #     return self._settings_store.ini_get(section, key, default)
 
-    def _ini_set(self, section: str, key: str, value: str) -> None:
-        try:
-            self._settings_store.ini_set(section, key, value)
-        except Exception as e:
-            self.log.appendPlainText(f"[UI/WARN] config.ini write failed: {e}")
+    # def _ini_set(self, section: str, key: str, value: str) -> None:
+    #     try:
+    #         self._settings_store.ini_set(section, key, value)
+    #     except Exception as e:
+    #         self.log.appendPlainText(f"[UI/WARN] config.ini write failed: {e}")
 
     # ---------------- UI ----------------
 
@@ -970,11 +970,11 @@ class MainWindow(QMainWindow):
 
     # ---------------- Slot persistence ----------------
 
-    def _load_slot_list_from_json(self, raw: str) -> List[PatternSlot]:
-        return slots_from_json(raw, SLOT_COUNT)
+    # def _load_slot_list_from_json(self, raw: str) -> List[PatternSlot]:
+    #     return slots_from_json(raw, SLOT_COUNT)
 
-    def _save_slot_list_to_json(self, slots: List[PatternSlot]) -> str:
-        return slots_to_json(slots)
+    # def _save_slot_list_to_json(self, slots: List[PatternSlot]) -> str:
+    #     return slots_to_json(slots)
 
     def _load_filter_slots(self) -> None:
         self._filter_slots = strip_slot_colors(self._settings_store.load_rule_slots(
@@ -1809,15 +1809,39 @@ class MainWindow(QMainWindow):
             QApplication.clipboard().setText(self.log.toPlainText())
             self.statusBar().showMessage("Copied all", 2000)
 
+    def _current_session_log_path(self) -> Path | None:
+        if self._connection_state.active_path is not None:
+            return self._connection_state.active_path
+        if self._connection_state.last_session_path is not None and self._connection_state.last_session_path.exists():
+            return self._connection_state.last_session_path
+        return None
+
+    def _has_session_logs_to_save(self) -> bool:
+        if self._connection_state.rx_lines > 0:
+            return True
+
+        session_log_path = MainWindow._current_session_log_path(self)
+        if session_log_path is None:
+            return False
+
+        try:
+            with session_log_path.open("r", encoding="utf-8", errors="replace") as handle:
+                for line in handle:
+                    if line.strip() and not line.startswith("#"):
+                        return True
+        except Exception:
+            return True
+        return False
+
     def _confirm_save_logs_before_exit(self) -> bool:
-        if self._listener is None or self._connection_state.rx_lines <= 0:
+        if not MainWindow._has_session_logs_to_save(self):
             return True
 
         mb = QMessageBox(self)
         mb.setWindowTitle("Exit")
         mb.setIcon(QMessageBox.Question)
         mb.setText("Save logs before exit?")
-        mb.setInformativeText("The current session is still connected and contains received log data.")
+        mb.setInformativeText("The current session contains received log data.")
         yes = mb.addButton("Save…", QMessageBox.YesRole)
         no = mb.addButton("No", QMessageBox.NoRole)
         cancel = mb.addButton("Cancel", QMessageBox.RejectRole)
@@ -1999,9 +2023,9 @@ class MainWindow(QMainWindow):
             )
 
     # --- Live logfile status ---
-    @staticmethod
-    def _format_bytes(n: int) -> str:
-        return format_bytes(n)
+    # @staticmethod
+    # def _format_bytes(n: int) -> str:
+    #     return format_bytes(n)
 
     @staticmethod
     def _format_timestamp_prefix(dt: datetime) -> str:
