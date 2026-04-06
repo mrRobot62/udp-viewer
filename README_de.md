@@ -23,7 +23,7 @@ Vollständige englische Dokumentation:
 
 ## Demo-Projekt zur UDP-Nutzung auf ESP32
 
-Ein passendes Demo-Projekt gibt es hier:
+Wenn du mit einem ESP32 und Logging experimentieren möchtest, findest du in diesem Demo-Repository ein passendes Beispiel:
 https://github.com/mrRobot62/esp-udp-logging.git
 
 ## Windows-Nutzer
