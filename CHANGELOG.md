@@ -7,12 +7,26 @@ The format is based on Keep a Changelog and follows semantic versioning
 principles where applicable.
 
 ------------------------------------------------------------------------
-## 0.16.3 -- Unreleased
+## 0.16.3 -- 2026-04-06
 ### Fixed
 
 -   Show the exit save dialog whenever the current session already
     contains log data, even after the listener has been disconnected or
     the main window is closed via the window close action
+
+-   Retry listener shutdown with a longer wait timeout when the first
+    stop attempt does not finish in time
+
+### Improved
+
+-   Updated the English and German README demo-project wording and
+    regenerated the bundled README PDFs
+
+### Technical
+
+-   Bumped application and package version metadata to `0.16.3`
+-   Added regression coverage for disconnected-session exit-save
+    handling and listener shutdown retry behavior
 
 ------------------------------------------------------------------------
 ## 0.16.2 -- 2026-04-05

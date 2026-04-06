@@ -13,7 +13,7 @@ Complete English documentation:
 
 - [docs/DOCUMENTATION_en.md](docs/DOCUMENTATION_en.md)
 - [docs/USER_GUIDE_en.md](docs/USER_GUIDE_en.md)
-- [docs/RELEASE_0.16.2.md](docs/RELEASE_0.16.2.md)
+- [docs/RELEASE_0.16.3.md](docs/RELEASE_0.16.3.md)
 
 Complete German documentation:
 

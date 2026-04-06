@@ -13,13 +13,13 @@ Vollständige deutsche Dokumentation:
 
 - [docs/DOKUMENTATION_de.md](docs/DOKUMENTATION_de.md)
 - [docs/USER_GUIDE_de.md](docs/USER_GUIDE_de.md)
-- [docs/RELEASE_0.16.2_de.md](docs/RELEASE_0.16.2_de.md)
+- [docs/RELEASE_0.16.3_de.md](docs/RELEASE_0.16.3_de.md)
 
 Vollständige englische Dokumentation:
 
 - [docs/DOCUMENTATION_en.md](docs/DOCUMENTATION_en.md)
 - [docs/USER_GUIDE_en.md](docs/USER_GUIDE_en.md)
-- [docs/RELEASE_0.16.2.md](docs/RELEASE_0.16.2.md)
+- [docs/RELEASE_0.16.3.md](docs/RELEASE_0.16.3.md)
 
 ## Demo-Projekt zur UDP-Nutzung auf ESP32
 
