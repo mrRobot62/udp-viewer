@@ -23,6 +23,7 @@ from .preferences import AppPreferences, FOOTER_PRESET_NAME_MAX_LENGTH, FooterPr
 
 
 class PreferencesDialog(QDialog):
+    FOOTER_PRESET_VISIBLE_ROWS = 8
     FOOTER_SCOPE_OPTIONS: tuple[tuple[str, FooterPresetScope], ...] = (
         ("All", "all"),
         ("Plot", "plot"),
@@ -33,7 +34,7 @@ class PreferencesDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("Preferences")
         self.setModal(True)
-        self.resize(620, 420)
+        self.resize(1240, 760)
 
         root = QVBoxLayout(self)
 
@@ -165,7 +166,8 @@ class PreferencesDialog(QDialog):
             "Reusable footer format presets for plot and logic visualizer slot dialogs."
         )
         self._footer_presets_table.itemChanged.connect(self._on_footer_preset_item_changed)
-        layout.addWidget(self._footer_presets_table)
+        self._configure_footer_presets_table_size()
+        layout.addWidget(self._footer_presets_table, 1)
 
         footer_buttons = QHBoxLayout()
         for text, handler, tip in (
@@ -198,7 +200,6 @@ class PreferencesDialog(QDialog):
         form.addRow("Logic Sliding Window Default", self._logic_sliding_default)
         form.addRow("Logic Default Window Size", self._logic_window_size_default)
         layout.addLayout(form)
-        layout.addStretch(1)
         return tab
 
     @staticmethod
@@ -311,6 +312,13 @@ class PreferencesDialog(QDialog):
         combo.setCurrentText(self._footer_scope_label(scope))
         combo.setToolTip("Choose whether this preset is available for all visualizers, only plot, or only logic.")
         return combo
+
+    def _configure_footer_presets_table_size(self) -> None:
+        header_height = self._footer_presets_table.horizontalHeader().height()
+        row_height = self._footer_presets_table.verticalHeader().defaultSectionSize()
+        frame_height = self._footer_presets_table.frameWidth() * 2
+        visible_height = header_height + (row_height * self.FOOTER_PRESET_VISIBLE_ROWS) + frame_height + 6
+        self._footer_presets_table.setMinimumHeight(visible_height)
 
     @classmethod
     def _footer_scope_label(cls, scope: FooterPresetScope) -> str:

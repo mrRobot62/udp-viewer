@@ -117,3 +117,15 @@ def test_preferences_dialog_trims_footer_preset_names_to_max_length() -> None:
     assert item.text() == "123456789012"[:FOOTER_PRESET_NAME_MAX_LENGTH]
     assert dialog._footer_scope_combo(4).currentData() == "all"
     dialog.close()
+
+
+def test_preferences_dialog_footer_preset_table_shows_at_least_eight_rows() -> None:
+    _app()
+    dialog = PreferencesDialog(AppPreferences())
+
+    row_height = dialog._footer_presets_table.verticalHeader().defaultSectionSize()
+    header_height = dialog._footer_presets_table.horizontalHeader().height()
+
+    assert dialog.width() >= 1200
+    assert dialog._footer_presets_table.minimumHeight() >= header_height + (8 * row_height)
+    dialog.close()
