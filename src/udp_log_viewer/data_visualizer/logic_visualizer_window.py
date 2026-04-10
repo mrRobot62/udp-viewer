@@ -6,7 +6,14 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 import re
 
-from .footer_status import build_footer_context, format_footer_template, parse_footer_timestamp
+from .footer_status import (
+    build_footer_context,
+    format_footer_template,
+    format_footer_value,
+    parse_footer_timestamp,
+    resolve_footer_context_placeholder,
+    split_footer_placeholder,
+)
 from .visualizer_sample import VisualizerSample
 from ..preferences import DEFAULT_VISUALIZER_PRESETS
 from ..project_runtime import build_project_filename, build_project_title_suffix
@@ -87,15 +94,28 @@ def format_measurement_duration(start_time: datetime | None, end_time: datetime 
     return f"{minutes:02d}:{seconds:02d}.{milliseconds:03d}"
 
 
-def _build_logic_field_lookup(samples: list[VisualizerSample]) -> dict[str, str]:
+def _build_logic_field_lookup(samples: list[VisualizerSample]) -> dict[str, float]:
     if not samples:
         return {}
     latest_values = samples[-1].values_by_name
     return {
-        str(field_name).strip().lower(): str(int(float(value))) if value is not None else "--"
+        str(field_name).strip().lower(): float(value)
         for field_name, value in latest_values.items()
-        if str(field_name).strip()
+        if str(field_name).strip() and value is not None
     }
+
+
+def _resolve_logic_footer_placeholder(key: str, context: dict[str, object], field_lookup: dict[str, float]) -> str | None:
+    context_value = resolve_footer_context_placeholder(key, context)
+    if context_value is not None:
+        return context_value
+    field_name, format_spec = split_footer_placeholder(key)
+    value = field_lookup.get(field_name.lower())
+    if value is None:
+        return None
+    if format_spec:
+        return format_footer_value(value, format_spec)
+    return str(int(value))
 
 
 def build_logic_footer_status(samples: list[VisualizerSample], footer_status_format: str = "") -> str:
@@ -103,7 +123,7 @@ def build_logic_footer_status(samples: list[VisualizerSample], footer_status_for
     field_lookup = _build_logic_field_lookup(samples)
     formatted = format_footer_template(
         footer_status_format,
-        lambda key: context.get(key.strip().lower()) or field_lookup.get(key.strip().lower()),
+        lambda key: _resolve_logic_footer_placeholder(key, context, field_lookup),
     )
     if formatted:
         return formatted

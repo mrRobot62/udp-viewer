@@ -129,3 +129,15 @@ def test_preferences_dialog_footer_preset_table_shows_at_least_eight_rows() -> N
     assert dialog.width() >= 1200
     assert dialog._footer_presets_table.minimumHeight() >= header_height + (8 * row_height)
     dialog.close()
+
+
+def test_preferences_dialog_multiline_footer_editor_updates_selected_preset() -> None:
+    _app()
+    dialog = PreferencesDialog(AppPreferences())
+
+    dialog._footer_presets_table.selectRow(0)
+    dialog._footer_format_editor.setPlainText("Samples:{samples:04d}\nTemp:{Thot:03.1f}")
+    prefs = dialog.result_preferences()
+
+    assert prefs.footer_status_presets[0].format == "Samples:{samples:04d}\nTemp:{Thot:03.1f}"
+    dialog.close()

@@ -75,7 +75,7 @@ class LogicVisualizerConfigDialog(QDialog):
         self.ed_footer_format = QLineEdit()
         self.ed_footer_format.setToolTip(
             "Optional footer format. Use {samples}, {start}, {end}, {duration}, or channel names like {ch0}. "
-            "Use \\n for a line break."
+            "Use format specs like {ch0:02.0f}. Use \\n for a line break."
         )
         self.cb_footer_preset = QComboBox()
         self.cb_footer_preset.addItem("Custom", "")

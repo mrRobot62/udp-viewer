@@ -6,7 +6,14 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 import re
 
-from .footer_status import build_footer_context, format_footer_template, parse_footer_timestamp
+from .footer_status import (
+    build_footer_context,
+    format_footer_template,
+    format_footer_value,
+    parse_footer_timestamp,
+    resolve_footer_context_placeholder,
+    split_footer_placeholder,
+)
 from .visualizer_axis_config import VisualizerAxisConfig
 from .visualizer_config import VisualizerConfig
 from .visualizer_sample import VisualizerSample
@@ -112,18 +119,20 @@ def _build_plot_field_lookup(series_metadata: list[dict[str, object]]) -> dict[s
     }
 
 
-def _resolve_plot_footer_placeholder(key: str, context: dict[str, str], series_metadata: list[dict[str, object]]) -> str | None:
+def _resolve_plot_footer_placeholder(key: str, context: dict[str, object], series_metadata: list[dict[str, object]]) -> str | None:
     normalized = key.strip()
     if not normalized:
         return None
-    direct = context.get(normalized.lower())
+    direct = resolve_footer_context_placeholder(normalized, context)
     if direct is not None:
         return direct
 
-    metric_name = normalized.split(":", 1)
+    parts = normalized.split(":")
     field_lookup = _build_plot_field_lookup(series_metadata)
-    if len(metric_name) == 2:
-        metric, field_name = metric_name[0].strip().lower(), metric_name[1].strip().lower()
+    if len(parts) >= 2 and parts[0].strip().lower() in {"current", "latest", "mean", "max"}:
+        metric = parts[0].strip().lower()
+        field_name = parts[1].strip().lower()
+        format_spec = ":".join(parts[2:]).strip() if len(parts) > 2 else ""
         meta = field_lookup.get(field_name)
         if meta is None:
             return None
@@ -137,12 +146,13 @@ def _resolve_plot_footer_placeholder(key: str, context: dict[str, str], series_m
         metric_key = metric_aliases.get(metric)
         if metric_key is None:
             return None
-        return _format_plot_value(meta.get(metric_key), unit)
+        return _format_plot_value(meta.get(metric_key), unit, format_spec=format_spec)
 
-    meta = field_lookup.get(normalized.lower())
+    field_name, format_spec = split_footer_placeholder(normalized)
+    meta = field_lookup.get(field_name.lower())
     if meta is None:
         return None
-    return _format_plot_value(meta.get("latest"), str(meta.get("unit", "") or ""))
+    return _format_plot_value(meta.get("latest"), str(meta.get("unit", "") or ""), format_spec=format_spec)
 
 
 def build_plot_footer_status(
@@ -1193,9 +1203,11 @@ def _to_matplotlib_linestyle(value: str | None) -> str:
     return mapping.get(normalized, "-")
 
 
-def _format_plot_value(value: float | int | None, unit: str = "") -> str:
+def _format_plot_value(value: float | int | None, unit: str = "", *, format_spec: str = "") -> str:
     if value is None:
         return "-"
+    if format_spec:
+        return format_footer_value(float(value), format_spec, unit)
     formatted = f"{float(value):.1f}".rstrip("0").rstrip(".")
     if unit:
         return f"{formatted} {unit}"

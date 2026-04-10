@@ -33,6 +33,8 @@ principles where applicable.
     `{current:Thot}`, `{latest:Thot}`, `{mean:Thot}`, and `{max:Thot}`
 -   Added logic footer channel placeholders such as `{ch0}` for the
     latest channel state
+-   Added Python-style footer format specifications such as
+    `{samples:04d}`, `{Thot:03.1f}`, and `{mean:Thot:04.1f}`
 
 ### Improved
 
@@ -43,6 +45,9 @@ principles where applicable.
     `Custom` whenever the configured text no longer matches a preset
 -   Limited footer preset names to 12 characters for readable dropdowns
     and table entries
+-   Added a multi-line footer format editor in `Preferences...` so
+    preset formats can be edited with real line breaks instead of only
+    escaped `\n` sequences
 -   Enforced unique footer preset names during preference normalization;
     the first matching name is kept
 -   Updated default footer presets to use compact custom formats instead

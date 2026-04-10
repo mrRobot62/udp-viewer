@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QPlainTextEdit,
     QPushButton,
     QSpinBox,
     QTabWidget,
@@ -34,6 +35,7 @@ class PreferencesDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("Preferences")
         self.setModal(True)
+        self._syncing_footer_editor = False
         self.resize(1240, 760)
 
         root = QVBoxLayout(self)
@@ -166,6 +168,7 @@ class PreferencesDialog(QDialog):
             "Reusable footer format presets for plot and logic visualizer slot dialogs."
         )
         self._footer_presets_table.itemChanged.connect(self._on_footer_preset_item_changed)
+        self._footer_presets_table.itemSelectionChanged.connect(self._load_selected_footer_format_editor)
         self._configure_footer_presets_table_size()
         layout.addWidget(self._footer_presets_table, 1)
 
@@ -179,9 +182,19 @@ class PreferencesDialog(QDialog):
             button = QPushButton(text, tab)
             button.setToolTip(tip)
             button.clicked.connect(handler)
-            footer_buttons.addWidget(button)
+        footer_buttons.addWidget(button)
         footer_buttons.addStretch(1)
         layout.addLayout(footer_buttons)
+
+        layout.addWidget(QLabel("Selected Footer Format"))
+        self._footer_format_editor = QPlainTextEdit(tab)
+        self._footer_format_editor.setMinimumHeight(90)
+        self._footer_format_editor.setPlaceholderText("Samples:{samples}\nDauer:{duration}")
+        self._footer_format_editor.setToolTip(
+            "Edit the selected preset format. Use real line breaks here; saved presets keep them."
+        )
+        self._footer_format_editor.textChanged.connect(self._on_footer_format_editor_changed)
+        layout.addWidget(self._footer_format_editor)
 
         form = QFormLayout()
         self._plot_sliding_default = QCheckBox("Enabled", tab)
@@ -234,6 +247,7 @@ class PreferencesDialog(QDialog):
             self._insert_footer_preset_row(self._footer_presets_table.rowCount(), preset.name, preset.scope, preset.format)
         if self._footer_presets_table.rowCount() > 0:
             self._footer_presets_table.selectRow(0)
+        self._load_selected_footer_format_editor()
 
     def _insert_footer_preset_row(self, row: int, name: str, scope: FooterPresetScope, fmt: str) -> None:
         self._footer_presets_table.insertRow(row)
@@ -289,12 +303,37 @@ class PreferencesDialog(QDialog):
 
     def _on_footer_preset_item_changed(self, item: QTableWidgetItem) -> None:
         if item.column() != 0:
+            if item.column() == 2 and item.row() == self._footer_presets_table.currentRow():
+                self._load_selected_footer_format_editor()
             return
         normalized = AppPreferences._normalize_footer_preset_name(item.text())
         if item.text() == normalized:
             return
         self._footer_presets_table.blockSignals(True)
         item.setText(normalized)
+        self._footer_presets_table.blockSignals(False)
+
+    def _load_selected_footer_format_editor(self) -> None:
+        row = self._footer_presets_table.currentRow()
+        text = ""
+        if row >= 0 and self._footer_presets_table.item(row, 2) is not None:
+            text = self._footer_presets_table.item(row, 2).text()
+        self._syncing_footer_editor = True
+        self._footer_format_editor.setPlainText(text)
+        self._syncing_footer_editor = False
+
+    def _on_footer_format_editor_changed(self) -> None:
+        if self._syncing_footer_editor:
+            return
+        row = self._footer_presets_table.currentRow()
+        if row < 0:
+            return
+        item = self._footer_presets_table.item(row, 2)
+        if item is None:
+            item = QTableWidgetItem("")
+            self._footer_presets_table.setItem(row, 2, item)
+        self._footer_presets_table.blockSignals(True)
+        item.setText(self._footer_format_editor.toPlainText())
         self._footer_presets_table.blockSignals(False)
 
     def _footer_scope_combo(self, row: int) -> QComboBox:

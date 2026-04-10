@@ -39,6 +39,21 @@ def test_logic_footer_status_supports_custom_channel_placeholders_and_newline() 
     assert footer == "Samples:2 Start:10:00:00 End:10:00:07 Dur:00:00:07\nCH0:1;CH1:0"
 
 
+def test_logic_footer_status_supports_python_format_specs() -> None:
+    samples = [
+        VisualizerSample(
+            timestamp_raw="20260404-10:00:00.000",
+            filter_string="[CSV_CLIENT_LOGIC]",
+            sample_index=0,
+            values_by_name={"ch0": 1.0},
+        )
+    ]
+
+    footer = build_logic_footer_status(samples, "Samples:{samples:04d} CH0:{ch0:02.0f}")
+
+    assert footer == "Samples:0001 CH0:01"
+
+
 def test_plot_footer_status_includes_series_max_and_current() -> None:
     samples = [
         VisualizerSample(timestamp_raw="20260404-10:00:00.000", filter_string="[CSV_CLIENT_PLOT]", sample_index=0),
@@ -116,6 +131,32 @@ def test_plot_footer_status_supports_custom_field_placeholders_and_newline() -> 
     )
 
     assert footer == "Samples:2 Start:10:00:00 End:10:00:05 Dur:00:00:05\nHot:118.2 C Mean:119.4 C Fan:90 %"
+
+
+def test_plot_footer_status_supports_python_format_specs() -> None:
+    samples = [
+        VisualizerSample(timestamp_raw="20260404-10:00:00.000", filter_string="[CSV_CLIENT_PLOT]", sample_index=0),
+        VisualizerSample(timestamp_raw="20260404-10:00:05.000", filter_string="[CSV_CLIENT_PLOT]", sample_index=1),
+    ]
+    series_metadata = [
+        {
+            "field_name": "hot_deg",
+            "unit": "C",
+            "statistic": True,
+            "render_style": "Line",
+            "latest": 8.2,
+            "mean": 7.4,
+            "max": 12.5,
+        },
+    ]
+
+    footer = build_plot_footer_status(
+        samples,
+        series_metadata,
+        "Samples:{samples:04d} Hot:{hot_deg:03.1f} Mean:{mean:hot_deg:04.1f}",
+    )
+
+    assert footer == "Samples:0002 Hot:8.2 C Mean:07.4 C"
 
 
 def test_plot_footer_status_removes_legacy_stats_placeholder_from_configured_format() -> None:
