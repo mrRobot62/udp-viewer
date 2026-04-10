@@ -333,9 +333,52 @@ Currently relevant:
 Typical workflow:
 
 1. open the visualizer configuration
-2. define `filter_string` and fields to match the expected CSV structure
-3. show the visualizer window
-4. receive or simulate matching CSV lines
+2. select the desired slot `1..5`
+3. enable `Slot Active` and define `filter_string` plus fields to match
+   the incoming CSV structure
+4. save the configuration
+5. show the visualizer window
+6. receive or simulate matching CSV lines
+
+### 9.0 Slots for plot and logic
+
+Plot and logic visualizers each provide up to 5 independent slots.
+
+Each slot has its own:
+
+- configuration
+- persistence in `config.ini`
+- window instance
+- sample history or buffer
+
+The configuration dialogs provide these slot controls:
+
+- `Slot`
+- `Slot Active`
+- `COPY`
+- `CLEAR`
+
+Meaning:
+
+- `Slot`
+  selects the visualizer slot being edited
+- `Slot Active`
+  controls whether this slot is opened by `SHOW` and processes data
+- `COPY`
+  copies one slot configuration to another slot of the same type
+- `CLEAR`
+  clears the current slot completely
+
+When changing slots with unsaved edits, the application asks whether
+those changes should be discarded.
+
+Important:
+
+- `SHOW` opens all active slots of the selected visualizer type
+- inactive slots do not open a window and do not collect samples
+- empty slots appear as empty configuration pages
+- an incoming CSV line must match both `filter_string` and field count
+  of the corresponding slot
 
 ### 9.1 Sliding Window in the graph window
 
@@ -382,6 +425,8 @@ Additional screenshot shortcuts in graph windows:
 The graph windows also provide explicit `TAB` navigation across the
 visible controls.
 
+### 9.2 Footer status line and internal placeholders
+
 At the bottom of each graph window a persistent footer status line is
 shown. Its content is configured in the slot dialog via `Footer Format`.
 Reusable templates are managed centrally under `Preferences` ->
@@ -393,54 +438,60 @@ as `\n` in a slot dialog.
 
 Global placeholders for plot and logic windows:
 
-- `{samples}`
-  number of all samples in the slot buffer, not just the visible sliding
-  window
-- `{start}`
-  timestamp of the first sample as `HH:MM:SS`
-- `{end}`
-  timestamp of the last sample as `HH:MM:SS`
-- `{duration}`
-  elapsed time from the first to the last sample as `HH:MM:SS`
+| Placeholder | Meaning | Data basis |
+| --- | --- | --- |
+| `{samples}` | number of all samples in the slot buffer | full slot buffer |
+| `{start}` | timestamp of the first sample as `HH:MM:SS` | full slot buffer |
+| `{end}` | timestamp of the last sample as `HH:MM:SS` | full slot buffer |
+| `{duration}` | elapsed time from the first to the last sample as `HH:MM:SS` | full slot buffer |
 
-Additional plot placeholders:
+Additional internal plot placeholders:
 
-- `{FieldName}` or `{current:FieldName}`
-  current value of the field
-- `{latest:FieldName}`
-  alias for the current value
-- `{mean:FieldName}` or `{avg:FieldName}`
-  average of the currently rendered numeric values of this plot series
-- `{max:FieldName}`
-  maximum of the currently rendered numeric values of this plot series
+| Placeholder | Meaning | Data basis |
+| --- | --- | --- |
+| `{FieldName}` | current value of the field | currently rendered plot series |
+| `{current:FieldName}` | current value of the field | currently rendered plot series |
+| `{latest:FieldName}` | alias for `{current:FieldName}` | currently rendered plot series |
+| `{mean:FieldName}` | mean value of the field | currently rendered numeric plot series |
+| `{avg:FieldName}` | alias for `{mean:FieldName}` | currently rendered numeric plot series |
+| `{max:FieldName}` | maximum value of the field | currently rendered numeric plot series |
 
-`mean` and `avg` are calculated inside UDP Viewer. They are not part of
-the UDP packet and are only available for numeric fields that are
-currently rendered as a plot series. When a sliding window is active,
-`mean`, `avg`, `max`, and `current` refer to the visible data window.
-`{samples}`, `{start}`, `{end}`, and `{duration}` refer to the full slot
-buffer.
+`mean`, `avg`, `max`, `current`, and `latest` are internal UDP Viewer
+values. They are not part of the UDP data stream. UDP Viewer calculates
+them while drawing the plot window from the numeric values that are
+currently rendered as a plot series.
+
+Important:
+
+- with an active sliding window, `mean`, `avg`, `max`, `current`, and
+  `latest` refer to the visible data window
+- without a sliding window, they refer to the currently rendered values
+  in the plot
+- they are available only for numeric plot fields currently present in
+  the plot
+- logic windows do not provide these plot parameters
+- `{samples}`, `{start}`, `{end}`, and `{duration}` refer to the full
+  slot buffer
 
 Additional logic placeholders:
 
-- `{ch0}`, `{ch1}`, ...
-  latest state of the corresponding logic channel
+| Placeholder | Meaning |
+| --- | --- |
+| `{ch0}`, `{ch1}`, ... | latest state of the corresponding logic channel |
 
 Formatting can be added like in Python format strings:
 
-- `{samples:04d}`
-  integer with leading zeros, e.g. `0007`
-- `{Thot:.1f}`
-  floating point value with one decimal place
-- `{Thot:05.1f}`
-  floating point value with leading zeros and minimum width 5, e.g.
-  `072.3`
-- `{mean:Thot:05.1f}`
-  formatted mean value of a plot field
-- `{ch0:02.0f}`
-  logic value without decimals and with a leading zero
-- `{duration:>8}`
-  right-aligned text output with minimum width 8
+| Example | Meaning |
+| --- | --- |
+| `{samples:04d}` | integer with leading zeros, e.g. `0007` |
+| `{Thot:.1f}` | floating point value with one decimal place |
+| `{Thot:05.1f}` | floating point value with leading zeros and minimum width 5, e.g. `072.3` |
+| `{mean:Thot:05.1f}` | formatted mean value of a plot field |
+| `{avg:Thot:05.1f}` | formatted mean value through the `avg` alias |
+| `{max:Thot:05.1f}` | formatted maximum value of a plot field |
+| `{current:Thot:05.1f}` | formatted current value of a plot field |
+| `{ch0:02.0f}` | logic value without decimals and with a leading zero |
+| `{duration:>8}` | right-aligned text output with minimum width 8 |
 
 Important: the width in Python format specs is the total minimum width,
 including decimal point and decimals. For `3 digits before the decimal
@@ -453,7 +504,7 @@ is still controlled via the `Statistic` column, but only for that
 default footer. Custom placeholders such as `{mean:Thot}` are
 independent of the `Statistic` column.
 
-### 9.2 Measuring in the logic graph
+### 9.3 Measuring in the logic graph
 
 The logic graph can measure time distances directly on one selected
 channel.
@@ -547,5 +598,8 @@ Important practical limits at the current state:
 ## 13. Further References
 
 - [DOCUMENTATION_en.md](../docs/DOCUMENTATION_en.md)
+- [CONFIGURATION_REFERENCE_en.md](../docs/CONFIGURATION_REFERENCE_en.md)
+- [SUPPORTED_CSV_INPUT_FORMATS_en.md](../docs/SUPPORTED_CSV_INPUT_FORMATS_en.md)
 - [BUILD_AND_PACKAGING_REFERENCE_en.md](../docs/BUILD_AND_PACKAGING_REFERENCE_en.md)
+- [RELEASE_0.16.4.md](../docs/RELEASE_0.16.4.md)
 - [DOKUMENTATION_de.md](../docs/DOKUMENTATION_de.md)

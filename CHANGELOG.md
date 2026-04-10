@@ -38,6 +38,7 @@ principles where applicable.
     `{samples:04d}`, `{Thot:03.1f}`, and `{mean:Thot:04.1f}`
 -   Added user guide documentation for footer placeholders, `mean`/`avg`
     availability, and supported Python-style formatting variants
+-   Added bilingual release notes for `0.16.4`
 
 ### Improved
 
@@ -57,9 +58,18 @@ principles where applicable.
     of the previous long automatic statistics line
 -   Updated footer preset defaults and templates to include total sample
     count via `{samples}`
+-   Reworked bilingual user and technical documentation so footer
+    placeholders, internal plot statistics, and configuration keys are
+    documented consistently
+-   Updated README documentation links to the current `0.16.4` release
+    and added visualizer footer/color feature bullets
 
 ### Fixed
 
+-   Fixed Preferences dialog footer-preset button layout so `ADD`,
+    `DELETE`, `UP`, and `DOWN` appear together below the preset table
+-   Replaced the Preferences dialog `OK` button with `Save` and placed
+    `Apply` between `Cancel` and `Save`
 -   Removed the legacy plot `MAX/Mean/Current` status block from
     configured footer templates by normalizing old `{stats}` placeholders
     out of existing configs and presets

@@ -103,6 +103,22 @@ Currently relevant keys:
 - `logic_sliding_window_default`
 - `logic_window_size_default`
 
+Example:
+
+```ini
+[preferences]
+language = en
+autoscroll_default = true
+timestamp_default = true
+max_lines_default = 20000
+visualizer_presets = 100,150,200,300
+footer_status_presets = [{"name":"Compact","scope":"all","format":"Samples:{samples} Duration:{duration}"}]
+plot_sliding_window_default = true
+plot_window_size_default = 200
+logic_sliding_window_default = true
+logic_window_size_default = 150
+```
+
 ## 8. `[rules]`
 
 The `[rules]` section contains:
@@ -139,11 +155,22 @@ Typical keys include:
 - `filter_string`
 - `graph_type`
 - `max_samples`
-- `footer_status_format`
 - `sliding_window_enabled`
 - `default_window_size`
 - `window_geometry`
 - `x_label`
+- `x_continuous`
+- `x_min`
+- `x_max`
+- `y1_label`
+- `y1_logarithmic`
+- `y1_min`
+- `y1_max`
+- `y2_label`
+- `y2_logarithmic`
+- `y2_min`
+- `y2_max`
+- `footer_status_format`
 - `field_count`
 
 Plus per-field keys such as:
@@ -158,6 +185,13 @@ Plus per-field keys such as:
 - `field_<n>_color`
 - `field_<n>_line_style`
 - `field_<n>_unit`
+
+`footer_status_format` stores the custom footer format configured for
+one visualizer slot. It may contain placeholders such as `{samples}`,
+`{duration}`, `{Thot}`, `{mean:Thot}`, `{avg:Thot}`, `{max:Thot}`, or
+`{ch0}`. Plot statistics such as `mean` and `avg` are calculated inside
+the viewer from the currently rendered numeric plot values; they are not
+stored in or received from the UDP data stream.
 
 ## 10. Live Logs and Screenshots
 

@@ -13,11 +13,17 @@ Complete English documentation:
 
 - [docs/DOCUMENTATION_en.md](docs/DOCUMENTATION_en.md)
 - [docs/USER_GUIDE_en.md](docs/USER_GUIDE_en.md)
-- [docs/RELEASE_0.16.3.md](docs/RELEASE_0.16.3.md)
+- [docs/CONFIGURATION_REFERENCE_en.md](docs/CONFIGURATION_REFERENCE_en.md)
+- [docs/SUPPORTED_CSV_INPUT_FORMATS_en.md](docs/SUPPORTED_CSV_INPUT_FORMATS_en.md)
+- [docs/RELEASE_0.16.4.md](docs/RELEASE_0.16.4.md)
 
 Complete German documentation:
 
 - [docs/DOKUMENTATION_de.md](docs/DOKUMENTATION_de.md)
+- [docs/USER_GUIDE_de.md](docs/USER_GUIDE_de.md)
+- [docs/CONFIGURATION_REFERENCE_de.md](docs/CONFIGURATION_REFERENCE_de.md)
+- [docs/SUPPORTED_CSV_INPUT_FORMATS_de.md](docs/SUPPORTED_CSV_INPUT_FORMATS_de.md)
+- [docs/RELEASE_0.16.4_de.md](docs/RELEASE_0.16.4_de.md)
 
 ## HowTo use UDP on EPS32 Demo project
 If you want to play around with an ESP32 & logging, please visit this demo repository
@@ -77,6 +83,8 @@ The current codebase includes:
 - built-in simulation for text, temperature, and logic traffic
 - CSV-based data visualization
 - logic-channel visualization
+- visualizer color selection with 16 preset colors and HTML code `#RRGGBB`
+- configurable visualizer footers with presets, placeholders, and formatting
 - edge and period measurement directly inside the logic graph
 - runtime `Legend` toggle in plot and logic graph windows
 - keyboard-driven screenshot/save shortcuts and explicit `TAB` navigation in the main and graph windows

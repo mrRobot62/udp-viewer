@@ -231,6 +231,13 @@ Zusätzlich pro Feld:
 - `field_<n>_line_style`
 - `field_<n>_unit`
 
+`footer_status_format` speichert das benutzerdefinierte Footer-Format
+eines Visualizer-Slots. Es kann Platzhalter wie `{samples}`,
+`{duration}`, `{Thot}`, `{mean:Thot}`, `{avg:Thot}`, `{max:Thot}` oder
+`{ch0}` enthalten. Plot-Statistiken wie `mean` und `avg` werden im
+Viewer aus den aktuell gerenderten numerischen Plot-Werten berechnet;
+sie werden nicht im UDP-Datenstrom gespeichert oder empfangen.
+
 ## 11. Live-Logs
 
 Beim Start einer Listener-Session erzeugt die App standardmäßig eine Live-Logdatei im `logs_dir`.

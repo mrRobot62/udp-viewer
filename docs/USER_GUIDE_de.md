@@ -433,6 +433,8 @@ Zusätzliche Screenshot-Kürzel im Graph-Fenster:
 Auch die Graph-Fenster besitzen eine explizite `TAB`-Navigation über die
 sichtbaren Bedienelemente.
 
+### 9.2 Footer-Statuszeile und interne Platzhalter
+
 Am unteren Rand jedes Graph-Fensters wird eine persistente
 Statuszeile angezeigt. Der Inhalt wird im jeweiligen Slot-Dialog über
 `Footer Format` festgelegt. Wiederverwendbare Vorlagen werden zentral
@@ -445,55 +447,61 @@ geschrieben werden.
 
 Globale Platzhalter für Plot- und Logic-Fenster:
 
-- `{samples}`
-  Anzahl aller Samples im Slot-Puffer, nicht nur das sichtbare Sliding
-  Window
-- `{start}`
-  Zeitstempel des ersten Samples als `HH:MM:SS`
-- `{end}`
-  Zeitstempel des letzten Samples als `HH:MM:SS`
-- `{duration}`
-  Zeitspanne vom ersten bis zum letzten Sample als `HH:MM:SS`
+| Platzhalter | Bedeutung | Datenbasis |
+| --- | --- | --- |
+| `{samples}` | Anzahl aller Samples im Slot-Puffer | gesamter Slot-Puffer |
+| `{start}` | Zeitstempel des ersten Samples als `HH:MM:SS` | gesamter Slot-Puffer |
+| `{end}` | Zeitstempel des letzten Samples als `HH:MM:SS` | gesamter Slot-Puffer |
+| `{duration}` | Zeitspanne vom ersten bis zum letzten Sample als `HH:MM:SS` | gesamter Slot-Puffer |
 
-Zusätzliche Plot-Platzhalter:
+Zusätzliche interne Plot-Platzhalter:
 
-- `{Feldname}` oder `{current:Feldname}`
-  aktueller Wert des Feldes
-- `{latest:Feldname}`
-  Alias für den aktuellen Wert
-- `{mean:Feldname}` oder `{avg:Feldname}`
-  Mittelwert der aktuell gerenderten numerischen Werte dieser Plot-Serie
-- `{max:Feldname}`
-  Maximalwert der aktuell gerenderten numerischen Werte dieser Plot-Serie
+| Platzhalter | Bedeutung | Datenbasis |
+| --- | --- | --- |
+| `{Feldname}` | aktueller Wert des Feldes | aktuell gerenderte Plot-Serie |
+| `{current:Feldname}` | aktueller Wert des Feldes | aktuell gerenderte Plot-Serie |
+| `{latest:Feldname}` | Alias für `{current:Feldname}` | aktuell gerenderte Plot-Serie |
+| `{mean:Feldname}` | Mittelwert des Feldes | aktuell gerenderte numerische Plot-Serie |
+| `{avg:Feldname}` | Alias für `{mean:Feldname}` | aktuell gerenderte numerische Plot-Serie |
+| `{max:Feldname}` | Maximalwert des Feldes | aktuell gerenderte numerische Plot-Serie |
 
-`mean` und `avg` werden innerhalb des UDP-Viewers berechnet. Sie sind
-nicht Teil des UDP-Pakets und stehen nur für numerische Felder zur
-Verfügung, die im Plot-Fenster aktuell als Serie gerendert werden. Bei
-aktivem Sliding Window beziehen sich `mean`, `avg`, `max` und `current`
-auf das sichtbare Datenfenster. `{samples}`, `{start}`, `{end}` und
-`{duration}` beziehen sich dagegen auf den gesamten Slot-Puffer.
+`mean`, `avg`, `max`, `current` und `latest` sind interne Werte des
+UDP-Viewers. Sie sind nicht Teil des UDP-Datenstroms. Der Viewer
+berechnet sie beim Zeichnen des Plot-Fensters aus den numerischen
+Werten, die aktuell als Plot-Serie gerendert werden.
+
+Wichtig:
+
+- bei aktivem Sliding Window beziehen sich `mean`, `avg`, `max`,
+  `current` und `latest` auf das sichtbare Datenfenster
+- ohne Sliding Window beziehen sie sich auf die aktuell gerenderten
+  Werte im Plot
+- sie stehen nur für numerische Plot-Felder zur Verfügung, die im Plot
+  aktuell vorhanden sind
+- für Logic-Fenster stehen diese Plot-Parameter nicht zur Verfügung
+- `{samples}`, `{start}`, `{end}` und `{duration}` beziehen sich dagegen
+  auf den gesamten Slot-Puffer
 
 Zusätzliche Logic-Platzhalter:
 
-- `{ch0}`, `{ch1}`, ...
-  letzter Zustand des jeweiligen Logic-Kanals
+| Platzhalter | Bedeutung |
+| --- | --- |
+| `{ch0}`, `{ch1}`, ... | letzter Zustand des jeweiligen Logic-Kanals |
 
 Formatierungen können wie bei Python-Formatstrings hinter dem
 Platzhalter angegeben werden:
 
-- `{samples:04d}`
-  Integer mit führenden Nullen, z. B. `0007`
-- `{Thot:.1f}`
-  Fließkommazahl mit einer Nachkommastelle
-- `{Thot:05.1f}`
-  Fließkommazahl mit führenden Nullen, mindestens 5 Zeichen breit, z. B.
-  `072.3`
-- `{mean:Thot:05.1f}`
-  formatierter Mittelwert eines Plot-Feldes
-- `{ch0:02.0f}`
-  Logic-Wert ohne Nachkommastellen und mit führender Null
-- `{duration:>8}`
-  rechtsbündige Textausgabe mit Mindestbreite 8
+| Beispiel | Bedeutung |
+| --- | --- |
+| `{samples:04d}` | Integer mit führenden Nullen, z. B. `0007` |
+| `{Thot:.1f}` | Fließkommazahl mit einer Nachkommastelle |
+| `{Thot:05.1f}` | Fließkommazahl mit führenden Nullen, mindestens 5 Zeichen breit, z. B. `072.3` |
+| `{mean:Thot:05.1f}` | formatierter Mittelwert eines Plot-Feldes |
+| `{avg:Thot:05.1f}` | formatierter Mittelwert über den Alias `avg` |
+| `{max:Thot:05.1f}` | formatierter Maximalwert eines Plot-Feldes |
+| `{current:Thot:05.1f}` | formatierter aktueller Wert eines Plot-Feldes |
+| `{ch0:02.0f}` | Logic-Wert ohne Nachkommastellen und mit führender Null |
+| `{duration:>8}` | rechtsbündige Textausgabe mit Mindestbreite 8 |
 
 Wichtig: Die Breite in Python-Formatangaben ist die gesamte
 Mindestbreite inklusive Dezimalpunkt und Nachkommastellen. Für
@@ -506,7 +514,7 @@ kompakte Default-Anzeige. Die alte automatische Plot-Statistik
 gilt aber nur für diese Default-Anzeige. Eigene Platzhalter wie
 `{mean:Thot}` sind davon unabhängig.
 
-### 9.2 Messung im Logic-Graphen
+### 9.3 Messung im Logic-Graphen
 
 Im Logic-Graphen kann die Zeit zwischen Signalflanken direkt gemessen
 werden.
@@ -619,3 +627,4 @@ Wichtige praktische Grenzen im aktuellen Stand:
 - [CONFIGURATION_REFERENCE_de.md](../docs/CONFIGURATION_REFERENCE_de.md)
 - [SUPPORTED_CSV_INPUT_FORMATS_de.md](../docs/SUPPORTED_CSV_INPUT_FORMATS_de.md)
 - [BUILD_AND_PACKAGING_REFERENCE_de.md](../docs/BUILD_AND_PACKAGING_REFERENCE_de.md)
+- [RELEASE_0.16.4_de.md](../docs/RELEASE_0.16.4_de.md)

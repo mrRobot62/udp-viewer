@@ -13,13 +13,17 @@ Vollständige deutsche Dokumentation:
 
 - [docs/DOKUMENTATION_de.md](docs/DOKUMENTATION_de.md)
 - [docs/USER_GUIDE_de.md](docs/USER_GUIDE_de.md)
-- [docs/RELEASE_0.16.3_de.md](docs/RELEASE_0.16.3_de.md)
+- [docs/CONFIGURATION_REFERENCE_de.md](docs/CONFIGURATION_REFERENCE_de.md)
+- [docs/SUPPORTED_CSV_INPUT_FORMATS_de.md](docs/SUPPORTED_CSV_INPUT_FORMATS_de.md)
+- [docs/RELEASE_0.16.4_de.md](docs/RELEASE_0.16.4_de.md)
 
 Vollständige englische Dokumentation:
 
 - [docs/DOCUMENTATION_en.md](docs/DOCUMENTATION_en.md)
 - [docs/USER_GUIDE_en.md](docs/USER_GUIDE_en.md)
-- [docs/RELEASE_0.16.3.md](docs/RELEASE_0.16.3.md)
+- [docs/CONFIGURATION_REFERENCE_en.md](docs/CONFIGURATION_REFERENCE_en.md)
+- [docs/SUPPORTED_CSV_INPUT_FORMATS_en.md](docs/SUPPORTED_CSV_INPUT_FORMATS_en.md)
+- [docs/RELEASE_0.16.4.md](docs/RELEASE_0.16.4.md)
 
 ## Demo-Projekt zur UDP-Nutzung auf ESP32
 
@@ -82,6 +86,8 @@ Die aktuelle Codebasis enthält:
 - integrierte Simulation für Text-, Temperatur- und Logic-Traffic
 - CSV-basierte Datenvisualisierung
 - Logic-Kanal-Visualisierung
+- Visualizer-Farbauswahl mit 16 Preset-Farben und HTML-Code `#RRGGBB`
+- konfigurierbare Visualizer-Footer mit Presets, Platzhaltern und Formatierung
 - Flanken- und Periodenmessung direkt im Logic-Graphen
 - Laufzeit-`Legend`-Umschaltung in Plot- und Logic-Fenstern
 - tastaturgesteuerte Screenshot-/Save-Kürzel und explizite `TAB`-Navigation im Haupt- und in den Graph-Fenstern
