@@ -4,7 +4,6 @@ from PyQt5.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDialog,
-    QDialogButtonBox,
     QFileDialog,
     QFormLayout,
     QHBoxLayout,
@@ -45,20 +44,24 @@ class PreferencesDialog(QDialog):
         tabs.addTab(self._build_visualizer_tab(), "Visualizer")
         root.addWidget(tabs)
 
-        buttons = QDialogButtonBox(
-            QDialogButtonBox.Ok | QDialogButtonBox.Cancel | QDialogButtonBox.Apply,
-            parent=self,
-        )
+        buttons = QHBoxLayout()
         self._restore_button = QPushButton("Restore Defaults")
         self._restore_button.setToolTip("Reset all preference values in this dialog to the application defaults.")
-        buttons.addButton(self._restore_button, QDialogButtonBox.ResetRole)
-        buttons.accepted.connect(self.accept)
-        buttons.rejected.connect(self.reject)
-        self._apply_button = buttons.button(QDialogButtonBox.Apply)
-        buttons.button(QDialogButtonBox.Ok).setToolTip("Save the displayed preferences and close the dialog.")
-        buttons.button(QDialogButtonBox.Cancel).setToolTip("Close the dialog without saving the current changes.")
+        self._cancel_button = QPushButton("Cancel")
+        self._cancel_button.setToolTip("Close the dialog without saving the current changes.")
+        self._cancel_button.clicked.connect(self.reject)
+        self._apply_button = QPushButton("Apply")
         self._apply_button.setToolTip("Save the displayed preferences without closing the dialog.")
-        root.addWidget(buttons)
+        self._save_button = QPushButton("Save")
+        self._save_button.setDefault(True)
+        self._save_button.setToolTip("Save the displayed preferences and close the dialog.")
+        self._save_button.clicked.connect(self.accept)
+        buttons.addWidget(self._restore_button)
+        buttons.addStretch(1)
+        buttons.addWidget(self._cancel_button)
+        buttons.addWidget(self._apply_button)
+        buttons.addWidget(self._save_button)
+        root.addLayout(buttons)
 
         self.set_preferences(preferences)
 
@@ -175,14 +178,14 @@ class PreferencesDialog(QDialog):
         footer_buttons = QHBoxLayout()
         for text, handler, tip in (
             ("ADD", self._on_footer_preset_add, "Append a new preset row at the end of the table."),
-            ("DEL", self._on_footer_preset_delete, "Delete the selected preset row."),
+            ("DELETE", self._on_footer_preset_delete, "Delete the selected preset row."),
             ("UP", self._on_footer_preset_up, "Move the selected preset row up."),
             ("DOWN", self._on_footer_preset_down, "Move the selected preset row down."),
         ):
             button = QPushButton(text, tab)
             button.setToolTip(tip)
             button.clicked.connect(handler)
-        footer_buttons.addWidget(button)
+            footer_buttons.addWidget(button)
         footer_buttons.addStretch(1)
         layout.addLayout(footer_buttons)
 

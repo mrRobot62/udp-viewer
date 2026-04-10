@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QPushButton
 
 from udp_log_viewer.data_visualizer.logic_visualizer_config_dialog import LogicVisualizerConfigDialog
 from udp_log_viewer.data_visualizer.visualizer_config import VisualizerConfig
@@ -128,6 +128,27 @@ def test_preferences_dialog_footer_preset_table_shows_at_least_eight_rows() -> N
 
     assert dialog.width() >= 1200
     assert dialog._footer_presets_table.minimumHeight() >= header_height + (8 * row_height)
+    dialog.close()
+
+
+def test_preferences_dialog_footer_and_save_buttons_are_ordered() -> None:
+    _app()
+    dialog = PreferencesDialog(AppPreferences())
+
+    button_labels = [button.text() for button in dialog.findChildren(QPushButton)]
+
+    assert button_labels[button_labels.index("ADD") : button_labels.index("DOWN") + 1] == [
+        "ADD",
+        "DELETE",
+        "UP",
+        "DOWN",
+    ]
+    assert button_labels[button_labels.index("Cancel") : button_labels.index("Save") + 1] == [
+        "Cancel",
+        "Apply",
+        "Save",
+    ]
+    assert "OK" not in button_labels
     dialog.close()
 
 
