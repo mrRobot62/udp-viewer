@@ -1,7 +1,9 @@
-# UDP Log Viewer
+# UDP Log Viewer with Plot & Logic Analyzer for Embedded Debugging
+UDP Log Viewer with integrated Plot and Logic Analyzer for embedded systems debugging (Arduino, ESP32, MCU, IoT)
 
-Cross-platform UDP log viewer for ESP32 and other embedded systems, built with Python and PyQt5.
-
+- Built-in Plot Visualizer (time series data)
+- Built-in Logic Analyzer (digital signals)
+- 
 ## Why using this tool?
 
 Debugging embedded devices over UDP is painful.
@@ -90,14 +92,33 @@ The current codebase includes:
 - keyboard-driven screenshot/save shortcuts and explicit `TAB` navigation in the main and graph windows
 - macOS and Windows packaging scripts
 
-## Run From Source
 
+## Quick-Start (from source)
+```
+git clone ...
+pip install -r requirements.txt
+python main.py
+```
+
+## Install & Run
+- MacOSX
+  - download DMG and install
+  - run this `xattr -dr com.apple.quarantine /Applications/UDPLogViewer.app` 
+- Windows
+  - download setup.exe and run
+
+## Run From Source
 ```bash
 python -m venv venv
 source venv/bin/activate
 pip install -e .[dev]
 udp-log-viewer
 ```
+## 🧪 Testing
+
+The project includes a comprehensive test suite under `/tests`.
+
+
 
 ## Developer Bootstrap
 
