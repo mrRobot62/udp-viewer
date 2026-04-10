@@ -382,23 +382,76 @@ Additional screenshot shortcuts in graph windows:
 The graph windows also provide explicit `TAB` navigation across the
 visible controls.
 
-At the bottom of each graph window a footer status line is shown.
+At the bottom of each graph window a persistent footer status line is
+shown. Its content is configured in the slot dialog via `Footer Format`.
+Reusable templates are managed centrally under `Preferences` ->
+`Visualizer` -> `Footer Presets`.
 
-For both plot and logic windows it contains:
+The footer supports plain text, placeholders in braces, and line breaks.
+Line breaks can be entered directly in the multi-line preset editor or
+as `\n` in a slot dialog.
 
-- `Start`
-  timestamp of the first received sample
-- `Duration`
-  elapsed time from the first to the most recent received sample
+Global placeholders for plot and logic windows:
 
-For plot windows it can additionally contain compact per-series
-statistics for selected `Line` series:
+- `{samples}`
+  number of all samples in the slot buffer, not just the visible sliding
+  window
+- `{start}`
+  timestamp of the first sample as `HH:MM:SS`
+- `{end}`
+  timestamp of the last sample as `HH:MM:SS`
+- `{duration}`
+  elapsed time from the first to the last sample as `HH:MM:SS`
 
-- `MAX/Mean/Current`
+Additional plot placeholders:
 
-Those statistics are controlled in the plot configuration dialog via the
-`Statistic` column. Only rows with `Statistic=yes` are included in the
-footer.
+- `{FieldName}` or `{current:FieldName}`
+  current value of the field
+- `{latest:FieldName}`
+  alias for the current value
+- `{mean:FieldName}` or `{avg:FieldName}`
+  average of the currently rendered numeric values of this plot series
+- `{max:FieldName}`
+  maximum of the currently rendered numeric values of this plot series
+
+`mean` and `avg` are calculated inside UDP Viewer. They are not part of
+the UDP packet and are only available for numeric fields that are
+currently rendered as a plot series. When a sliding window is active,
+`mean`, `avg`, `max`, and `current` refer to the visible data window.
+`{samples}`, `{start}`, `{end}`, and `{duration}` refer to the full slot
+buffer.
+
+Additional logic placeholders:
+
+- `{ch0}`, `{ch1}`, ...
+  latest state of the corresponding logic channel
+
+Formatting can be added like in Python format strings:
+
+- `{samples:04d}`
+  integer with leading zeros, e.g. `0007`
+- `{Thot:.1f}`
+  floating point value with one decimal place
+- `{Thot:05.1f}`
+  floating point value with leading zeros and minimum width 5, e.g.
+  `072.3`
+- `{mean:Thot:05.1f}`
+  formatted mean value of a plot field
+- `{ch0:02.0f}`
+  logic value without decimals and with a leading zero
+- `{duration:>8}`
+  right-aligned text output with minimum width 8
+
+Important: the width in Python format specs is the total minimum width,
+including decimal point and decimals. For `3 digits before the decimal
+point + 1 decimal`, `05.1f` is typically correct for positive numbers,
+not `03.1f`.
+
+If no custom footer format is configured, the viewer uses a compact
+default footer. The legacy automatic plot statistic `MAX/Mean/Current`
+is still controlled via the `Statistic` column, but only for that
+default footer. Custom placeholders such as `{mean:Thot}` are
+independent of the `Statistic` column.
 
 ### 9.2 Measuring in the logic graph
 

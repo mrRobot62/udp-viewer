@@ -434,23 +434,77 @@ Auch die Graph-Fenster besitzen eine explizite `TAB`-Navigation über die
 sichtbaren Bedienelemente.
 
 Am unteren Rand jedes Graph-Fensters wird eine persistente
-Statuszeile angezeigt.
+Statuszeile angezeigt. Der Inhalt wird im jeweiligen Slot-Dialog über
+`Footer Format` festgelegt. Wiederverwendbare Vorlagen werden zentral
+unter `Preferences` -> `Visualizer` -> `Footer Presets` gepflegt.
 
-Sie zeigt fuer Plot und Logic:
+Der Footer unterstützt normale Textanteile, Platzhalter in geschweiften
+Klammern und Zeilenumbrüche. Zeilenumbrüche können entweder direkt im
+mehrzeiligen Preset-Editor eingegeben oder im Slot-Dialog als `\n`
+geschrieben werden.
 
-- `Start`
-  Zeitstempel des ersten empfangenen Samples
-- `Duration`
-  Zeitspanne vom ersten bis zum zuletzt empfangenen Sample
+Globale Platzhalter für Plot- und Logic-Fenster:
 
-Im Plot-Fenster koennen zusaetzlich kompakte Serienstatistiken
-angezeigt werden:
+- `{samples}`
+  Anzahl aller Samples im Slot-Puffer, nicht nur das sichtbare Sliding
+  Window
+- `{start}`
+  Zeitstempel des ersten Samples als `HH:MM:SS`
+- `{end}`
+  Zeitstempel des letzten Samples als `HH:MM:SS`
+- `{duration}`
+  Zeitspanne vom ersten bis zum letzten Sample als `HH:MM:SS`
 
-- `MAX/Mean/Current`
+Zusätzliche Plot-Platzhalter:
 
-Diese Statistik wird im Plot-Konfigurationsdialog ueber die Spalte
-`Statistic` pro Feld gesteuert. Nur Zeilen mit `Statistic=yes` werden in
-der Footer-Zeile beruecksichtigt.
+- `{Feldname}` oder `{current:Feldname}`
+  aktueller Wert des Feldes
+- `{latest:Feldname}`
+  Alias für den aktuellen Wert
+- `{mean:Feldname}` oder `{avg:Feldname}`
+  Mittelwert der aktuell gerenderten numerischen Werte dieser Plot-Serie
+- `{max:Feldname}`
+  Maximalwert der aktuell gerenderten numerischen Werte dieser Plot-Serie
+
+`mean` und `avg` werden innerhalb des UDP-Viewers berechnet. Sie sind
+nicht Teil des UDP-Pakets und stehen nur für numerische Felder zur
+Verfügung, die im Plot-Fenster aktuell als Serie gerendert werden. Bei
+aktivem Sliding Window beziehen sich `mean`, `avg`, `max` und `current`
+auf das sichtbare Datenfenster. `{samples}`, `{start}`, `{end}` und
+`{duration}` beziehen sich dagegen auf den gesamten Slot-Puffer.
+
+Zusätzliche Logic-Platzhalter:
+
+- `{ch0}`, `{ch1}`, ...
+  letzter Zustand des jeweiligen Logic-Kanals
+
+Formatierungen können wie bei Python-Formatstrings hinter dem
+Platzhalter angegeben werden:
+
+- `{samples:04d}`
+  Integer mit führenden Nullen, z. B. `0007`
+- `{Thot:.1f}`
+  Fließkommazahl mit einer Nachkommastelle
+- `{Thot:05.1f}`
+  Fließkommazahl mit führenden Nullen, mindestens 5 Zeichen breit, z. B.
+  `072.3`
+- `{mean:Thot:05.1f}`
+  formatierter Mittelwert eines Plot-Feldes
+- `{ch0:02.0f}`
+  Logic-Wert ohne Nachkommastellen und mit führender Null
+- `{duration:>8}`
+  rechtsbündige Textausgabe mit Mindestbreite 8
+
+Wichtig: Die Breite in Python-Formatangaben ist die gesamte
+Mindestbreite inklusive Dezimalpunkt und Nachkommastellen. Für
+`3 Vorkommastellen + 1 Nachkommastelle` ist daher bei positiven Zahlen
+typisch `05.1f` passend, nicht `03.1f`.
+
+Wenn kein eigenes Footer-Format gesetzt ist, verwendet der Viewer eine
+kompakte Default-Anzeige. Die alte automatische Plot-Statistik
+`MAX/Mean/Current` wird weiterhin über die Spalte `Statistic` gesteuert,
+gilt aber nur für diese Default-Anzeige. Eigene Platzhalter wie
+`{mean:Thot}` sind davon unabhängig.
 
 ### 9.2 Messung im Logic-Graphen
 

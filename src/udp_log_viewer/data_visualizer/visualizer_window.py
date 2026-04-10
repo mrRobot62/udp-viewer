@@ -129,7 +129,7 @@ def _resolve_plot_footer_placeholder(key: str, context: dict[str, object], serie
 
     parts = normalized.split(":")
     field_lookup = _build_plot_field_lookup(series_metadata)
-    if len(parts) >= 2 and parts[0].strip().lower() in {"current", "latest", "mean", "max"}:
+    if len(parts) >= 2 and parts[0].strip().lower() in {"current", "latest", "mean", "avg", "max"}:
         metric = parts[0].strip().lower()
         field_name = parts[1].strip().lower()
         format_spec = ":".join(parts[2:]).strip() if len(parts) > 2 else ""
@@ -141,6 +141,7 @@ def _resolve_plot_footer_placeholder(key: str, context: dict[str, object], serie
             "current": "latest",
             "latest": "latest",
             "mean": "mean",
+            "avg": "mean",
             "max": "max",
         }
         metric_key = metric_aliases.get(metric)

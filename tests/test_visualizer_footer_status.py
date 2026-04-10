@@ -153,10 +153,10 @@ def test_plot_footer_status_supports_python_format_specs() -> None:
     footer = build_plot_footer_status(
         samples,
         series_metadata,
-        "Samples:{samples:04d} Hot:{hot_deg:03.1f} Mean:{mean:hot_deg:04.1f}",
+        "Samples:{samples:04d} Hot:{hot_deg:03.1f} Mean:{mean:hot_deg:04.1f} Avg:{avg:hot_deg:04.1f}",
     )
 
-    assert footer == "Samples:0002 Hot:8.2 C Mean:07.4 C"
+    assert footer == "Samples:0002 Hot:8.2 C Mean:07.4 C Avg:07.4 C"
 
 
 def test_plot_footer_status_removes_legacy_stats_placeholder_from_configured_format() -> None:

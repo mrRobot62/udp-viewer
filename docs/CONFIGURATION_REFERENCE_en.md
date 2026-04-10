@@ -97,6 +97,7 @@ Currently relevant keys:
 - `timestamp_default`
 - `max_lines_default`
 - `visualizer_presets`
+- `footer_status_presets`
 - `plot_sliding_window_default`
 - `plot_window_size_default`
 - `logic_sliding_window_default`
@@ -138,6 +139,7 @@ Typical keys include:
 - `filter_string`
 - `graph_type`
 - `max_samples`
+- `footer_status_format`
 - `sliding_window_enabled`
 - `default_window_size`
 - `window_geometry`

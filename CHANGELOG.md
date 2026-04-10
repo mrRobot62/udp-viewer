@@ -30,11 +30,14 @@ principles where applicable.
 -   Added footer placeholders `{samples}`, `{start}`, `{end}`, and
     `{duration}` for both plot and logic visualizers
 -   Added plot footer field placeholders such as `{Thot}`,
-    `{current:Thot}`, `{latest:Thot}`, `{mean:Thot}`, and `{max:Thot}`
+    `{current:Thot}`, `{latest:Thot}`, `{mean:Thot}`, `{avg:Thot}`,
+    and `{max:Thot}`
 -   Added logic footer channel placeholders such as `{ch0}` for the
     latest channel state
 -   Added Python-style footer format specifications such as
     `{samples:04d}`, `{Thot:03.1f}`, and `{mean:Thot:04.1f}`
+-   Added user guide documentation for footer placeholders, `mean`/`avg`
+    availability, and supported Python-style formatting variants
 
 ### Improved
 
