@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 import re
 
+from .footer_status import build_footer_context, format_footer_template, parse_footer_timestamp
 from .visualizer_axis_config import VisualizerAxisConfig
 from .visualizer_config import VisualizerConfig
 from .visualizer_sample import VisualizerSample
@@ -72,13 +73,7 @@ class PlotMeasurement:
 
 
 def parse_plot_timestamp(timestamp_raw: str) -> datetime | None:
-    value = (timestamp_raw or "").strip()
-    if not value:
-        return None
-    try:
-        return datetime.strptime(value.split(" ")[0], "%Y%m%d-%H:%M:%S.%f")
-    except ValueError:
-        return None
+    return parse_footer_timestamp(timestamp_raw)
 
 
 def format_plot_measurement_duration(start_time: datetime | None, end_time: datetime | None) -> str:
@@ -91,28 +86,8 @@ def format_plot_measurement_duration(start_time: datetime | None, end_time: date
     return f"{minutes:02d}:{seconds:02d}.{hundredths:02d}"
 
 
-def _format_status_time(value: datetime | None) -> str:
-    if value is None:
-        return "--:--:--"
-    return value.strftime("%H:%M:%S")
-
-
-def _format_status_duration(start_time: datetime | None, end_time: datetime | None) -> str:
-    if start_time is None or end_time is None:
-        return "--:--:--"
-    total_seconds = max(0, int((end_time - start_time).total_seconds()))
-    hours, remainder = divmod(total_seconds, 3600)
-    minutes, seconds = divmod(remainder, 60)
-    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
-
-
-def build_plot_footer_status(samples: list[VisualizerSample], series_metadata: list[dict[str, object]]) -> str:
-    first_time = parse_plot_timestamp(samples[0].timestamp_raw) if samples else None
-    last_time = parse_plot_timestamp(samples[-1].timestamp_raw) if samples else None
-    parts = [
-        f"Start: {_format_status_time(first_time)}",
-        f"Duration: {_format_status_duration(first_time, last_time)}",
-    ]
+def _build_plot_stats_text(series_metadata: list[dict[str, object]]) -> str:
+    parts: list[str] = []
     for meta in series_metadata:
         field_name = str(meta.get("field_name", "")).strip()
         if not field_name:
@@ -126,6 +101,69 @@ def build_plot_footer_status(samples: list[VisualizerSample], series_metadata: l
         parts.append(
             f"{field_name} MAX/Mean/Current:{_format_plot_value(meta.get('max'), unit)}/{_format_plot_value(meta.get('mean'), unit)}/{_format_plot_value(meta.get('latest'), unit)}"
         )
+    return " - ".join(parts)
+
+
+def _build_plot_field_lookup(series_metadata: list[dict[str, object]]) -> dict[str, dict[str, object]]:
+    return {
+        str(meta.get("field_name", "")).strip().lower(): meta
+        for meta in series_metadata
+        if str(meta.get("field_name", "")).strip()
+    }
+
+
+def _resolve_plot_footer_placeholder(key: str, context: dict[str, str], series_metadata: list[dict[str, object]]) -> str | None:
+    normalized = key.strip()
+    if not normalized:
+        return None
+    direct = context.get(normalized.lower())
+    if direct is not None:
+        return direct
+
+    metric_name = normalized.split(":", 1)
+    field_lookup = _build_plot_field_lookup(series_metadata)
+    if len(metric_name) == 2:
+        metric, field_name = metric_name[0].strip().lower(), metric_name[1].strip().lower()
+        meta = field_lookup.get(field_name)
+        if meta is None:
+            return None
+        unit = str(meta.get("unit", "") or "")
+        metric_aliases = {
+            "current": "latest",
+            "latest": "latest",
+            "mean": "mean",
+            "max": "max",
+        }
+        metric_key = metric_aliases.get(metric)
+        if metric_key is None:
+            return None
+        return _format_plot_value(meta.get(metric_key), unit)
+
+    meta = field_lookup.get(normalized.lower())
+    if meta is None:
+        return None
+    return _format_plot_value(meta.get("latest"), str(meta.get("unit", "") or ""))
+
+
+def build_plot_footer_status(
+    samples: list[VisualizerSample],
+    series_metadata: list[dict[str, object]],
+    footer_status_format: str = "",
+) -> str:
+    context = build_footer_context(samples)
+    stats_text = _build_plot_stats_text(series_metadata)
+    formatted = format_footer_template(
+        footer_status_format,
+        lambda key: _resolve_plot_footer_placeholder(key, context, series_metadata),
+    )
+    if formatted:
+        return formatted
+    parts = [
+        f"Start: {context['start']}",
+        f"Duration: {context['duration']}",
+    ]
+    if stats_text:
+        parts.append(stats_text)
     return " - ".join(parts)
 
 
@@ -380,7 +418,10 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
 
             self._status_label = QLabel("")
             self._footer_label = QLabel(build_plot_footer_status([], []))
-            self._footer_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            self._footer_label.setWordWrap(True)
+            self._footer_label.setMinimumWidth(0)
+            self._footer_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
+            self._footer_label.setMaximumHeight(self.fontMetrics().lineSpacing() * 2 + 8)
 
             top_bar = QHBoxLayout()
             top_bar.addWidget(self._auto_refresh_checkbox)
@@ -680,7 +721,13 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
 
             self._apply_axis_settings(samples)
 
-            self._footer_label.setText(build_plot_footer_status(self._controller.samples, self._series_metadata))
+            self._footer_label.setText(
+                build_plot_footer_status(
+                    self._controller.samples,
+                    self._series_metadata,
+                    self._controller.config.footer_status_format,
+                )
+            )
 
             self._draw_end_labels()
             if plotted_y1 and self._controller.runtime_show_legend:

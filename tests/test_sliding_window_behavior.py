@@ -39,6 +39,7 @@ def test_config_store_persists_sliding_window_fields(tmp_path: Path) -> None:
     config.sliding_window_enabled = False
     config.default_window_size = 123
     config.show_legend = False
+    config.footer_status_format = "Start:{start}\\nThot:{Thot}"
     config.y1_axis.major_tick_step = 10.0
 
     store.save_visualizer_configs([config])
@@ -47,6 +48,7 @@ def test_config_store_persists_sliding_window_fields(tmp_path: Path) -> None:
     assert loaded.sliding_window_enabled is False
     assert loaded.default_window_size == 123
     assert loaded.show_legend is False
+    assert loaded.footer_status_format == "Start:{start}\\nThot:{Thot}"
     assert loaded.y1_axis.major_tick_step == 10.0
 
 

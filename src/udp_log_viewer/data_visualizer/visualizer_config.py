@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 
+from ..footer_format import normalize_footer_status_format
 from .visualizer_axis_config import VisualizerAxisConfig
 from .visualizer_field_config import VisualizerFieldConfig
 
@@ -9,6 +10,7 @@ class VisualizerConfig:
     enabled: bool = False
     title: str = ""
     filter_string: str = ""
+    footer_status_format: str = ""
     show_legend: bool = True
     max_samples: int = 2000
     sliding_window_enabled: bool = True
@@ -25,6 +27,7 @@ class VisualizerConfig:
     def __post_init__(self) -> None:
         self.title = (self.title or "").strip()
         self.filter_string = (self.filter_string or "").strip()
+        self.footer_status_format = normalize_footer_status_format(self.footer_status_format)
         self.max_samples = self._normalize_max_samples(self.max_samples)
         self.default_window_size = self._normalize_window_size(self.default_window_size, self.max_samples)
 

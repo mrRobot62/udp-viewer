@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 import re
 
+from .footer_status import build_footer_context, format_footer_template, parse_footer_timestamp
 from .visualizer_sample import VisualizerSample
 from ..preferences import DEFAULT_VISUALIZER_PRESETS
 from ..project_runtime import build_project_filename, build_project_title_suffix
@@ -74,13 +75,7 @@ class LogicMeasurement:
 
 
 def parse_visualizer_timestamp(timestamp_raw: str) -> datetime | None:
-    value = (timestamp_raw or "").strip()
-    if not value:
-        return None
-    try:
-        return datetime.strptime(value.split(" ")[0], "%Y%m%d-%H:%M:%S.%f")
-    except ValueError:
-        return None
+    return parse_footer_timestamp(timestamp_raw)
 
 
 def format_measurement_duration(start_time: datetime | None, end_time: datetime | None) -> str:
@@ -92,28 +87,30 @@ def format_measurement_duration(start_time: datetime | None, end_time: datetime 
     return f"{minutes:02d}:{seconds:02d}.{milliseconds:03d}"
 
 
-def _format_status_time(value: datetime | None) -> str:
-    if value is None:
-        return "--:--:--"
-    return value.strftime("%H:%M:%S")
+def _build_logic_field_lookup(samples: list[VisualizerSample]) -> dict[str, str]:
+    if not samples:
+        return {}
+    latest_values = samples[-1].values_by_name
+    return {
+        str(field_name).strip().lower(): str(int(float(value))) if value is not None else "--"
+        for field_name, value in latest_values.items()
+        if str(field_name).strip()
+    }
 
 
-def _format_status_duration(start_time: datetime | None, end_time: datetime | None) -> str:
-    if start_time is None or end_time is None:
-        return "--:--:--"
-    total_seconds = max(0, int((end_time - start_time).total_seconds()))
-    hours, remainder = divmod(total_seconds, 3600)
-    minutes, seconds = divmod(remainder, 60)
-    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
-
-
-def build_logic_footer_status(samples: list[VisualizerSample]) -> str:
-    first_time = parse_visualizer_timestamp(samples[0].timestamp_raw) if samples else None
-    last_time = parse_visualizer_timestamp(samples[-1].timestamp_raw) if samples else None
+def build_logic_footer_status(samples: list[VisualizerSample], footer_status_format: str = "") -> str:
+    context = build_footer_context(samples)
+    field_lookup = _build_logic_field_lookup(samples)
+    formatted = format_footer_template(
+        footer_status_format,
+        lambda key: context.get(key.strip().lower()) or field_lookup.get(key.strip().lower()),
+    )
+    if formatted:
+        return formatted
     return " - ".join(
         [
-            f"Start: {_format_status_time(first_time)}",
-            f"Duration: {_format_status_duration(first_time, last_time)}",
+            f"Start: {context['start']}",
+            f"Duration: {context['duration']}",
         ]
     )
 
@@ -422,7 +419,10 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
 
             self._status_label = QLabel("")
             self._footer_label = QLabel(build_logic_footer_status([]))
-            self._footer_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            self._footer_label.setWordWrap(True)
+            self._footer_label.setMinimumWidth(0)
+            self._footer_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
+            self._footer_label.setMaximumHeight(self.fontMetrics().lineSpacing() * 2 + 8)
 
             top_bar = QHBoxLayout()
             top_bar.addWidget(self._auto_refresh_checkbox)
@@ -779,7 +779,12 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
                 plotted_count += 1
 
             self._apply_axis_settings(active_fields, len(visible_samples))
-            self._footer_label.setText(build_logic_footer_status(self._controller.samples))
+            self._footer_label.setText(
+                build_logic_footer_status(
+                    self._controller.samples,
+                    self._controller.config.footer_status_format,
+                )
+            )
 
             if plotted_count > 0 and self._controller.runtime_show_legend:
                 self._axes.legend(loc="upper right")

@@ -139,6 +139,7 @@ class ConfigStore:
         parser.set(section, "enabled", str(bool(config.enabled)).lower())
         parser.set(section, "title", config.title)
         parser.set(section, "filter_string", config.filter_string)
+        parser.set(section, "footer_status_format", config.footer_status_format)
         parser.set(section, "show_legend", str(bool(config.show_legend)).lower())
         parser.set(section, "graph_type", graph_type)
         parser.set(section, "max_samples", str(config.max_samples))
@@ -266,6 +267,7 @@ class ConfigStore:
             enabled=self._get_bool(parser, section, "enabled", default=base_config.enabled),
             title=parser.get(section, "title", fallback=base_config.title),
             filter_string=parser.get(section, "filter_string", fallback=base_config.filter_string),
+            footer_status_format=parser.get(section, "footer_status_format", fallback=base_config.footer_status_format),
             show_legend=self._get_bool(parser, section, "show_legend", default=base_config.show_legend),
             graph_type=parser.get(section, "graph_type", fallback=getattr(base_config, "graph_type", "plot")),
             max_samples=max_samples,
@@ -336,6 +338,7 @@ class ConfigStore:
             not config.enabled
             and not config.title
             and not config.filter_string
+            and not config.footer_status_format
             and not config.window_geometry
             and not config.fields
         )

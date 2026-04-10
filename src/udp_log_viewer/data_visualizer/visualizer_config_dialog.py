@@ -9,24 +9,26 @@ from PyQt5.QtWidgets import (
 )
 
 from .config_store import ConfigStore
+from .color_selection_widget import ColorSelectionWidget
 from .slot_copy_dialog import SlotCopyDialog
 from .visualizer_axis_config import VisualizerAxisConfig
 from .visualizer_config import VisualizerConfig
 from .visualizer_field_config import VisualizerFieldConfig
 from .visualizer_slot import SLOT_COUNT
+from ..preferences import FooterStatusPreset
 
 
 class VisualizerConfigDialog(QDialog):
     SCALE_OPTIONS = ("1", "10", "100", "1000")
     AXIS_OPTIONS = ("Y1", "Y2")
     RENDER_STYLE_OPTIONS = ("Line", "Step")
-    COLOR_OPTIONS = ("black", "gray", "red", "blue", "green", "orange", "purple")
     LINESTYLE_OPTIONS = ("solid", "dashed", "dotted", "dashdot")
 
     def __init__(
         self,
         configs: list[VisualizerConfig],
         current_slot: int = 0,
+        footer_status_presets: tuple[FooterStatusPreset, ...] = (),
         on_apply: Callable[[list[VisualizerConfig], int], None] | None = None,
         parent: QWidget | None = None,
     ) -> None:
@@ -35,6 +37,7 @@ class VisualizerConfigDialog(QDialog):
         while len(self._configs) < SLOT_COUNT:
             self._configs.append(VisualizerConfig(graph_type="plot"))
         self._current_slot = max(0, min(current_slot, SLOT_COUNT - 1))
+        self._footer_status_presets = tuple(preset for preset in footer_status_presets if preset.scope in ("all", "plot"))
         self._on_apply = on_apply
         self._loaded_form_config = ConfigStore.clone_config(self._configs[self._current_slot])
         self._switch_guard = False
@@ -62,6 +65,19 @@ class VisualizerConfigDialog(QDialog):
         self._filter = QLineEdit()
         self._filter.setMinimumWidth(420)
         self._filter.setToolTip("Only log lines matching this filter are routed into this visualizer slot.")
+        self._footer_format = QLineEdit()
+        self._footer_format.setToolTip(
+            "Optional footer format. Use {samples}, {start}, {end}, {duration}, or field names like {Thot}. "
+            "For plot fields you can also use {current:Thot}, {mean:Thot}, {max:Thot}. "
+            "Use \\n for a line break."
+        )
+        self._footer_preset_combo = QComboBox()
+        self._footer_preset_combo.addItem("Custom", "")
+        for preset in self._footer_status_presets:
+            self._footer_preset_combo.addItem(preset.name, preset.format)
+        self._footer_preset_combo.setToolTip("Apply one of the reusable footer format presets.")
+        self._footer_preset_combo.currentIndexChanged.connect(self._on_footer_preset_changed)
+        self._footer_format.textChanged.connect(self._sync_footer_preset_combo)
         self._show_legend = QCheckBox("Show Legend")
         self._show_legend.setToolTip("Show or hide the plot legend by default.")
         self._max_samples = QSpinBox()
@@ -88,6 +104,13 @@ class VisualizerConfigDialog(QDialog):
         identity_row.addWidget(QLabel("Filter"))
         identity_row.addWidget(self._filter, 1)
         root.addLayout(identity_row)
+
+        footer_row = QHBoxLayout()
+        footer_row.addWidget(QLabel("Preset"))
+        footer_row.addWidget(self._footer_preset_combo)
+        footer_row.addWidget(QLabel("Footer Format"))
+        footer_row.addWidget(self._footer_format, 1)
+        root.addLayout(footer_row)
 
         options_row = QHBoxLayout()
         options_row.addWidget(self._show_legend)
@@ -218,6 +241,8 @@ class VisualizerConfigDialog(QDialog):
         self._enabled.setChecked(config.enabled)
         self._title.setText(config.title)
         self._filter.setText(config.filter_string)
+        self._footer_format.setText(config.footer_status_format)
+        self._sync_footer_preset_combo(config.footer_status_format)
         self._show_legend.setChecked(config.show_legend)
         self._max_samples.setValue(config.max_samples)
         self._sliding_window_enabled.setChecked(config.sliding_window_enabled)
@@ -274,6 +299,7 @@ class VisualizerConfigDialog(QDialog):
             enabled=self._enabled.isChecked(),
             title=self._title.text().strip(),
             filter_string=self._filter.text().strip(),
+            footer_status_format=self._footer_format.text().strip(),
             show_legend=self._show_legend.isChecked(),
             max_samples=int(self._max_samples.value()),
             sliding_window_enabled=self._sliding_window_enabled.isChecked(),
@@ -371,7 +397,7 @@ class VisualizerConfigDialog(QDialog):
         self._table.setCellWidget(row, 5, self._build_combo(("yes", "no"), "yes" if field.statistic else "no"))
         self._table.setCellWidget(row, 6, self._build_combo(self.AXIS_OPTIONS, field.axis))
         self._table.setCellWidget(row, 7, self._build_combo(self.RENDER_STYLE_OPTIONS, field.render_style))
-        self._table.setCellWidget(row, 8, self._build_combo(self.COLOR_OPTIONS, field.color))
+        self._table.setCellWidget(row, 8, ColorSelectionWidget(field.color))
         self._table.setCellWidget(row, 9, self._build_combo(self.LINESTYLE_OPTIONS, field.line_style))
         self._table.setItem(row, 10, QTableWidgetItem(field.unit))
 
@@ -419,6 +445,8 @@ class VisualizerConfigDialog(QDialog):
 
     def _combo_text(self, row: int, col: int) -> str:
         combo = self._table.cellWidget(row, col)
+        if isinstance(combo, ColorSelectionWidget):
+            return combo.color_code()
         return combo.currentText().strip() if combo is not None else ""
 
     def _on_add(self) -> None:
@@ -437,6 +465,26 @@ class VisualizerConfigDialog(QDialog):
                 unit="",
             )
         )
+
+    def _on_footer_preset_changed(self) -> None:
+        preset_format = self._footer_preset_combo.currentData()
+        if not preset_format:
+            return
+        self._footer_format.blockSignals(True)
+        self._footer_format.setText(str(preset_format))
+        self._footer_format.blockSignals(False)
+        self._sync_footer_preset_combo(self._footer_format.text())
+
+    def _sync_footer_preset_combo(self, current_text: str) -> None:
+        text = (current_text or "").strip()
+        self._footer_preset_combo.blockSignals(True)
+        index = 0
+        for current_index in range(1, self._footer_preset_combo.count()):
+            if str(self._footer_preset_combo.itemData(current_index) or "").strip() == text:
+                index = current_index
+                break
+        self._footer_preset_combo.setCurrentIndex(index)
+        self._footer_preset_combo.blockSignals(False)
 
     def _on_copy(self) -> None:
         self._configs[self._current_slot] = self._read_form_config()
@@ -500,6 +548,8 @@ class VisualizerConfigDialog(QDialog):
         self._table.cellWidget(row, 5).setCurrentText(values["statistic"])
         self._table.cellWidget(row, 6).setCurrentText(values["axis"])
         self._table.cellWidget(row, 7).setCurrentText(values["render_style"])
-        self._table.cellWidget(row, 8).setCurrentText(values["color"])
+        color_widget = self._table.cellWidget(row, 8)
+        if isinstance(color_widget, ColorSelectionWidget):
+            color_widget.set_color(values["color"])
         self._table.cellWidget(row, 9).setCurrentText(values["line_style"])
         self._table.item(row, 10).setText(values["unit"])

@@ -13,14 +13,22 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QSpinBox,
     QTabWidget,
+    QTableWidget,
+    QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
 
-from .preferences import AppPreferences
+from .preferences import AppPreferences, FOOTER_PRESET_NAME_MAX_LENGTH, FooterPresetScope, FooterStatusPreset
 
 
 class PreferencesDialog(QDialog):
+    FOOTER_SCOPE_OPTIONS: tuple[tuple[str, FooterPresetScope], ...] = (
+        ("All", "all"),
+        ("Plot", "plot"),
+        ("Logic", "logic"),
+    )
+
     def __init__(self, preferences: AppPreferences, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Preferences")
@@ -70,6 +78,7 @@ class PreferencesDialog(QDialog):
                 int(self._preset_3.value()),
                 int(self._preset_4.value()),
             ),
+            footer_status_presets=self._footer_presets_from_table(),
             plot_sliding_window_default=self._plot_sliding_default.isChecked(),
             plot_window_size_default=int(self._plot_window_size_default.value()),
             logic_sliding_window_default=self._logic_sliding_default.isChecked(),
@@ -86,6 +95,7 @@ class PreferencesDialog(QDialog):
         self._preset_2.setValue(preferences.visualizer_presets[1])
         self._preset_3.setValue(preferences.visualizer_presets[2])
         self._preset_4.setValue(preferences.visualizer_presets[3])
+        self._set_footer_presets_table(preferences.footer_status_presets)
         self._plot_sliding_default.setChecked(preferences.plot_sliding_window_default)
         self._plot_window_size_default.setValue(preferences.plot_window_size_default)
         self._logic_sliding_default.setChecked(preferences.logic_sliding_window_default)
@@ -144,6 +154,33 @@ class PreferencesDialog(QDialog):
         presets_row.addStretch(1)
         layout.addLayout(presets_row)
 
+        layout.addWidget(QLabel("Footer Presets"))
+        self._footer_presets_table = QTableWidget(0, 3, tab)
+        self._footer_presets_table.setHorizontalHeaderLabels(["Preset Name", "Type", "Format"])
+        self._footer_presets_table.verticalHeader().setVisible(False)
+        self._footer_presets_table.setSelectionBehavior(self._footer_presets_table.SelectRows)
+        self._footer_presets_table.setSelectionMode(self._footer_presets_table.SingleSelection)
+        self._footer_presets_table.horizontalHeader().setStretchLastSection(True)
+        self._footer_presets_table.setToolTip(
+            "Reusable footer format presets for plot and logic visualizer slot dialogs."
+        )
+        self._footer_presets_table.itemChanged.connect(self._on_footer_preset_item_changed)
+        layout.addWidget(self._footer_presets_table)
+
+        footer_buttons = QHBoxLayout()
+        for text, handler, tip in (
+            ("ADD", self._on_footer_preset_add, "Append a new preset row at the end of the table."),
+            ("DEL", self._on_footer_preset_delete, "Delete the selected preset row."),
+            ("UP", self._on_footer_preset_up, "Move the selected preset row up."),
+            ("DOWN", self._on_footer_preset_down, "Move the selected preset row down."),
+        ):
+            button = QPushButton(text, tab)
+            button.setToolTip(tip)
+            button.clicked.connect(handler)
+            footer_buttons.addWidget(button)
+        footer_buttons.addStretch(1)
+        layout.addLayout(footer_buttons)
+
         form = QFormLayout()
         self._plot_sliding_default = QCheckBox("Enabled", tab)
         self._plot_sliding_default.setToolTip("Default sliding-window state for new plot visualizer windows.")
@@ -179,3 +216,105 @@ class PreferencesDialog(QDialog):
         )
         if selected:
             self._log_path.setText(selected)
+
+    def _footer_presets_from_table(self) -> tuple[FooterStatusPreset, ...]:
+        presets: list[FooterStatusPreset] = []
+        for row in range(self._footer_presets_table.rowCount()):
+            name = self._footer_presets_table.item(row, 0).text().strip() if self._footer_presets_table.item(row, 0) else ""
+            scope = self._footer_scope_text(row)
+            fmt = self._footer_presets_table.item(row, 2).text().strip() if self._footer_presets_table.item(row, 2) else ""
+            if name and fmt:
+                presets.append(FooterStatusPreset(name=name, scope=scope, format=fmt))
+        return tuple(presets)
+
+    def _set_footer_presets_table(self, presets: tuple[FooterStatusPreset, ...]) -> None:
+        self._footer_presets_table.setRowCount(0)
+        for preset in presets:
+            self._insert_footer_preset_row(self._footer_presets_table.rowCount(), preset.name, preset.scope, preset.format)
+        if self._footer_presets_table.rowCount() > 0:
+            self._footer_presets_table.selectRow(0)
+
+    def _insert_footer_preset_row(self, row: int, name: str, scope: FooterPresetScope, fmt: str) -> None:
+        self._footer_presets_table.insertRow(row)
+        self._footer_presets_table.setItem(row, 0, QTableWidgetItem(name))
+        self._footer_presets_table.setCellWidget(row, 1, self._build_footer_scope_combo(scope))
+        self._footer_presets_table.setItem(row, 2, QTableWidgetItem(fmt))
+        if self._footer_presets_table.item(row, 0) is not None:
+            self._footer_presets_table.item(row, 0).setToolTip(
+                f"Maximum {FOOTER_PRESET_NAME_MAX_LENGTH} characters."
+            )
+
+    def _selected_footer_preset_row(self) -> int:
+        row = self._footer_presets_table.currentRow()
+        return row if row >= 0 else self._footer_presets_table.rowCount() - 1
+
+    def _on_footer_preset_add(self) -> None:
+        insert_at = self._footer_presets_table.rowCount()
+        self._insert_footer_preset_row(insert_at, "New Preset", "all", "Samples:{samples}\\nDauer:{duration}")
+        self._footer_presets_table.selectRow(insert_at)
+
+    def _on_footer_preset_delete(self) -> None:
+        row = self._footer_presets_table.currentRow()
+        if row < 0:
+            return
+        self._footer_presets_table.removeRow(row)
+        if self._footer_presets_table.rowCount() > 0:
+            self._footer_presets_table.selectRow(min(row, self._footer_presets_table.rowCount() - 1))
+
+    def _on_footer_preset_up(self) -> None:
+        self._move_footer_preset_row(-1)
+
+    def _on_footer_preset_down(self) -> None:
+        self._move_footer_preset_row(1)
+
+    def _move_footer_preset_row(self, offset: int) -> None:
+        row = self._footer_presets_table.currentRow()
+        target = row + offset
+        if row < 0 or target < 0 or target >= self._footer_presets_table.rowCount():
+            return
+        current_name = self._footer_presets_table.item(row, 0).text() if self._footer_presets_table.item(row, 0) else ""
+        current_scope = self._footer_scope_text(row)
+        current_format = self._footer_presets_table.item(row, 2).text() if self._footer_presets_table.item(row, 2) else ""
+        target_name = self._footer_presets_table.item(target, 0).text() if self._footer_presets_table.item(target, 0) else ""
+        target_scope = self._footer_scope_text(target)
+        target_format = self._footer_presets_table.item(target, 2).text() if self._footer_presets_table.item(target, 2) else ""
+        self._footer_presets_table.item(row, 0).setText(target_name)
+        self._footer_scope_combo(row).setCurrentText(self._footer_scope_label(target_scope))
+        self._footer_presets_table.item(row, 2).setText(target_format)
+        self._footer_presets_table.item(target, 0).setText(current_name)
+        self._footer_scope_combo(target).setCurrentText(self._footer_scope_label(current_scope))
+        self._footer_presets_table.item(target, 2).setText(current_format)
+        self._footer_presets_table.selectRow(target)
+
+    def _on_footer_preset_item_changed(self, item: QTableWidgetItem) -> None:
+        if item.column() != 0:
+            return
+        normalized = AppPreferences._normalize_footer_preset_name(item.text())
+        if item.text() == normalized:
+            return
+        self._footer_presets_table.blockSignals(True)
+        item.setText(normalized)
+        self._footer_presets_table.blockSignals(False)
+
+    def _footer_scope_combo(self, row: int) -> QComboBox:
+        combo = self._footer_presets_table.cellWidget(row, 1)
+        assert isinstance(combo, QComboBox)
+        return combo
+
+    def _footer_scope_text(self, row: int) -> FooterPresetScope:
+        return self._footer_scope_combo(row).currentData() or "all"
+
+    def _build_footer_scope_combo(self, scope: FooterPresetScope) -> QComboBox:
+        combo = QComboBox(self._footer_presets_table)
+        for label, value in self.FOOTER_SCOPE_OPTIONS:
+            combo.addItem(label, value)
+        combo.setCurrentText(self._footer_scope_label(scope))
+        combo.setToolTip("Choose whether this preset is available for all visualizers, only plot, or only logic.")
+        return combo
+
+    @classmethod
+    def _footer_scope_label(cls, scope: FooterPresetScope) -> str:
+        for label, value in cls.FOOTER_SCOPE_OPTIONS:
+            if value == scope:
+                return label
+        return "All"

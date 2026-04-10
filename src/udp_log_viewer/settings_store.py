@@ -51,6 +51,7 @@ class SettingsStore:
             log_path=log_path,
             project_root=project_root,
             visualizer_presets=self.ini_get(self._PREFS_SECTION, "visualizer_presets", "100,150,200,300"),
+            footer_status_presets=self.ini_get(self._PREFS_SECTION, "footer_status_presets", ""),
             plot_sliding_window_default=self._ini_get_bool(
                 self._PREFS_SECTION,
                 "plot_sliding_window_default",
@@ -84,6 +85,7 @@ class SettingsStore:
         parser.set(self._PREFS_SECTION, "log_path", preferences.log_path)
         parser.set(self._PREFS_SECTION, "project_root", preferences.project_root)
         parser.set(self._PREFS_SECTION, "visualizer_presets", preferences.presets_as_ini())
+        parser.set(self._PREFS_SECTION, "footer_status_presets", preferences.footer_presets_as_ini())
         parser.set(
             self._PREFS_SECTION,
             "plot_sliding_window_default",

@@ -199,6 +199,7 @@ class VisualizerManager:
             dialog = LogicVisualizerConfigDialog(
                 configs=configs,
                 current_slot=selected_slot,
+                footer_status_presets=self.preferences.footer_status_presets,
                 on_apply=apply_callback,
                 parent=parent,
             )
@@ -206,6 +207,7 @@ class VisualizerManager:
             dialog = VisualizerConfigDialog(
                 configs=configs,
                 current_slot=selected_slot,
+                footer_status_presets=self.preferences.footer_status_presets,
                 on_apply=apply_callback,
                 parent=parent,
             )

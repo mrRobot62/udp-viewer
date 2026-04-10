@@ -3,7 +3,7 @@ from __future__ import annotations
 import random
 
 from udp_log_viewer import __display_version__, __version__
-from udp_log_viewer.preferences import AppPreferences
+from udp_log_viewer.preferences import AppPreferences, FOOTER_PRESET_NAME_MAX_LENGTH, FooterStatusPreset
 from udp_log_viewer.data_visualizer.csv_log_parser import CsvLogParser
 from udp_log_viewer.data_visualizer.config_store import ConfigStore
 from udp_log_viewer.replay_simulation import (
@@ -14,7 +14,7 @@ from udp_log_viewer.udp_log_utils import compile_patterns, match_exclude, match_
 
 
 def test_package_version_is_consistent() -> None:
-    assert __version__ == "0.16.2"
+    assert __version__ == "0.16.4"
     assert __display_version__.startswith(__version__)
 
 
@@ -122,3 +122,13 @@ def test_preferences_normalize_visualizer_presets() -> None:
     prefs = AppPreferences(visualizer_presets="300,100,200,150")
 
     assert prefs.visualizer_presets == (100, 150, 200, 300)
+
+
+def test_preferences_normalize_footer_status_presets() -> None:
+    prefs = AppPreferences(
+        footer_status_presets='[{"name":"PresetNameTooLong","scope":"logic","format":"Start:{start}"},{"name":"PresetNameTooLong","scope":"plot","format":"Other"},{"name":" ","format":"x"}]'
+    )
+
+    assert prefs.footer_status_presets == (
+        FooterStatusPreset("PresetNameTo"[:FOOTER_PRESET_NAME_MAX_LENGTH], "logic", "Start:{start}"),
+    )
