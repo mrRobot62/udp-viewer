@@ -3,7 +3,10 @@ UDP Log Viewer with integrated Plot and Logic Analyzer for embedded systems debu
 
 - Built-in Plot Visualizer (time series data)
 - Built-in Logic Analyzer (digital signals)
-- 
+
+![Intro](assets/UDP-LOG-VIEWER4.gif)
+
+
 ## Why using this tool?
 
 Debugging embedded devices over UDP is painful.
@@ -91,6 +94,7 @@ The current codebase includes:
 - runtime `Legend` toggle in plot and logic graph windows
 - keyboard-driven screenshot/save shortcuts and explicit `TAB` navigation in the main and graph windows
 - macOS and Windows packaging scripts
+
 
 
 ## Quick-Start (from source)

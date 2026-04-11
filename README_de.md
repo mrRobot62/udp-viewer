@@ -2,6 +2,11 @@
 
 Plattformübergreifender UDP Log Viewer für ESP32 und andere Embedded-Systeme, entwickelt mit Python und PyQt5.
 
+- Integrierter Plot-Visualizer für Zeitreihen
+- Integrierter Logic-Analyzer für digitale Signale
+
+![Intro](assets/UDP-LOG-VIEWER4.gif)
+
 ## Warum dieses Tool?
 
 Das Debuggen von Embedded-Systemen über UDP ist mühsam.
