@@ -7,7 +7,7 @@ The format is based on Keep a Changelog and follows semantic versioning
 principles where applicable.
 
 ------------------------------------------------------------------------
-## 0.16.4 -- 2026-04-10
+## 0.17.0 -- 2026-04-10
 ### Added
 
 -   Expanded plot and logic visualizer color selection with 16
@@ -38,7 +38,7 @@ principles where applicable.
     `{samples:04d}`, `{Thot:03.1f}`, and `{mean:Thot:04.1f}`
 -   Added user guide documentation for footer placeholders, `mean`/`avg`
     availability, and supported Python-style formatting variants
--   Added bilingual release notes for `0.16.4`
+-   Added bilingual release notes for `0.17.0`
 
 ### Improved
 
@@ -61,7 +61,7 @@ principles where applicable.
 -   Reworked bilingual user and technical documentation so footer
     placeholders, internal plot statistics, and configuration keys are
     documented consistently
--   Updated README documentation links to the current `0.16.4` release
+-   Updated README documentation links to the current `0.17.0` release
     and added visualizer footer/color feature bullets
 
 ### Fixed
@@ -82,7 +82,7 @@ principles where applicable.
 
 ### Technical
 
--   Bumped application and package version metadata to `0.16.4`
+-   Bumped application and package version metadata to `0.17.0`
 -   Added shared color-selection and footer-format helper modules for
     reuse across plot and logic visualizer dialogs/windows
 -   Added persistence for custom footer status formats in visualizer slot

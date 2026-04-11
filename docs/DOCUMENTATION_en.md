@@ -523,5 +523,5 @@ Primary files for further inspection:
 - [CONFIGURATION_REFERENCE_en.md](../docs/CONFIGURATION_REFERENCE_en.md)
 - [SUPPORTED_CSV_INPUT_FORMATS_en.md](../docs/SUPPORTED_CSV_INPUT_FORMATS_en.md)
 - [BUILD_AND_PACKAGING_REFERENCE_en.md](../docs/BUILD_AND_PACKAGING_REFERENCE_en.md)
-- [RELEASE_0.16.4.md](../docs/RELEASE_0.16.4.md)
+- [RELEASE_0.17.0.md](../docs/RELEASE_0.17.0.md)
 - [DOKUMENTATION_de.md](../docs/DOKUMENTATION_de.md)

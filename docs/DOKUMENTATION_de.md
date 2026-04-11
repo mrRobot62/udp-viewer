@@ -532,7 +532,7 @@ Sinnvolle nächste Verbesserungen im Repository:
 - [SUPPORTED_CSV_INPUT_FORMATS_de.md](../docs/SUPPORTED_CSV_INPUT_FORMATS_de.md)
 - [CONFIGURATION_REFERENCE_de.md](../docs/CONFIGURATION_REFERENCE_de.md)
 - [BUILD_AND_PACKAGING_REFERENCE_de.md](../docs/BUILD_AND_PACKAGING_REFERENCE_de.md)
-- [RELEASE_0.16.4_de.md](../docs/RELEASE_0.16.4_de.md)
+- [RELEASE_0.17.0_de.md](../docs/RELEASE_0.17.0_de.md)
 
 ## 17. Dateiverweise
 

@@ -17,7 +17,7 @@ Complete English documentation:
 - [docs/USER_GUIDE_en.md](docs/USER_GUIDE_en.md)
 - [docs/CONFIGURATION_REFERENCE_en.md](docs/CONFIGURATION_REFERENCE_en.md)
 - [docs/SUPPORTED_CSV_INPUT_FORMATS_en.md](docs/SUPPORTED_CSV_INPUT_FORMATS_en.md)
-- [docs/RELEASE_0.16.4.md](docs/RELEASE_0.16.4.md)
+- [docs/RELEASE_0.17.0.md](docs/RELEASE_0.17.0.md)
 
 Complete German documentation:
 
@@ -25,7 +25,7 @@ Complete German documentation:
 - [docs/USER_GUIDE_de.md](docs/USER_GUIDE_de.md)
 - [docs/CONFIGURATION_REFERENCE_de.md](docs/CONFIGURATION_REFERENCE_de.md)
 - [docs/SUPPORTED_CSV_INPUT_FORMATS_de.md](docs/SUPPORTED_CSV_INPUT_FORMATS_de.md)
-- [docs/RELEASE_0.16.4_de.md](docs/RELEASE_0.16.4_de.md)
+- [docs/RELEASE_0.17.0_de.md](docs/RELEASE_0.17.0_de.md)
 
 ## HowTo use UDP on EPS32 Demo project
 If you want to play around with an ESP32 & logging, please visit this demo repository
