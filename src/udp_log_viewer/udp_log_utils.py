@@ -7,6 +7,7 @@ from typing import Deque, List, Pattern, Union, Any, Dict
 
 
 def drain_queue(q: Deque[str], max_items: int) -> List[str]:
+    """Drain queue."""
     out: List[str] = []
     for _ in range(max_items):
         if not q:
@@ -18,10 +19,12 @@ def drain_queue(q: Deque[str], max_items: int) -> List[str]:
 # ---------- Filter helpers ----------
 
 def _parse_tokens(text: str) -> List[str]:
+    """Internal helper for parse tokens."""
     return [t.strip() for t in text.split(";") if t.strip()]
 
 
 def compile_patterns(text: str, mode: str) -> List[Pattern[str] | str]:
+    """Compile patterns."""
     tokens = _parse_tokens(text)
     if not tokens:
         return []
@@ -40,6 +43,7 @@ def compile_patterns(text: str, mode: str) -> List[Pattern[str] | str]:
 
 def match_include(line: str, patterns: List[Pattern[str] | str]) -> bool:
     # AND logic
+    """Return whether include."""
     if not patterns:
         return True
 
@@ -55,6 +59,7 @@ def match_include(line: str, patterns: List[Pattern[str] | str]) -> bool:
 
 def match_exclude(line: str, patterns: List[Pattern[str] | str]) -> bool:
     # OR logic
+    """Return whether exclude."""
     if not patterns:
         return False
 
@@ -71,6 +76,7 @@ def match_exclude(line: str, patterns: List[Pattern[str] | str]) -> bool:
 # ---------- Highlight rule persistence helpers ----------
 
 def rules_to_json(rules: List[dict]) -> str:
+    """Handle rules to json."""
     try:
         return json.dumps(rules, ensure_ascii=False)
     except Exception:
@@ -78,6 +84,7 @@ def rules_to_json(rules: List[dict]) -> str:
 
 
 def rules_from_json(text: str) -> List[dict]:
+    """Handle rules from json."""
     try:
         data = json.loads(text or "[]")
         if isinstance(data, list):

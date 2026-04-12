@@ -14,6 +14,7 @@ FooterPresetScope = Literal["all", "plot", "logic"]
 
 @dataclass(slots=True, frozen=True)
 class FooterStatusPreset:
+    """Reusable footer template with a name, scope, and format string."""
     name: str
     scope: FooterPresetScope
     format: str
@@ -29,6 +30,7 @@ DEFAULT_FOOTER_STATUS_PRESETS = (
 
 @dataclass(slots=True)
 class AppPreferences:
+    """Normalized set of application-wide defaults stored in ``config.ini``."""
     language: str = "de"
     autoscroll_default: bool = True
     timestamp_default: bool = True
@@ -43,6 +45,7 @@ class AppPreferences:
     logic_window_size_default: int = 150
 
     def __post_init__(self) -> None:
+        """Normalize derived values after dataclass initialization."""
         self.language = (self.language or "de").strip().lower() or "de"
         self.max_lines_default = self._normalize_positive_int(self.max_lines_default, fallback=20000, minimum=1000)
         self.log_path = self._normalize_log_path(self.log_path)
@@ -62,6 +65,7 @@ class AppPreferences:
 
     @staticmethod
     def _normalize_positive_int(value: int | str | None, *, fallback: int, minimum: int) -> int:
+        """Normalize positive int."""
         try:
             parsed = int(value) if value is not None else fallback
         except (TypeError, ValueError):
@@ -70,6 +74,7 @@ class AppPreferences:
 
     @staticmethod
     def _normalize_log_path(value: str | None) -> str:
+        """Normalize log path."""
         return (value or "").strip()
 
     @classmethod
@@ -77,6 +82,7 @@ class AppPreferences:
         cls,
         values: tuple[int, int, int, int] | list[int] | str | None,
     ) -> tuple[int, int, int, int]:
+        """Normalize presets."""
         if isinstance(values, str):
             raw_parts = [part.strip() for part in values.split(",")]
         elif values is None:
@@ -102,6 +108,7 @@ class AppPreferences:
         return tuple(parsed)  # type: ignore[return-value]
 
     def presets_as_ini(self) -> str:
+        """Handle presets as ini."""
         return ",".join(str(value) for value in self.visualizer_presets)
 
     @classmethod
@@ -109,6 +116,7 @@ class AppPreferences:
         cls,
         values: tuple[FooterStatusPreset, ...] | list[FooterStatusPreset] | list[dict[str, str]] | str | None,
     ) -> tuple[FooterStatusPreset, ...]:
+        """Normalize footer presets."""
         raw_items: list[FooterStatusPreset | dict[str, str]] = []
         if isinstance(values, str):
             try:
@@ -145,10 +153,12 @@ class AppPreferences:
 
     @staticmethod
     def _normalize_footer_preset_name(value: str | None) -> str:
+        """Normalize footer preset name."""
         return (value or "").strip()[:FOOTER_PRESET_NAME_MAX_LENGTH]
 
     @staticmethod
     def _normalize_footer_preset_scope(value: str | None) -> FooterPresetScope:
+        """Normalize footer preset scope."""
         normalized = (value or "all").strip().lower()
         if normalized not in ("all", "plot", "logic"):
             return "all"
@@ -156,12 +166,14 @@ class AppPreferences:
 
     @staticmethod
     def _normalize_footer_preset_format(value: str | None) -> str:
+        """Normalize footer preset format."""
         raw = str(value or "").strip()
         if raw in {"Start:{start}\\n{stats}", "Start:{start}  Dauer:{duration}\\n{stats}"}:
             return "Start:{start}\\nDauer:{duration}"
         return normalize_footer_status_format(raw)
 
     def footer_presets_as_ini(self) -> str:
+        """Handle footer presets as ini."""
         return json.dumps(
             [{"name": preset.name, "scope": preset.scope, "format": preset.format} for preset in self.footer_status_presets],
             ensure_ascii=True,

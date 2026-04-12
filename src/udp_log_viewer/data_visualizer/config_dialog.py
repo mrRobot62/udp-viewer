@@ -4,7 +4,9 @@ from .visualizer_field_config import VisualizerFieldConfig
 
 
 class ConfigDialog(QDialog):
+    """Dialog for Config."""
     def __init__(self, config: VisualizerConfig):
+        """Initialize ConfigDialog and prepare its initial state."""
         super().__init__()
         self.config = config
 
@@ -21,6 +23,7 @@ class ConfigDialog(QDialog):
             self.add_row(f)
 
     def add_row(self, f: VisualizerFieldConfig):
+        """Handle add row."""
         row = self.table.rowCount()
         self.table.insertRow(row)
 
@@ -35,12 +38,14 @@ class ConfigDialog(QDialog):
         self.table.setItem(row, 8, QTableWidgetItem(f.unit))
 
     def combo(self, values, current):
+        """Handle combo."""
         c = QComboBox()
         c.addItems(values)
         c.setCurrentText(str(current).lower() if isinstance(current,bool) else str(current))
         return c
 
     def configure_logic(self, parent=None):
+        """Handle configure logic."""
         config = self._configs[0]  # oder eigener Slot später
 
         config.graph_type = "logic"

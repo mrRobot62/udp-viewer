@@ -25,6 +25,7 @@ import sys
 
 @dataclass
 class AppPathsConfig:
+    """Configuration container for AppPaths."""
     app_support_dir: Path
     config_path: Path
     logs_dir: Path
@@ -33,6 +34,7 @@ class AppPathsConfig:
 
 
 def _get_app_support_dir(org: str, app: str) -> Path:
+    """Return app support dir."""
     if sys.platform.startswith("darwin"):
         return Path.home() / "Library" / "Application Support" / org / app
     if sys.platform.startswith("win"):
@@ -43,6 +45,7 @@ def _get_app_support_dir(org: str, app: str) -> Path:
 
 
 def _get_default_documents_dir() -> Path:
+    """Return default documents dir."""
     if sys.platform.startswith("win"):
         base = os.environ.get("USERPROFILE") or str(Path.home())
         return Path(base) / "Documents"
@@ -50,14 +53,17 @@ def _get_default_documents_dir() -> Path:
 
 
 def get_default_app_support_dir(org: str, app: str) -> Path:
+    """Return default app support dir."""
     return _get_app_support_dir(org, app)
 
 
 def get_default_config_path(org: str, app: str) -> Path:
+    """Return default config path."""
     return get_default_app_support_dir(org, app) / "config.ini"
 
 
 def get_default_project_root_dir() -> Path:
+    """Return default project root dir."""
     return _get_default_documents_dir()
 
 
@@ -68,6 +74,7 @@ def load_or_create_config(
     *,
     config_path: str | Path | None = None,
 ) -> AppPathsConfig:
+    """Load or create config."""
     if config_path is None:
         cfg_path = get_default_config_path(org, app)
     else:

@@ -6,6 +6,7 @@ _LEGACY_STATS_PATTERN = re.compile(r"(\s*[-;|]?\s*)?\{stats\}(\s*[-;|]?\s*)?", r
 
 
 def normalize_footer_status_format(value: str | None) -> str:
+    """Normalize footer status format."""
     fmt = (value or "").strip()
     if not fmt:
         return ""

@@ -10,6 +10,7 @@ PatternOrStr = Union[Pattern[str], str]
 
 
 def _compile(pattern_text: str, mode: str) -> Optional[PatternOrStr]:
+    """Internal helper for compile."""
     pattern_text = (pattern_text or "").strip()
     if not pattern_text:
         return None
@@ -25,12 +26,14 @@ def _compile(pattern_text: str, mode: str) -> Optional[PatternOrStr]:
 
 
 def _matches(line: str, compiled: PatternOrStr) -> bool:
+    """Internal helper for matches."""
     if isinstance(compiled, str):
         return compiled in line
     return compiled.search(line) is not None
 
 
 def _color_from_name(name: str) -> Optional[QColor]:
+    """Internal helper for color from name."""
     name = (name or "").strip().lower()
     if name in ("", "none"):
         return None
@@ -58,6 +61,7 @@ class HighlightRule:
 
     @staticmethod
     def create(pattern_text: str, mode: str, color_name: str) -> Optional["HighlightRule"]:
+        """Handle create."""
         mode = (mode or "Substring").strip()
         if mode not in ("Substring", "Regex"):
             mode = "Substring"
@@ -74,9 +78,11 @@ class HighlightRule:
         )
 
     def matches(self, line: str) -> bool:
+        """Return whether the given log line matches this rule."""
         return _matches(line, self.compiled)
 
     def color(self) -> Optional[QColor]:
+        """Return the configured color object for this rule."""
         return _color_from_name(self.color_name)
 
 
@@ -90,15 +96,18 @@ class LogHighlighter(QSyntaxHighlighter):
     """
 
     def __init__(self, parent_document) -> None:
+        """Initialize LogHighlighter and prepare its initial state."""
         super().__init__(parent_document)
         self._rules: List[HighlightRule] = []
         self._default_format = QTextCharFormat()
 
     def set_rules(self, rules: List[HighlightRule]) -> None:
+        """Set rules."""
         self._rules = list(rules)
         self.rehighlight()
 
     def highlightBlock(self, text: str) -> None:
+        """Handle highlightBlock."""
         if not self._rules or not text:
             return
 

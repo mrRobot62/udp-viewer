@@ -11,13 +11,16 @@ from .preferences import AppPreferences
 
 
 class SettingsStore:
+    """Persistence helper for Settings."""
     _PREFS_SECTION = "preferences"
 
     def __init__(self, settings: QSettings, config_path: Path) -> None:
+        """Initialize SettingsStore and prepare its initial state."""
         self._settings = settings
         self._config_path = config_path
 
     def load_ui_state(self, default_state: UiState) -> UiState:
+        """Load ui state."""
         return UiState(
             bind_ip=self._settings.value("net/bind_ip", default_state.bind_ip, type=str),
             port=self._settings.value("net/port", default_state.port, type=int),
@@ -29,6 +32,7 @@ class SettingsStore:
         )
 
     def save_ui_state(self, state: UiState) -> None:
+        """Save ui state."""
         self._settings.setValue("net/bind_ip", state.bind_ip)
         self._settings.setValue("net/port", int(state.port))
         self._settings.setValue("ui/autoscroll", bool(state.autoscroll))
@@ -37,6 +41,7 @@ class SettingsStore:
         self._settings.sync()
 
     def load_preferences(self) -> AppPreferences:
+        """Load preferences."""
         log_path = self.ini_get(self._PREFS_SECTION, "log_path", "").strip()
         if not log_path:
             log_path = self.ini_get("paths", "logs_dir", "").strip()
@@ -75,6 +80,7 @@ class SettingsStore:
         )
 
     def save_preferences(self, preferences: AppPreferences) -> None:
+        """Save preferences."""
         parser = self._read_parser()
         if not parser.has_section(self._PREFS_SECTION):
             parser.add_section(self._PREFS_SECTION)
@@ -108,6 +114,7 @@ class SettingsStore:
         qsettings_key: str,
         slot_count: int,
     ) -> list[PatternSlot]:
+        """Load rule slots."""
         raw = self.ini_get(ini_section, ini_key, "")
         slots = slots_from_json(raw, slot_count)
         if all(not slot.pattern.strip() for slot in slots):
@@ -124,6 +131,7 @@ class SettingsStore:
         ini_key: str,
         qsettings_key: str,
     ) -> None:
+        """Save rule slots."""
         payload = slots_to_json(slots)
         self._settings.setValue(qsettings_key, payload)
         self._settings.sync()
@@ -134,10 +142,12 @@ class SettingsStore:
             pass
 
     def ini_read(self) -> dict:
+        """Handle ini read."""
         parser = self._read_parser()
         return {section: dict(parser.items(section)) for section in parser.sections()}
 
     def ini_get(self, section: str, key: str, default: str = "") -> str:
+        """Handle ini get."""
         try:
             parser = self._read_parser()
             return parser.get(section, key, fallback=default)
@@ -145,6 +155,7 @@ class SettingsStore:
             return default
 
     def ini_set(self, section: str, key: str, value: str) -> None:
+        """Handle ini set."""
         parser = self._read_parser()
         if not parser.has_section(section):
             parser.add_section(section)
@@ -152,6 +163,7 @@ class SettingsStore:
         self._write_parser(parser)
 
     def _read_parser(self) -> configparser.ConfigParser:
+        """Internal helper for read parser."""
         parser = configparser.ConfigParser()
         if self._config_path.exists():
             try:
@@ -161,11 +173,13 @@ class SettingsStore:
         return parser
 
     def _write_parser(self, parser: configparser.ConfigParser) -> None:
+        """Internal helper for write parser."""
         self._config_path.parent.mkdir(parents=True, exist_ok=True)
         with open(self._config_path, "w", encoding="utf-8", newline="\n") as handle:
             parser.write(handle)
 
     def _ini_get_bool(self, section: str, key: str, default: bool) -> bool:
+        """Internal helper for ini get bool."""
         parser = self._read_parser()
         try:
             return parser.getboolean(section, key, fallback=default)
@@ -173,6 +187,7 @@ class SettingsStore:
             return default
 
     def _ini_get_int(self, section: str, key: str, default: int) -> int:
+        """Internal helper for ini get int."""
         parser = self._read_parser()
         try:
             return parser.getint(section, key, fallback=default)

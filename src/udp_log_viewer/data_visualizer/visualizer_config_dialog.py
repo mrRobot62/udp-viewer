@@ -19,6 +19,7 @@ from ..preferences import FooterStatusPreset
 
 
 class VisualizerConfigDialog(QDialog):
+    """Dialog for VisualizerConfig."""
     SCALE_OPTIONS = ("1", "10", "100", "1000")
     AXIS_OPTIONS = ("Y1", "Y2")
     RENDER_STYLE_OPTIONS = ("Line", "Step")
@@ -32,6 +33,7 @@ class VisualizerConfigDialog(QDialog):
         on_apply: Callable[[list[VisualizerConfig], int], None] | None = None,
         parent: QWidget | None = None,
     ) -> None:
+        """Initialize VisualizerConfigDialog and prepare its initial state."""
         super().__init__(parent)
         self._configs = [ConfigStore.clone_config(config) for config in configs[:SLOT_COUNT]]
         while len(self._configs) < SLOT_COUNT:
@@ -215,13 +217,16 @@ class VisualizerConfigDialog(QDialog):
         self._load_slot_into_form(self._current_slot)
 
     def result_configs(self) -> list[VisualizerConfig]:
+        """Return the full slot configuration map collected from the dialog."""
         self._configs[self._current_slot] = self._read_form_config()
         return [ConfigStore.clone_config(config) for config in self._configs]
 
     def current_slot(self) -> int:
+        """Return the currently selected slot number."""
         return self._current_slot
 
     def _persist_current_config(self) -> list[VisualizerConfig]:
+        """Internal helper for persist current config."""
         configs = self.result_configs()
         self._loaded_form_config = ConfigStore.clone_config(self._configs[self._current_slot])
         if self._on_apply is not None:
@@ -229,13 +234,16 @@ class VisualizerConfigDialog(QDialog):
         return configs
 
     def _on_apply_clicked(self) -> None:
+        """Handle apply clicked events."""
         self._persist_current_config()
 
     def _on_save_clicked(self) -> None:
+        """Handle save clicked events."""
         self._persist_current_config()
         self.accept()
 
     def _load_slot_into_form(self, slot_index: int) -> None:
+        """Load slot into form."""
         config = ConfigStore.clone_config(self._configs[slot_index])
         self._switch_guard = True
         self._enabled.setChecked(config.enabled)
@@ -274,6 +282,7 @@ class VisualizerConfigDialog(QDialog):
         self._loaded_form_config = self._read_form_config()
 
     def _read_form_config(self) -> VisualizerConfig:
+        """Internal helper for read form config."""
         fields = []
         for row in range(self._table.rowCount()):
             field_name = self._table.item(row, 0).text().strip() if self._table.item(row, 0) else ""
@@ -330,9 +339,11 @@ class VisualizerConfigDialog(QDialog):
         )
 
     def _has_unsaved_changes(self) -> bool:
+        """Return whether unsaved changes."""
         return self._read_form_config() != self._loaded_form_config
 
     def _confirm_slot_change(self) -> str:
+        """Internal helper for confirm slot change."""
         if not self._has_unsaved_changes():
             return "keep"
         box = QMessageBox(self)
@@ -352,23 +363,28 @@ class VisualizerConfigDialog(QDialog):
         return "cancel"
 
     def _change_slot(self, next_slot: int) -> None:
+        """Internal helper for change slot."""
         self._current_slot = next_slot
         self._load_slot_into_form(next_slot)
 
     def _reset_slot_spin(self) -> None:
+        """Reset slot spin."""
         self._switch_guard = True
         self._slot_spin.setValue(self._current_slot + 1)
         self._switch_guard = False
 
     def _save_and_switch_slot(self, next_slot: int) -> None:
+        """Save and switch slot."""
         self._persist_current_config()
         self._change_slot(next_slot)
 
     def _discard_and_switch_slot(self, next_slot: int) -> None:
+        """Internal helper for discard and switch slot."""
         self._configs[self._current_slot] = ConfigStore.clone_config(self._loaded_form_config)
         self._change_slot(next_slot)
 
     def _on_slot_changed(self, value: int) -> None:
+        """Handle slot changed events."""
         if self._switch_guard:
             return
         next_slot = value - 1
@@ -387,6 +403,7 @@ class VisualizerConfigDialog(QDialog):
         self._change_slot(next_slot)
 
     def _append_row(self, field: VisualizerFieldConfig) -> None:
+        """Append row."""
         row = self._table.rowCount()
         self._table.insertRow(row)
         self._table.setItem(row, 0, QTableWidgetItem(field.field_name))
@@ -402,6 +419,7 @@ class VisualizerConfigDialog(QDialog):
         self._table.setItem(row, 10, QTableWidgetItem(field.unit))
 
     def _build_combo(self, values: tuple[str, ...], current: str) -> QComboBox:
+        """Build and return combo."""
         combo = QComboBox()
         combo.addItems(list(values))
         combo.setCurrentText(current if current in values else values[0])
@@ -409,6 +427,7 @@ class VisualizerConfigDialog(QDialog):
         return combo
 
     def _build_float_spin(self, value: float | None) -> QDoubleSpinBox:
+        """Build and return float spin."""
         spin = QDoubleSpinBox()
         spin.setRange(0, 99999.0)
         spin.setDecimals(2)
@@ -419,21 +438,25 @@ class VisualizerConfigDialog(QDialog):
 
     @staticmethod
     def _spin_value_or_none(spin: QDoubleSpinBox) -> float | None:
+        """Internal helper for spin value or none."""
         return None if spin.value() <= 0 else float(spin.value())
 
     @staticmethod
     def _positive_spin_value_or_none(spin: QDoubleSpinBox) -> float | None:
+        """Internal helper for positive spin value or none."""
         value = VisualizerConfigDialog._spin_value_or_none(spin)
         if value is None or value <= 0:
             return None
         return value
 
     def _sync_tick_step_ranges(self) -> None:
+        """Internal helper for sync tick step ranges."""
         self._sync_single_tick_step_range(self._y1_max, self._y1_major_tick_step)
         self._sync_single_tick_step_range(self._y2_max, self._y2_major_tick_step)
 
     @staticmethod
     def _sync_single_tick_step_range(max_spin: QDoubleSpinBox, step_spin: QDoubleSpinBox) -> None:
+        """Internal helper for sync single tick step range."""
         max_value = VisualizerConfigDialog._spin_value_or_none(max_spin)
         max_step = max(1.0, (max_value / 5.0) if max_value is not None and max_value > 0 else 100.0)
         step_spin.blockSignals(True)
@@ -444,12 +467,14 @@ class VisualizerConfigDialog(QDialog):
         step_spin.blockSignals(False)
 
     def _combo_text(self, row: int, col: int) -> str:
+        """Internal helper for combo text."""
         combo = self._table.cellWidget(row, col)
         if isinstance(combo, ColorSelectionWidget):
             return combo.color_code()
         return combo.currentText().strip() if combo is not None else ""
 
     def _on_add(self) -> None:
+        """Handle add events."""
         self._append_row(
             VisualizerFieldConfig(
                 "new_field",
@@ -467,6 +492,7 @@ class VisualizerConfigDialog(QDialog):
         )
 
     def _on_footer_preset_changed(self) -> None:
+        """Handle footer preset changed events."""
         preset_format = self._footer_preset_combo.currentData()
         if not preset_format:
             return
@@ -476,6 +502,7 @@ class VisualizerConfigDialog(QDialog):
         self._sync_footer_preset_combo(self._footer_format.text())
 
     def _sync_footer_preset_combo(self, current_text: str) -> None:
+        """Internal helper for sync footer preset combo."""
         text = (current_text or "").strip()
         self._footer_preset_combo.blockSignals(True)
         index = 0
@@ -487,6 +514,7 @@ class VisualizerConfigDialog(QDialog):
         self._footer_preset_combo.blockSignals(False)
 
     def _on_copy(self) -> None:
+        """Handle copy events."""
         self._configs[self._current_slot] = self._read_form_config()
         dialog = SlotCopyDialog(self._current_slot, parent=self)
         if dialog.exec_() != dialog.Accepted:
@@ -498,33 +526,39 @@ class VisualizerConfigDialog(QDialog):
             self._load_slot_into_form(self._current_slot)
 
     def _on_clear(self) -> None:
+        """Handle clear events."""
         self._configs[self._current_slot] = VisualizerConfig(graph_type="plot")
         self._load_slot_into_form(self._current_slot)
 
     def _on_delete(self) -> None:
+        """Handle delete events."""
         row = self._table.currentRow()
         if row >= 0:
             self._table.removeRow(row)
 
     def _on_up(self) -> None:
+        """Handle up events."""
         row = self._table.currentRow()
         if row > 0:
             self._swap_rows(row, row - 1)
             self._table.selectRow(row - 1)
 
     def _on_down(self) -> None:
+        """Handle down events."""
         row = self._table.currentRow()
         if 0 <= row < self._table.rowCount() - 1:
             self._swap_rows(row, row + 1)
             self._table.selectRow(row + 1)
 
     def _swap_rows(self, row_a: int, row_b: int) -> None:
+        """Internal helper for swap rows."""
         values_a = self._row_values(row_a)
         values_b = self._row_values(row_b)
         self._set_row_values(row_a, values_b)
         self._set_row_values(row_b, values_a)
 
     def _row_values(self, row: int) -> dict[str, str]:
+        """Internal helper for row values."""
         return {
             "field_name": self._table.item(row, 0).text() if self._table.item(row, 0) else "",
             "active": self._combo_text(row, 1),
@@ -540,6 +574,7 @@ class VisualizerConfigDialog(QDialog):
         }
 
     def _set_row_values(self, row: int, values: dict[str, str]) -> None:
+        """Set row values."""
         self._table.item(row, 0).setText(values["field_name"])
         self._table.cellWidget(row, 1).setCurrentText(values["active"])
         self._table.cellWidget(row, 2).setCurrentText(values["numeric"])

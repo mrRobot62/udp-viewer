@@ -7,6 +7,7 @@ from PyQt5.QtCore import QSettings
 
 
 def is_config_path_writable(path: Path) -> bool:
+    """Return whether config path writable."""
     if path.exists():
         return os.access(path, os.W_OK)
     return os.access(path.parent, os.W_OK)
@@ -19,6 +20,7 @@ def resolve_config_path(
     default_path: Path,
     prompt_callback,
 ) -> Path:
+    """Resolve config path."""
     remembered = settings.value(settings_key, "", type=str).strip()
 
     candidates: list[Path] = []
@@ -40,6 +42,7 @@ def resolve_config_path(
 
 
 def normalize_config_selection(selected_path: str, suggested_path: Path) -> Path:
+    """Normalize config selection."""
     if not selected_path:
         return suggested_path
     target = Path(selected_path).expanduser()

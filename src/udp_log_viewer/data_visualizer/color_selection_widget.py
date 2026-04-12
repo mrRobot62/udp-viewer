@@ -45,6 +45,7 @@ PRESET_LABEL_BY_CODE = {code: label for label, code in PRESET_COLORS}
 
 
 def normalize_color_code(color: str | None, fallback: str = DEFAULT_COLOR_CODE) -> str:
+    """Normalize color code."""
     candidate = (color or "").strip()
     if not candidate:
         return fallback
@@ -57,7 +58,9 @@ def normalize_color_code(color: str | None, fallback: str = DEFAULT_COLOR_CODE) 
 
 
 class ColorSelectionWidget(QWidget):
+    """Combined preset and hex-code editor for visualizer field colors."""
     def __init__(self, color: str = DEFAULT_COLOR_CODE, parent: QWidget | None = None) -> None:
+        """Initialize ColorSelectionWidget and prepare its initial state."""
         super().__init__(parent)
         self._syncing = False
 
@@ -84,9 +87,11 @@ class ColorSelectionWidget(QWidget):
         self.set_color(color)
 
     def color_code(self) -> str:
+        """Handle color code."""
         return normalize_color_code(self.line_edit.text(), fallback=self._selected_or_default_color())
 
     def set_color(self, color: str) -> None:
+        """Set color."""
         normalized = normalize_color_code(color)
         self._syncing = True
         self.line_edit.setText(normalized)
@@ -95,12 +100,14 @@ class ColorSelectionWidget(QWidget):
         self._syncing = False
 
     def _selected_or_default_color(self) -> str:
+        """Internal helper for selected or default color."""
         selected = self.combo_box.currentData()
         if isinstance(selected, str) and selected.startswith("#"):
             return selected.lower()
         return DEFAULT_COLOR_CODE
 
     def _on_combo_changed(self) -> None:
+        """Handle combo changed events."""
         if self._syncing:
             return
         selected = self.combo_box.currentData()
@@ -111,6 +118,7 @@ class ColorSelectionWidget(QWidget):
         self._syncing = False
 
     def _on_text_changed(self, text: str) -> None:
+        """Handle text changed events."""
         if self._syncing:
             return
         normalized = normalize_color_code(text, fallback="")

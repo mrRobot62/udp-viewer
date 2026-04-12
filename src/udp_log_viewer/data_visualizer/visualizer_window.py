@@ -66,6 +66,7 @@ if TYPE_CHECKING:
 WINDOW_SIZE_MIN = 1
 WINDOW_SIZE_MAX = 5000
 def _build_window_size_tooltip(max_samples: int) -> str:
+    """Build and return window size tooltip."""
     return f"Number of most recent samples shown when the sliding window is enabled. Allowed range: {WINDOW_SIZE_MIN} to {max(WINDOW_SIZE_MIN, min(max_samples, WINDOW_SIZE_MAX))}."
 
 
@@ -75,15 +76,18 @@ SCREENSHOT_SHORTCUT_TIPS = "Screenshot shortcuts: Ctrl+Shift+S, Cmd+Shift+S, or 
 
 @dataclass(slots=True, frozen=True)
 class PlotMeasurement:
+    """Selected measurement span for the plot visualizer."""
     start_index: int
     end_index: int | None
 
 
 def parse_plot_timestamp(timestamp_raw: str) -> datetime | None:
+    """Parse a visualizer sample timestamp for plot measurements."""
     return parse_footer_timestamp(timestamp_raw)
 
 
 def format_plot_measurement_duration(start_time: datetime | None, end_time: datetime | None) -> str:
+    """Format a plot measurement span as ``MM:SS.hh``."""
     if start_time is None or end_time is None:
         return "--:--.--"
     delta_ms = max(0, int(round((end_time - start_time).total_seconds() * 1000.0)))
@@ -94,6 +98,7 @@ def format_plot_measurement_duration(start_time: datetime | None, end_time: date
 
 
 def _build_plot_stats_text(series_metadata: list[dict[str, object]]) -> str:
+    """Build and return plot stats text."""
     parts: list[str] = []
     for meta in series_metadata:
         field_name = str(meta.get("field_name", "")).strip()
@@ -112,6 +117,7 @@ def _build_plot_stats_text(series_metadata: list[dict[str, object]]) -> str:
 
 
 def _build_plot_field_lookup(series_metadata: list[dict[str, object]]) -> dict[str, dict[str, object]]:
+    """Build and return plot field lookup."""
     return {
         str(meta.get("field_name", "")).strip().lower(): meta
         for meta in series_metadata
@@ -120,6 +126,7 @@ def _build_plot_field_lookup(series_metadata: list[dict[str, object]]) -> dict[s
 
 
 def _resolve_plot_footer_placeholder(key: str, context: dict[str, object], series_metadata: list[dict[str, object]]) -> str | None:
+    """Resolve plot footer placeholder."""
     normalized = key.strip()
     if not normalized:
         return None
@@ -161,6 +168,7 @@ def build_plot_footer_status(
     series_metadata: list[dict[str, object]],
     footer_status_format: str = "",
 ) -> str:
+    """Build and return plot footer status."""
     context = build_footer_context(samples)
     stats_text = _build_plot_stats_text(series_metadata)
     formatted = format_footer_template(
@@ -179,12 +187,14 @@ def build_plot_footer_status(
 
 
 def advance_plot_measurement(measurement: PlotMeasurement | None, clicked_index: int) -> PlotMeasurement:
+    """Advance plot measurement."""
     if measurement is None or measurement.end_index is not None:
         return PlotMeasurement(start_index=clicked_index, end_index=None)
     return PlotMeasurement(start_index=measurement.start_index, end_index=clicked_index)
 
 
 def choose_plot_measurement_label_anchor(start_x: int, end_x: int, label_text: str) -> tuple[float, str]:
+    """Choose plot measurement label anchor."""
     span = abs(end_x - start_x)
     min_span_for_center = max(4, len(label_text) // 2)
     if span >= min_span_for_center:
@@ -193,6 +203,7 @@ def choose_plot_measurement_label_anchor(start_x: int, end_x: int, label_text: s
 
 
 class VisualizerWindow:
+    """Window controller for Visualizer."""
     def __init__(
         self,
         config: VisualizerConfig,
@@ -201,6 +212,7 @@ class VisualizerWindow:
         project_name: str | None = None,
         output_dir: str | Path | None = None,
     ) -> None:
+        """Initialize VisualizerWindow and prepare its initial state."""
         self.config = config
         self.screenshot_dir = Path(screenshot_dir) if screenshot_dir is not None else None
         self.window_size_presets = tuple(window_size_presets or DEFAULT_VISUALIZER_PRESETS)
@@ -218,17 +230,20 @@ class VisualizerWindow:
         self._ensure_widget()
 
     def append_sample(self, sample: VisualizerSample) -> None:
+        """Append sample."""
         self.samples.append(sample)
         self._trim_samples_if_needed()
         if self.auto_refresh_enabled:
             self.refresh_plot()
 
     def clear_samples(self) -> None:
+        """Clear samples."""
         self.samples.clear()
         self.freeze_sample_index = None
         self.rebuild_plot()
 
     def set_auto_refresh(self, enabled: bool) -> None:
+        """Set auto refresh."""
         self.auto_refresh_enabled = enabled
         if enabled:
             self.freeze_sample_index = None
@@ -237,36 +252,43 @@ class VisualizerWindow:
         self.freeze_sample_index = len(self.samples)
 
     def set_runtime_sliding_window_enabled(self, enabled: bool) -> None:
+        """Set runtime sliding window enabled."""
         self.runtime_sliding_window_enabled = bool(enabled)
         self.rebuild_plot()
 
     def set_runtime_window_size(self, value: int) -> None:
+        """Set runtime window size."""
         self.runtime_window_size = self._normalize_runtime_window_size(value)
         self.rebuild_plot()
 
     def set_runtime_show_legend(self, enabled: bool) -> None:
+        """Set runtime show legend."""
         self.runtime_show_legend = bool(enabled)
         self.rebuild_plot()
 
     def reset_runtime_window(self) -> None:
+        """Reset runtime window."""
         self.runtime_sliding_window_enabled = bool(self.config.sliding_window_enabled)
         self.runtime_window_size = self._normalize_runtime_window_size(self.config.default_window_size)
         self.runtime_show_legend = bool(self.config.show_legend)
         self.rebuild_plot()
 
     def refresh_plot(self) -> None:
+        """Refresh plot."""
         self.refresh_request_count += 1
         widget = self._ensure_widget()
         if widget is not None:
             widget.refresh_plot()
 
     def rebuild_plot(self) -> None:
+        """Rebuild plot."""
         self.rebuild_request_count += 1
         widget = self._ensure_widget()
         if widget is not None:
             widget.rebuild_plot()
 
     def show(self) -> None:
+        """Show the underlying Qt window."""
         widget = self._ensure_widget()
         if widget is not None:
             widget.show()
@@ -274,30 +296,36 @@ class VisualizerWindow:
             widget.activateWindow()
 
     def update_runtime_context(self, *, project_name: str | None, output_dir: str | Path | None) -> None:
+        """Update runtime context."""
         self.project_name = (project_name or "").strip() or None
         self.output_dir = Path(output_dir) if output_dir is not None else None
         if self._widget is not None:
             self._widget.setWindowTitle(self._widget._build_window_title())
 
     def set_initial_position(self, *, slot_index: int, group_offset: int = 0) -> None:
+        """Set initial position."""
         widget = self._ensure_widget()
         if widget is not None and hasattr(widget, "set_initial_position"):
             widget.set_initial_position(slot_index=slot_index, group_offset=group_offset)
 
     def close(self) -> None:
+        """Close the underlying Qt window or runtime resource."""
         if self._widget is not None:
             self._widget.close()
 
     def save_screenshot(self) -> Path | None:
+        """Save screenshot."""
         widget = self._ensure_widget()
         if widget is None:
             return None
         return widget.save_screenshot()
 
     def is_gui_available(self) -> bool:
+        """Return whether gui available."""
         return self._ensure_widget() is not None
 
     def get_visible_samples_for_test(self) -> list[VisualizerSample]:
+        """Return visible samples for test."""
         visible = self.samples[: self.freeze_sample_index] if self.freeze_sample_index is not None else self.samples
         if not visible:
             return []
@@ -306,6 +334,7 @@ class VisualizerWindow:
         return list(visible[-self.runtime_window_size :])
 
     def _ensure_widget(self) -> "_VisualizerWindowWidget | None":
+        """Ensure widget."""
         if self._widget is not None:
             return self._widget
         if not self._can_create_widget():
@@ -314,6 +343,7 @@ class VisualizerWindow:
         return self._widget
 
     def _trim_samples_if_needed(self) -> None:
+        """Internal helper for trim samples if needed."""
         max_samples = self.config.max_samples
         if len(self.samples) <= max_samples:
             return
@@ -323,6 +353,7 @@ class VisualizerWindow:
             self.freeze_sample_index = max(0, self.freeze_sample_index - overflow)
 
     def _normalize_runtime_window_size(self, value: int | str | None) -> int:
+        """Normalize runtime window size."""
         try:
             parsed = int(value) if value is not None else self.config.default_window_size
         except (TypeError, ValueError):
@@ -333,6 +364,7 @@ class VisualizerWindow:
 
     @staticmethod
     def _can_create_widget() -> bool:
+        """Return whether create widget."""
         if not (_PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE):
             return False
         try:
@@ -1194,6 +1226,7 @@ else:
 
 
 def _to_matplotlib_linestyle(value: str | None) -> str:
+    """Internal helper for to matplotlib linestyle."""
     normalized = (value or "solid").strip().lower()
     mapping = {
         "solid": "-",
@@ -1205,6 +1238,7 @@ def _to_matplotlib_linestyle(value: str | None) -> str:
 
 
 def _format_plot_value(value: float | int | None, unit: str = "", *, format_spec: str = "") -> str:
+    """Internal helper for format plot value."""
     if value is None:
         return "-"
     if format_spec:
@@ -1222,6 +1256,7 @@ def _build_staggered_label_offsets(
     min_gap_points: int = 14,
     max_offset_points: int = 42,
 ) -> dict[int, int]:
+    """Build and return staggered label offsets."""
     axis_series = [meta for meta in series_metadata if meta.get("axis") is axis]
     if len(axis_series) <= 1:
         return {id(meta): 0 for meta in axis_series}
@@ -1250,6 +1285,7 @@ def _build_staggered_label_offsets(
 
 
 def _uses_binary_step_axis(fields, *, axis: str) -> bool:
+    """Internal helper for uses binary step axis."""
     for field in fields:
         if not getattr(field, "active", False):
             continue

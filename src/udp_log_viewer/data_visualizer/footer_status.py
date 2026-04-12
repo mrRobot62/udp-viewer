@@ -11,6 +11,7 @@ _PLACEHOLDER_PATTERN = re.compile(r"\{([^{}]+)\}")
 
 
 def split_footer_placeholder(value: str) -> tuple[str, str]:
+    """Handle split footer placeholder."""
     name, separator, format_spec = value.strip().partition(":")
     if not separator:
         return name.strip(), ""
@@ -18,6 +19,7 @@ def split_footer_placeholder(value: str) -> tuple[str, str]:
 
 
 def format_footer_value(value: Any, format_spec: str = "", unit: str = "") -> str:
+    """Format footer value."""
     if value is None:
         return "--"
     if format_spec:
@@ -34,6 +36,7 @@ def format_footer_value(value: Any, format_spec: str = "", unit: str = "") -> st
 
 
 def resolve_footer_context_placeholder(key: str, context: dict[str, Any]) -> str | None:
+    """Resolve footer context placeholder."""
     name, format_spec = split_footer_placeholder(key)
     value = context.get(name.lower())
     if value is None:
@@ -42,6 +45,7 @@ def resolve_footer_context_placeholder(key: str, context: dict[str, Any]) -> str
 
 
 def parse_footer_timestamp(timestamp_raw: str) -> datetime | None:
+    """Parse footer timestamp."""
     value = (timestamp_raw or "").strip()
     if not value:
         return None
@@ -52,12 +56,14 @@ def parse_footer_timestamp(timestamp_raw: str) -> datetime | None:
 
 
 def format_footer_time(value: datetime | None) -> str:
+    """Format footer time."""
     if value is None:
         return "--:--:--"
     return value.strftime("%H:%M:%S")
 
 
 def format_footer_duration(start_time: datetime | None, end_time: datetime | None) -> str:
+    """Format footer duration."""
     if start_time is None or end_time is None:
         return "--:--:--"
     total_seconds = max(0, int((end_time - start_time).total_seconds()))
@@ -67,6 +73,7 @@ def format_footer_duration(start_time: datetime | None, end_time: datetime | Non
 
 
 def format_footer_template(template: str, resolver) -> str:
+    """Format footer template."""
     raw_template = (template or "").strip()
     if not raw_template:
         return ""
@@ -81,6 +88,7 @@ def format_footer_template(template: str, resolver) -> str:
 
 
 def build_footer_context(samples: list[VisualizerSample]) -> dict[str, Any]:
+    """Build and return footer context."""
     first_time = parse_footer_timestamp(samples[0].timestamp_raw) if samples else None
     last_time = parse_footer_timestamp(samples[-1].timestamp_raw) if samples else None
     return {

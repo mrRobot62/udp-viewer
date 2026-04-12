@@ -27,6 +27,7 @@ from .project_runtime import (
 
 
 class ProjectDialog(QDialog):
+    """Dialog for Project."""
     def __init__(
         self,
         current_project: RuntimeProject | None = None,
@@ -34,6 +35,7 @@ class ProjectDialog(QDialog):
         default_root_dir: Path | None = None,
         parent: QWidget | None = None,
     ) -> None:
+        """Initialize ProjectDialog and prepare its initial state."""
         super().__init__(parent)
         self.setWindowTitle("Project")
         self.setModal(True)
@@ -131,23 +133,29 @@ class ProjectDialog(QDialog):
         self._update_notes_info()
 
     def project_name(self) -> str:
+        """Handle project name."""
         return self._name.text().strip()
 
     def root_dir(self) -> Path:
+        """Handle root dir."""
         return Path(self._root_dir.text().strip()).expanduser()
 
     def project_notes(self) -> str:
+        """Handle project notes."""
         return normalize_project_notes(self._notes.toPlainText(), max_chars=self._notes_max_chars)
 
     def project(self) -> RuntimeProject:
+        """Return the runtime project object described by the dialog fields."""
         return RuntimeProject(name=self.project_name(), root_dir=self.root_dir())
 
     def _browse_root_dir(self) -> None:
+        """Internal helper for browse root dir."""
         selected = QFileDialog.getExistingDirectory(self, "Select Project Root Folder", self._root_dir.text().strip())
         if selected:
             self._root_dir.setText(selected)
 
     def _update_preview(self) -> None:
+        """Update preview."""
         project_name = self.project_name()
         root_dir = self._root_dir.text().strip()
         if self._notes_uses_default:
@@ -163,6 +171,7 @@ class ProjectDialog(QDialog):
         self._preview.setText(str(Path(root_dir).expanduser() / project_name))
 
     def _enforce_notes_limit(self) -> None:
+        """Internal helper for enforce notes limit."""
         normalized = normalize_project_notes(self._notes.toPlainText(), max_chars=self._notes_max_chars)
         if normalized != self._notes.toPlainText():
             cursor = self._notes.textCursor()
@@ -177,9 +186,11 @@ class ProjectDialog(QDialog):
         self._update_notes_info()
 
     def _update_notes_info(self) -> None:
+        """Update notes info."""
         self._notes_info.setText(f"{len(self.project_notes())}/{self._notes_max_chars} characters")
 
     def _set_default_notes_text(self, project_name: str) -> None:
+        """Set default notes text."""
         self._default_notes_text = build_project_readme_default_text(project_name or "project")
         self._notes.blockSignals(True)
         self._notes.setPlainText(self._default_notes_text)
@@ -188,6 +199,7 @@ class ProjectDialog(QDialog):
         self._update_notes_info()
 
     def _reset_to_defaults(self) -> None:
+        """Reset to defaults."""
         self._name.clear()
         self._root_dir.setText(str(self._default_root_dir) if self._default_root_dir is not None else "")
         self._set_default_notes_text("project")

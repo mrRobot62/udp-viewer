@@ -64,6 +64,7 @@ if TYPE_CHECKING:
 WINDOW_SIZE_MIN = 1
 WINDOW_SIZE_MAX = 5000
 def _build_window_size_tooltip(max_samples: int) -> str:
+    """Build and return window size tooltip."""
     return f"Number of most recent samples shown when the sliding window is enabled. Allowed range: {WINDOW_SIZE_MIN} to {max(WINDOW_SIZE_MIN, min(max_samples, WINDOW_SIZE_MAX))}."
 
 
@@ -73,6 +74,7 @@ SCREENSHOT_SHORTCUT_TIPS = "Screenshot shortcuts: Ctrl+Shift+S, Cmd+Shift+S, or 
 
 @dataclass(slots=True, frozen=True)
 class LogicMeasurement:
+    """Selected edge or period measurement inside the logic visualizer."""
     field_name: str
     start_index: int
     start_edge: str
@@ -82,10 +84,12 @@ class LogicMeasurement:
 
 
 def parse_visualizer_timestamp(timestamp_raw: str) -> datetime | None:
+    """Parse a visualizer sample timestamp for logic measurements."""
     return parse_footer_timestamp(timestamp_raw)
 
 
 def format_measurement_duration(start_time: datetime | None, end_time: datetime | None) -> str:
+    """Format a logic measurement span as ``MM:SS.mmm``."""
     if start_time is None or end_time is None:
         return "--:--.---"
     delta_ms = max(0, int(round((end_time - start_time).total_seconds() * 1000.0)))
@@ -95,6 +99,7 @@ def format_measurement_duration(start_time: datetime | None, end_time: datetime 
 
 
 def _build_logic_field_lookup(samples: list[VisualizerSample]) -> dict[str, float]:
+    """Build and return logic field lookup."""
     if not samples:
         return {}
     latest_values = samples[-1].values_by_name
@@ -106,6 +111,7 @@ def _build_logic_field_lookup(samples: list[VisualizerSample]) -> dict[str, floa
 
 
 def _resolve_logic_footer_placeholder(key: str, context: dict[str, object], field_lookup: dict[str, float]) -> str | None:
+    """Resolve logic footer placeholder."""
     context_value = resolve_footer_context_placeholder(key, context)
     if context_value is not None:
         return context_value
@@ -119,6 +125,7 @@ def _resolve_logic_footer_placeholder(key: str, context: dict[str, object], fiel
 
 
 def build_logic_footer_status(samples: list[VisualizerSample], footer_status_format: str = "") -> str:
+    """Build and return logic footer status."""
     context = build_footer_context(samples)
     field_lookup = _build_logic_field_lookup(samples)
     formatted = format_footer_template(
@@ -136,6 +143,7 @@ def build_logic_footer_status(samples: list[VisualizerSample], footer_status_for
 
 
 def choose_measurement_label_anchor(start_x: int, end_x: int, label_text: str) -> tuple[float, str]:
+    """Choose measurement label anchor."""
     span = max(0, end_x - start_x)
     min_span_for_center = max(4, len(label_text) // 2)
     if span >= min_span_for_center:
@@ -144,6 +152,7 @@ def choose_measurement_label_anchor(start_x: int, end_x: int, label_text: str) -
 
 
 def _logic_level_from_sample(sample: VisualizerSample, field_name: str) -> bool | None:
+    """Internal helper for logic level from sample."""
     raw = sample.values_by_name.get(field_name)
     if raw is None:
         return None
@@ -157,6 +166,7 @@ def find_next_logic_edge(
     *,
     edge_type: str | None = None,
 ) -> tuple[int, str] | None:
+    """Find next logic edge."""
     if len(samples) < 2:
         return None
 
@@ -179,6 +189,7 @@ def build_logic_measurement(
     *,
     same_edge_only: bool,
 ) -> LogicMeasurement | None:
+    """Build and return logic measurement."""
     start_edge = find_next_logic_edge(samples, field_name, clicked_index)
     if start_edge is None:
         return None
@@ -203,6 +214,7 @@ def build_logic_measurement(
 
 
 class LogicVisualizerWindow:
+    """Window controller for LogicVisualizer."""
     def __init__(
         self,
         config,
@@ -211,6 +223,7 @@ class LogicVisualizerWindow:
         project_name: str | None = None,
         output_dir: str | Path | None = None,
     ) -> None:
+        """Initialize LogicVisualizerWindow and prepare its initial state."""
         self.config = config
         self.screenshot_dir = Path(screenshot_dir) if screenshot_dir is not None else None
         self.window_size_presets = tuple(window_size_presets or DEFAULT_VISUALIZER_PRESETS)
@@ -227,17 +240,20 @@ class LogicVisualizerWindow:
         self._ensure_widget()
 
     def append_sample(self, sample) -> None:
+        """Append sample."""
         self.samples.append(sample)
         self._trim_samples_if_needed()
         if self.auto_refresh_enabled:
             self.refresh_plot()
 
     def clear_samples(self) -> None:
+        """Clear samples."""
         self.samples.clear()
         self.freeze_sample_index = None
         self.rebuild_plot()
 
     def set_auto_refresh(self, enabled: bool) -> None:
+        """Set auto refresh."""
         self.auto_refresh_enabled = enabled
         if enabled:
             self.freeze_sample_index = None
@@ -246,34 +262,41 @@ class LogicVisualizerWindow:
             self.freeze_sample_index = len(self.samples)
 
     def set_runtime_sliding_window_enabled(self, enabled: bool) -> None:
+        """Set runtime sliding window enabled."""
         self.runtime_sliding_window_enabled = bool(enabled)
         self.rebuild_plot()
 
     def set_runtime_window_size(self, value: int) -> None:
+        """Set runtime window size."""
         self.runtime_window_size = self._normalize_runtime_window_size(value)
         self.rebuild_plot()
 
     def set_runtime_show_legend(self, enabled: bool) -> None:
+        """Set runtime show legend."""
         self.runtime_show_legend = bool(enabled)
         self.rebuild_plot()
 
     def reset_runtime_window(self) -> None:
+        """Reset runtime window."""
         self.runtime_sliding_window_enabled = bool(self.config.sliding_window_enabled)
         self.runtime_window_size = self._normalize_runtime_window_size(self.config.default_window_size)
         self.runtime_show_legend = bool(getattr(self.config, "show_legend", True))
         self.rebuild_plot()
 
     def refresh_plot(self) -> None:
+        """Refresh plot."""
         widget = self._ensure_widget()
         if widget is not None:
             widget.refresh_plot()
 
     def rebuild_plot(self) -> None:
+        """Rebuild plot."""
         widget = self._ensure_widget()
         if widget is not None:
             widget.rebuild_plot()
 
     def show(self) -> None:
+        """Show the underlying Qt window."""
         widget = self._ensure_widget()
         if widget is not None:
             widget.show()
@@ -281,27 +304,32 @@ class LogicVisualizerWindow:
             widget.activateWindow()
 
     def update_runtime_context(self, *, project_name: str | None, output_dir: str | Path | None) -> None:
+        """Update runtime context."""
         self.project_name = (project_name or "").strip() or None
         self.output_dir = Path(output_dir) if output_dir is not None else None
         if self._widget is not None:
             self._widget.setWindowTitle(self._widget._build_window_title())
 
     def set_initial_position(self, *, slot_index: int, group_offset: int = 0) -> None:
+        """Set initial position."""
         widget = self._ensure_widget()
         if widget is not None and hasattr(widget, "set_initial_position"):
             widget.set_initial_position(slot_index=slot_index, group_offset=group_offset)
 
     def close(self) -> None:
+        """Close the underlying Qt window or runtime resource."""
         if self._widget is not None:
             self._widget.close()
 
     def save_screenshot(self):
+        """Save screenshot."""
         widget = self._ensure_widget()
         if widget is None:
             return None
         return widget.save_screenshot()
 
     def get_visible_samples_for_test(self) -> list[VisualizerSample]:
+        """Return visible samples for test."""
         visible = self.samples[: self.freeze_sample_index] if self.freeze_sample_index is not None else self.samples
         if not visible:
             return []
@@ -310,6 +338,7 @@ class LogicVisualizerWindow:
         return list(visible[-self.runtime_window_size :])
 
     def _ensure_widget(self):
+        """Ensure widget."""
         if self._widget is not None:
             return self._widget
         if not self._can_create_widget():
@@ -318,6 +347,7 @@ class LogicVisualizerWindow:
         return self._widget
 
     def _trim_samples_if_needed(self) -> None:
+        """Internal helper for trim samples if needed."""
         max_samples = getattr(self.config, "max_samples", 2000)
         if len(self.samples) <= max_samples:
             return
@@ -327,6 +357,7 @@ class LogicVisualizerWindow:
             self.freeze_sample_index = max(0, self.freeze_sample_index - overflow)
 
     def _normalize_runtime_window_size(self, value: int | str | None) -> int:
+        """Normalize runtime window size."""
         try:
             parsed = int(value) if value is not None else self.config.default_window_size
         except (TypeError, ValueError):
@@ -337,6 +368,7 @@ class LogicVisualizerWindow:
 
     @staticmethod
     def _can_create_widget() -> bool:
+        """Return whether create widget."""
         if not (_PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE):
             return False
         try:

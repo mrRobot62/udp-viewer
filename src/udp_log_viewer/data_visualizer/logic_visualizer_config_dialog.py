@@ -30,6 +30,7 @@ from ..preferences import FooterStatusPreset
 
 
 class LogicVisualizerConfigDialog(QDialog):
+    """Dialog for LogicVisualizerConfig."""
     def __init__(
         self,
         configs: list[VisualizerConfig],
@@ -38,6 +39,7 @@ class LogicVisualizerConfigDialog(QDialog):
         on_apply: Callable[[list[VisualizerConfig], int], None] | None = None,
         parent=None,
     ):
+        """Initialize LogicVisualizerConfigDialog and prepare its initial state."""
         super().__init__(parent)
         self.setWindowTitle("Logic Visualizer Config")
         self.resize(980, 620)
@@ -186,13 +188,16 @@ class LogicVisualizerConfigDialog(QDialog):
         self._load_slot_into_form(self._current_slot)
 
     def result_configs(self) -> list[VisualizerConfig]:
+        """Return the full slot configuration map collected from the dialog."""
         self._configs[self._current_slot] = self._read_form_config()
         return [ConfigStore.clone_config(config) for config in self._configs]
 
     def current_slot(self) -> int:
+        """Return the currently selected slot number."""
         return self._current_slot
 
     def _persist_current_config(self) -> list[VisualizerConfig]:
+        """Internal helper for persist current config."""
         configs = self.result_configs()
         self._loaded_form_config = ConfigStore.clone_config(self._configs[self._current_slot])
         if self._on_apply is not None:
@@ -200,13 +205,16 @@ class LogicVisualizerConfigDialog(QDialog):
         return configs
 
     def _on_apply_clicked(self) -> None:
+        """Handle apply clicked events."""
         self._persist_current_config()
 
     def _on_save_clicked(self) -> None:
+        """Handle save clicked events."""
         self._persist_current_config()
         self.accept()
 
     def _load_slot_into_form(self, slot_index: int) -> None:
+        """Load slot into form."""
         config = ConfigStore.clone_config(self._configs[slot_index])
         self._switch_guard = True
         self.chk_enabled.setChecked(config.enabled)
@@ -232,6 +240,7 @@ class LogicVisualizerConfigDialog(QDialog):
         self._loaded_form_config = self._read_form_config()
 
     def _read_form_config(self) -> VisualizerConfig:
+        """Internal helper for read form config."""
         new_fields = []
         for row in range(self.table.rowCount()):
             field_name = self.table.item(row, 0).text().strip() if self.table.item(row, 0) else ""
@@ -281,9 +290,11 @@ class LogicVisualizerConfigDialog(QDialog):
         )
 
     def _has_unsaved_changes(self) -> bool:
+        """Return whether unsaved changes."""
         return self._read_form_config() != self._loaded_form_config
 
     def _confirm_slot_change(self) -> str:
+        """Internal helper for confirm slot change."""
         if not self._has_unsaved_changes():
             return "keep"
         box = QMessageBox(self)
@@ -303,23 +314,28 @@ class LogicVisualizerConfigDialog(QDialog):
         return "cancel"
 
     def _change_slot(self, next_slot: int) -> None:
+        """Internal helper for change slot."""
         self._current_slot = next_slot
         self._load_slot_into_form(next_slot)
 
     def _reset_slot_spin(self) -> None:
+        """Reset slot spin."""
         self._switch_guard = True
         self.sb_slot.setValue(self._current_slot + 1)
         self._switch_guard = False
 
     def _save_and_switch_slot(self, next_slot: int) -> None:
+        """Save and switch slot."""
         self._persist_current_config()
         self._change_slot(next_slot)
 
     def _discard_and_switch_slot(self, next_slot: int) -> None:
+        """Internal helper for discard and switch slot."""
         self._configs[self._current_slot] = ConfigStore.clone_config(self._loaded_form_config)
         self._change_slot(next_slot)
 
     def _on_slot_changed(self, value: int) -> None:
+        """Handle slot changed events."""
         if self._switch_guard:
             return
         next_slot = value - 1
@@ -338,6 +354,7 @@ class LogicVisualizerConfigDialog(QDialog):
         self._change_slot(next_slot)
 
     def add_row(self, field_name: str, active: bool, plot: bool, color: str) -> None:
+        """Handle add row."""
         row = self.table.rowCount()
         self.table.insertRow(row)
 
@@ -358,6 +375,7 @@ class LogicVisualizerConfigDialog(QDialog):
         self.table.setCellWidget(row, 3, ColorSelectionWidget(color))
 
     def _on_copy(self) -> None:
+        """Handle copy events."""
         self._configs[self._current_slot] = self._read_form_config()
         dialog = SlotCopyDialog(self._current_slot, parent=self)
         if dialog.exec_() != dialog.Accepted:
@@ -369,10 +387,12 @@ class LogicVisualizerConfigDialog(QDialog):
             self._load_slot_into_form(self._current_slot)
 
     def _on_clear(self) -> None:
+        """Handle clear events."""
         self._configs[self._current_slot] = VisualizerConfig(graph_type="logic")
         self._load_slot_into_form(self._current_slot)
 
     def _move_up(self):
+        """Internal helper for move up."""
         row = self.table.currentRow()
         if row <= 0:
             return
@@ -380,6 +400,7 @@ class LogicVisualizerConfigDialog(QDialog):
         self.table.selectRow(row - 1)
 
     def _move_down(self):
+        """Internal helper for move down."""
         row = self.table.currentRow()
         if row < 0 or row >= self.table.rowCount() - 1:
             return
@@ -387,6 +408,7 @@ class LogicVisualizerConfigDialog(QDialog):
         self.table.selectRow(row + 1)
 
     def _on_footer_preset_changed(self) -> None:
+        """Handle footer preset changed events."""
         preset_format = self.cb_footer_preset.currentData()
         if not preset_format:
             return
@@ -396,6 +418,7 @@ class LogicVisualizerConfigDialog(QDialog):
         self._sync_footer_preset_combo(self.ed_footer_format.text())
 
     def _sync_footer_preset_combo(self, current_text: str) -> None:
+        """Internal helper for sync footer preset combo."""
         text = (current_text or "").strip()
         self.cb_footer_preset.blockSignals(True)
         index = 0
@@ -407,12 +430,14 @@ class LogicVisualizerConfigDialog(QDialog):
         self.cb_footer_preset.blockSignals(False)
 
     def _swap_rows(self, row_a: int, row_b: int):
+        """Internal helper for swap rows."""
         values_a = self._row_values(row_a)
         values_b = self._row_values(row_b)
         self._set_row_values(row_a, values_b)
         self._set_row_values(row_b, values_a)
 
     def _row_values(self, row: int) -> dict:
+        """Internal helper for row values."""
         return {
             "field_name": self.table.item(row, 0).text() if self.table.item(row, 0) else "",
             "active": self.table.cellWidget(row, 1).currentText(),
@@ -421,6 +446,7 @@ class LogicVisualizerConfigDialog(QDialog):
         }
 
     def _set_row_values(self, row: int, values: dict):
+        """Set row values."""
         self.table.item(row, 0).setText(values["field_name"])
         self.table.cellWidget(row, 1).setCurrentText(values["active"])
         self.table.cellWidget(row, 2).setCurrentText(values["plot"])

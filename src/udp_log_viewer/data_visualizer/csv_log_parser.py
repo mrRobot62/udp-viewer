@@ -7,6 +7,7 @@ from .visualizer_sample import VisualizerSample
 
 
 class CsvLogParser:
+    """Parser that converts supported CSV-like log lines into visualizer samples."""
     _FILTER_IN_FIRST_FIELD_RE = re.compile(
         r"^(?P<timestamp>.*?)\s*(?P<filter>\[CSV_[^\]]+\])\s*$"
     )
@@ -17,6 +18,7 @@ class CsvLogParser:
         config: VisualizerConfig,
         sample_index: int,
     ) -> VisualizerSample | None:
+        """Parse line."""
         timestamp, filter_value, data_fields = self._extract_parts(line)
         if filter_value is None:
             return None
@@ -53,6 +55,7 @@ class CsvLogParser:
 
     def _extract_parts(self, line: str) -> tuple[str, str | None, list[str]]:
         # Spaces before/after ';' are tolerated and ignored.
+        """Internal helper for extract parts."""
         parts = [part.strip() for part in line.strip().split(";")]
         if not parts:
             return "", None, []
@@ -89,6 +92,7 @@ class CsvLogParser:
 
     @staticmethod
     def _parse_numeric_value(raw_value: str, scale: int) -> float | None:
+        """Internal helper for parse numeric value."""
         try:
             numeric_value = float(raw_value)
         except ValueError:

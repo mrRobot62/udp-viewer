@@ -7,11 +7,13 @@ from typing import Deque
 
 @dataclass(frozen=True)
 class ListenerRequest:
+    """Validated listener startup parameters from the main window."""
     bind_ip: str
     port: int
 
 
 def parse_listener_request(bind_ip_text: str, port_text: str) -> tuple[ListenerRequest | None, str | None]:
+    """Parse listener request."""
     bind_ip = bind_ip_text.strip() or "0.0.0.0"
     port_raw = port_text.strip()
 
@@ -29,10 +31,12 @@ def parse_listener_request(bind_ip_text: str, port_text: str) -> tuple[ListenerR
 
 
 def reset_pause_state(pause_buffer: Deque[str], *, maxlen: int = 2000) -> tuple[Deque[str], int, bool]:
+    """Reset pause state."""
     return deque(maxlen=maxlen), 0, False
 
 
 def stop_listener_thread(listener, *, wait_ms: int = 800) -> None:
+    """Handle stop listener thread."""
     try:
         listener.stop()
         if listener.wait(wait_ms):
