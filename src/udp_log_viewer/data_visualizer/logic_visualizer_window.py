@@ -252,6 +252,19 @@ class LogicVisualizerWindow:
         self.freeze_sample_index = None
         self.rebuild_plot()
 
+    def reset_runtime_state(self, *, clear_samples: bool = False) -> None:
+        """Reset transient runtime state to the slot defaults."""
+        if clear_samples:
+            self.samples.clear()
+        self.auto_refresh_enabled = True
+        self.freeze_sample_index = None
+        self.runtime_sliding_window_enabled = bool(self.config.sliding_window_enabled)
+        self.runtime_window_size = self._normalize_runtime_window_size(self.config.default_window_size)
+        self.runtime_show_legend = bool(getattr(self.config, "show_legend", True))
+        if self._widget is not None:
+            self._widget.reset_interaction_state()
+        self.rebuild_plot()
+
     def set_auto_refresh(self, enabled: bool) -> None:
         """Set auto refresh."""
         self.auto_refresh_enabled = enabled
@@ -708,6 +721,13 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._legend_checkbox.blockSignals(False)
             self._window_size_spin.blockSignals(False)
 
+        def reset_interaction_state(self) -> None:
+            """Clear transient widget interaction state after a session reset."""
+            self._measurement = None
+            self._status_label.setText("")
+            self._cursor_line.set_visible(False)
+            self._sync_runtime_controls()
+
         def _on_mouse_move(self, event) -> None:
             if event.inaxes != self._axes:
                 return
@@ -1038,6 +1058,9 @@ else:
             pass
 
         def show(self) -> None:
+            pass
+
+        def reset_interaction_state(self) -> None:
             pass
 
         def raise_(self) -> None:

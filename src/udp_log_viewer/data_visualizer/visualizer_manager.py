@@ -183,7 +183,7 @@ class VisualizerManager:
         """Clear all buffers."""
         self.sample_counters_by_slot.clear()
         for window in self.windows_by_slot.values():
-            window.clear_samples()
+            window.reset_runtime_state(clear_samples=True)
 
     def clear_window_buffer(self, index: int) -> None:
         """Clear window buffer."""
@@ -191,7 +191,7 @@ class VisualizerManager:
         self.sample_counters_by_slot[slot_id] = 0
         window = self.windows_by_slot.get(slot_id)
         if window is not None:
-            window.clear_samples()
+            window.reset_runtime_state(clear_samples=True)
 
     def configure_csv_temp(self, parent: QWidget | None = None) -> bool:
         """Handle configure csv temp."""
