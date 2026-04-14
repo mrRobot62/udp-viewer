@@ -352,13 +352,15 @@ Der Standard-Visualizer unterstützt:
 - konfigurierbaren Linienstil
 - automatisches Redraw oder Freeze-Modus
 - Footer-Statuszeilen mit Platzhaltern wie `{samples}`, `{Thot}`,
-  `{current:Thot}`, `{mean:Thot}`, `{avg:Thot}` und `{max:Thot}`
+  `{current:Thot}`, `{mean:Thot}`, `{avg:Thot}`, `{median:Thot}`,
+  `{tail_avg:Thot}`, `{thr_avg:Thot}` und `{max:Thot}`
 - Screenshot-Export nach PNG
 
-Die Footer-Parameter `mean`, `avg`, `max`, `current` und `latest` werden
-im Viewer aus den aktuell gerenderten numerischen Plot-Werten berechnet.
-Sie sind keine Werte aus dem UDP-Datenstrom. Bei aktivem Sliding Window
-beziehen sie sich auf das sichtbare Fenster.
+Die Footer-Parameter `mean`, `avg`, `median`, `tail_avg`, `thr_avg`,
+`max`, `current` und `latest` werden im Viewer aus den aktuell
+gerenderten numerischen Plot-Werten berechnet. Sie sind keine Werte aus
+dem UDP-Datenstrom. Bei aktivem Sliding Window beziehen sie sich auf
+das sichtbare Fenster.
 
 ### 10.4 Logic-Visualizer
 

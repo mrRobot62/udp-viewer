@@ -5,6 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 import re
+from statistics import median
 
 from .footer_status import (
     build_footer_context,
@@ -125,6 +126,142 @@ def _build_plot_field_lookup(series_metadata: list[dict[str, object]]) -> dict[s
     }
 
 
+def _extract_numeric_values(meta: dict[str, object]) -> list[float]:
+    """Return the numeric values stored for a plot series."""
+    values = meta.get("y_values")
+    if not isinstance(values, list):
+        return []
+    return [float(value) for value in values if value is not None]
+
+
+def _compute_tail_average(values: list[float]) -> float | None:
+    """Return the average across the trailing quarter of the visible values."""
+    if not values:
+        return None
+    tail_count = max(1, len(values) // 4)
+    tail_values = values[-tail_count:]
+    return sum(tail_values) / len(tail_values)
+
+
+def _candidate_threshold_field_names(field_name: str) -> list[str]:
+    """Return likely companion threshold field names for a measured series."""
+    normalized = field_name.strip().lower()
+    if not normalized:
+        return []
+    candidates = [
+        f"{normalized}_min",
+        f"{normalized}_max",
+        f"{normalized}_target_min",
+        f"{normalized}_target_max",
+    ]
+    if normalized.startswith("t") and len(normalized) > 1:
+        suffix = normalized[1:]
+        candidates.extend(
+            [
+                f"target_{suffix}_min",
+                f"target_{suffix}_max",
+                f"{suffix}_min",
+                f"{suffix}_max",
+            ]
+        )
+    return candidates
+
+
+def _resolve_threshold_series(
+    field_name: str,
+    field_lookup: dict[str, dict[str, object]],
+) -> tuple[list[float | None] | None, list[float | None] | None]:
+    """Resolve lower and upper threshold series for a measured field."""
+    lower_series = None
+    upper_series = None
+
+    for candidate in _candidate_threshold_field_names(field_name):
+        meta = field_lookup.get(candidate)
+        if meta is None:
+            continue
+        values = meta.get("y_values")
+        if not isinstance(values, list):
+            continue
+        if candidate.endswith("_min"):
+            lower_series = values
+        elif candidate.endswith("_max"):
+            upper_series = values
+
+    generic_min = field_lookup.get("target_min")
+    generic_max = field_lookup.get("target_max")
+    if lower_series is None and isinstance(generic_min.get("y_values") if generic_min else None, list):
+        lower_series = generic_min.get("y_values")
+    if upper_series is None and isinstance(generic_max.get("y_values") if generic_max else None, list):
+        upper_series = generic_max.get("y_values")
+    return lower_series, upper_series
+
+
+def _compute_threshold_average(
+    meta: dict[str, object],
+    field_lookup: dict[str, dict[str, object]],
+) -> float | None:
+    """Return the average across samples inside the available target band."""
+    field_name = str(meta.get("field_name", "")).strip()
+    values = meta.get("y_values")
+    if not field_name or not isinstance(values, list):
+        return None
+
+    lower_series, upper_series = _resolve_threshold_series(field_name, field_lookup)
+    if lower_series is None and upper_series is None:
+        return None
+
+    filtered: list[float] = []
+    for index, raw_value in enumerate(values):
+        if raw_value is None:
+            continue
+        numeric_value = float(raw_value)
+        lower = lower_series[index] if lower_series is not None and index < len(lower_series) else None
+        upper = upper_series[index] if upper_series is not None and index < len(upper_series) else None
+        if lower is not None and numeric_value < float(lower):
+            continue
+        if upper is not None and numeric_value > float(upper):
+            continue
+        filtered.append(numeric_value)
+
+    if not filtered:
+        return None
+    return sum(filtered) / len(filtered)
+
+
+def _resolve_plot_metric_value(
+    metric: str,
+    meta: dict[str, object],
+    field_lookup: dict[str, dict[str, object]],
+) -> float | int | None:
+    """Resolve a single computed footer metric for a plot field."""
+    metric_aliases = {
+        "current": "latest",
+        "latest": "latest",
+        "mean": "mean",
+        "avg": "mean",
+        "max": "max",
+        "median": "median",
+        "tail_avg": "tail_avg",
+        "thr_avg": "thr_avg",
+        "thres_avg": "thr_avg",
+        "threshold_avg": "thr_avg",
+    }
+    metric_key = metric_aliases.get(metric)
+    if metric_key is None:
+        return None
+    if metric_key in {"latest", "mean", "max"}:
+        return meta.get(metric_key)
+
+    numeric_values = _extract_numeric_values(meta)
+    if metric_key == "median":
+        return median(numeric_values) if numeric_values else None
+    if metric_key == "tail_avg":
+        return _compute_tail_average(numeric_values)
+    if metric_key == "thr_avg":
+        return _compute_threshold_average(meta, field_lookup)
+    return None
+
+
 def _resolve_plot_footer_placeholder(key: str, context: dict[str, object], series_metadata: list[dict[str, object]]) -> str | None:
     """Resolve plot footer placeholder."""
     normalized = key.strip()
@@ -136,7 +273,18 @@ def _resolve_plot_footer_placeholder(key: str, context: dict[str, object], serie
 
     parts = normalized.split(":")
     field_lookup = _build_plot_field_lookup(series_metadata)
-    if len(parts) >= 2 and parts[0].strip().lower() in {"current", "latest", "mean", "avg", "max"}:
+    if len(parts) >= 2 and parts[0].strip().lower() in {
+        "current",
+        "latest",
+        "mean",
+        "avg",
+        "max",
+        "median",
+        "tail_avg",
+        "thr_avg",
+        "thres_avg",
+        "threshold_avg",
+    }:
         metric = parts[0].strip().lower()
         field_name = parts[1].strip().lower()
         format_spec = ":".join(parts[2:]).strip() if len(parts) > 2 else ""
@@ -144,17 +292,10 @@ def _resolve_plot_footer_placeholder(key: str, context: dict[str, object], serie
         if meta is None:
             return None
         unit = str(meta.get("unit", "") or "")
-        metric_aliases = {
-            "current": "latest",
-            "latest": "latest",
-            "mean": "mean",
-            "avg": "mean",
-            "max": "max",
-        }
-        metric_key = metric_aliases.get(metric)
-        if metric_key is None:
+        metric_value = _resolve_plot_metric_value(metric, meta, field_lookup)
+        if metric_value is None:
             return None
-        return _format_plot_value(meta.get(metric_key), unit, format_spec=format_spec)
+        return _format_plot_value(metric_value, unit, format_spec=format_spec)
 
     field_name, format_spec = split_footer_placeholder(normalized)
     meta = field_lookup.get(field_name.lower())

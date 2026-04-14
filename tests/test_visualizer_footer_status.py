@@ -159,6 +159,80 @@ def test_plot_footer_status_supports_python_format_specs() -> None:
     assert footer == "Samples:0002 Hot:8.2 C Mean:07.4 C Avg:07.4 C"
 
 
+def test_plot_footer_status_supports_tail_average_and_median() -> None:
+    samples = [
+        VisualizerSample(timestamp_raw="20260404-10:00:00.000", filter_string="[CSV_CLIENT_PLOT]", sample_index=index)
+        for index in range(8)
+    ]
+    series_metadata = [
+        {
+            "field_name": "Thot",
+            "unit": "C",
+            "statistic": True,
+            "render_style": "Line",
+            "latest": 80.0,
+            "mean": 52.5,
+            "max": 80.0,
+            "y_values": [10.0, 20.0, 30.0, 40.0, 60.0, 70.0, 75.0, 80.0],
+        },
+    ]
+
+    footer = build_plot_footer_status(
+        samples,
+        series_metadata,
+        "Tail:{tail_avg:Thot:04.1f} Median:{median:Thot:04.1f}",
+    )
+
+    assert footer == "Tail:77.5 C Median:50.0 C"
+
+
+def test_plot_footer_status_supports_threshold_average_inside_target_band() -> None:
+    samples = [
+        VisualizerSample(timestamp_raw="20260404-10:00:00.000", filter_string="[CSV_CLIENT_PLOT]", sample_index=index)
+        for index in range(6)
+    ]
+    series_metadata = [
+        {
+            "field_name": "Thot",
+            "unit": "C",
+            "statistic": True,
+            "render_style": "Line",
+            "latest": 74.0,
+            "mean": 58.5,
+            "max": 74.0,
+            "y_values": [20.0, 35.0, 55.0, 65.0, 72.0, 74.0],
+        },
+        {
+            "field_name": "target_min",
+            "unit": "C",
+            "statistic": True,
+            "render_style": "Line",
+            "latest": 60.0,
+            "mean": 60.0,
+            "max": 60.0,
+            "y_values": [60.0, 60.0, 60.0, 60.0, 60.0, 60.0],
+        },
+        {
+            "field_name": "target_max",
+            "unit": "C",
+            "statistic": True,
+            "render_style": "Line",
+            "latest": 75.0,
+            "mean": 75.0,
+            "max": 75.0,
+            "y_values": [75.0, 75.0, 75.0, 75.0, 75.0, 75.0],
+        },
+    ]
+
+    footer = build_plot_footer_status(
+        samples,
+        series_metadata,
+        "Thr:{thr_avg:Thot:04.1f} Alias:{thres_avg:Thot:04.1f}",
+    )
+
+    assert footer == "Thr:70.3 C Alias:70.3 C"
+
+
 def test_plot_footer_status_removes_legacy_stats_placeholder_from_configured_format() -> None:
     config = VisualizerConfig(
         graph_type="plot",

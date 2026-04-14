@@ -233,10 +233,12 @@ Zusätzlich pro Feld:
 
 `footer_status_format` speichert das benutzerdefinierte Footer-Format
 eines Visualizer-Slots. Es kann Platzhalter wie `{samples}`,
-`{duration}`, `{Thot}`, `{mean:Thot}`, `{avg:Thot}`, `{max:Thot}` oder
-`{ch0}` enthalten. Plot-Statistiken wie `mean` und `avg` werden im
-Viewer aus den aktuell gerenderten numerischen Plot-Werten berechnet;
-sie werden nicht im UDP-Datenstrom gespeichert oder empfangen.
+`{duration}`, `{Thot}`, `{mean:Thot}`, `{avg:Thot}`, `{median:Thot}`,
+`{tail_avg:Thot}`, `{thr_avg:Thot}`, `{max:Thot}` oder `{ch0}`
+enthalten. Plot-Statistiken wie `mean`, `avg`, `median`, `tail_avg`
+und `thr_avg` werden im Viewer aus den aktuell gerenderten numerischen
+Plot-Werten berechnet; sie werden nicht im UDP-Datenstrom gespeichert
+oder empfangen.
 
 ## 11. Live-Logs
 

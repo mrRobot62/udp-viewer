@@ -463,21 +463,31 @@ Zusätzliche interne Plot-Platzhalter:
 | `{latest:Feldname}` | Alias für `{current:Feldname}` | aktuell gerenderte Plot-Serie |
 | `{mean:Feldname}` | Mittelwert des Feldes | aktuell gerenderte numerische Plot-Serie |
 | `{avg:Feldname}` | Alias für `{mean:Feldname}` | aktuell gerenderte numerische Plot-Serie |
+| `{median:Feldname}` | Median des Feldes | aktuell gerenderte numerische Plot-Serie |
+| `{tail_avg:Feldname}` | Mittelwert über das letzte Viertel der sichtbaren Werte | aktuell gerenderte numerische Plot-Serie |
+| `{thr_avg:Feldname}` | Mittelwert nur innerhalb des Zielkorridors | aktuell gerenderte numerische Plot-Serie |
 | `{max:Feldname}` | Maximalwert des Feldes | aktuell gerenderte numerische Plot-Serie |
 
-`mean`, `avg`, `max`, `current` und `latest` sind interne Werte des
-UDP-Viewers. Sie sind nicht Teil des UDP-Datenstroms. Der Viewer
-berechnet sie beim Zeichnen des Plot-Fensters aus den numerischen
-Werten, die aktuell als Plot-Serie gerendert werden.
+`mean`, `avg`, `median`, `tail_avg`, `thr_avg`, `max`, `current` und
+`latest` sind interne Werte des UDP-Viewers. Sie sind nicht Teil des
+UDP-Datenstroms. Der Viewer berechnet sie beim Zeichnen des
+Plot-Fensters aus den numerischen Werten, die aktuell als Plot-Serie
+gerendert werden.
 
 Wichtig:
 
-- bei aktivem Sliding Window beziehen sich `mean`, `avg`, `max`,
-  `current` und `latest` auf das sichtbare Datenfenster
+- bei aktivem Sliding Window beziehen sich `mean`, `avg`, `median`,
+  `tail_avg`, `thr_avg`, `max`, `current` und `latest` auf das
+  sichtbare Datenfenster
 - ohne Sliding Window beziehen sie sich auf die aktuell gerenderten
   Werte im Plot
 - sie stehen nur für numerische Plot-Felder zur Verfügung, die im Plot
   aktuell vorhanden sind
+- `tail_avg` bildet den Mittelwert über das letzte Viertel der aktuell
+  sichtbaren gültigen Werte
+- `thr_avg` bildet den Mittelwert nur aus Werten im Zielbereich; dafür
+  nutzt der Viewer bevorzugt passende Min-/Max-Serien wie
+  `{Thot_min}/{Thot_max}` oder generisch `target_min/target_max`
 - für Logic-Fenster stehen diese Plot-Parameter nicht zur Verfügung
 - `{samples}`, `{start}`, `{end}` und `{duration}` beziehen sich dagegen
   auf den gesamten Slot-Puffer
@@ -498,6 +508,9 @@ Platzhalter angegeben werden:
 | `{Thot:05.1f}` | Fließkommazahl mit führenden Nullen, mindestens 5 Zeichen breit, z. B. `072.3` |
 | `{mean:Thot:05.1f}` | formatierter Mittelwert eines Plot-Feldes |
 | `{avg:Thot:05.1f}` | formatierter Mittelwert über den Alias `avg` |
+| `{median:Thot:05.1f}` | formatierter Median eines Plot-Feldes |
+| `{tail_avg:Thot:05.1f}` | formatierter Mittelwert über das letzte Viertel |
+| `{thr_avg:Thot:05.1f}` | formatierter Mittelwert im Zielkorridor |
 | `{max:Thot:05.1f}` | formatierter Maximalwert eines Plot-Feldes |
 | `{current:Thot:05.1f}` | formatierter aktueller Wert eines Plot-Feldes |
 | `{ch0:02.0f}` | Logic-Wert ohne Nachkommastellen und mit führender Null |

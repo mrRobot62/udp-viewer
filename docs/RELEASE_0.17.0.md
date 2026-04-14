@@ -48,13 +48,19 @@ Internal plot placeholders:
   average of the currently rendered numeric plot values
 - `{avg:FieldName}`
   alias for `mean`
+- `{median:FieldName}`
+  median of the currently rendered numeric plot values
+- `{tail_avg:FieldName}`
+  average across the last quarter of the currently visible values
+- `{thr_avg:FieldName}`
+  average only inside the target band
 - `{max:FieldName}`
   maximum of the currently rendered numeric plot values
 
-`mean`, `avg`, `max`, `current`, and `latest` are not values from the
-UDP data stream. They are calculated inside UDP Viewer from the
-currently rendered numeric plot data. With an active sliding window,
-they refer to the visible data window.
+`mean`, `avg`, `median`, `tail_avg`, `thr_avg`, `max`, `current`, and
+`latest` are not values from the UDP data stream. They are calculated
+inside UDP Viewer from the currently rendered numeric plot data. With an
+active sliding window, they refer to the visible data window.
 
 Logic placeholders:
 
@@ -75,6 +81,12 @@ Footer placeholders support Python-style format specs:
   formatted mean value
 - `{avg:Thot:05.1f}`
   formatted mean value through the `avg` alias
+- `{median:Thot:05.1f}`
+  formatted median value
+- `{tail_avg:Thot:05.1f}`
+  formatted average across the last quarter
+- `{thr_avg:Thot:05.1f}`
+  formatted average inside the target band
 - `{max:Thot:05.1f}`
   formatted maximum value
 - `{current:Thot:05.1f}`

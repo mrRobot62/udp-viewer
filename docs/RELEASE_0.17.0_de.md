@@ -51,13 +51,20 @@ Interne Plot-Platzhalter:
   Mittelwert der aktuell gerenderten numerischen Plot-Werte
 - `{avg:Feldname}`
   Alias für `mean`
+- `{median:Feldname}`
+  Median der aktuell gerenderten numerischen Plot-Werte
+- `{tail_avg:Feldname}`
+  Mittelwert über das letzte Viertel der aktuell sichtbaren Werte
+- `{thr_avg:Feldname}`
+  Mittelwert nur im Zielkorridor
 - `{max:Feldname}`
   Maximalwert der aktuell gerenderten numerischen Plot-Werte
 
-`mean`, `avg`, `max`, `current` und `latest` sind keine Werte aus dem
-UDP-Datenstrom. Sie werden innerhalb des UDP-Viewers aus den aktuell
-gerenderten numerischen Plot-Daten berechnet. Bei aktivem Sliding
-Window beziehen sie sich auf das sichtbare Datenfenster.
+`mean`, `avg`, `median`, `tail_avg`, `thr_avg`, `max`, `current` und
+`latest` sind keine Werte aus dem UDP-Datenstrom. Sie werden innerhalb
+des UDP-Viewers aus den aktuell gerenderten numerischen Plot-Daten
+berechnet. Bei aktivem Sliding Window beziehen sie sich auf das
+sichtbare Datenfenster.
 
 Logic-Platzhalter:
 
@@ -78,6 +85,12 @@ Footer-Platzhalter unterstützen Python-ähnliche Formatangaben:
   formatierter Mittelwert
 - `{avg:Thot:05.1f}`
   formatierter Mittelwert über den Alias `avg`
+- `{median:Thot:05.1f}`
+  formatierter Median
+- `{tail_avg:Thot:05.1f}`
+  formatierter Mittelwert über das letzte Viertel
+- `{thr_avg:Thot:05.1f}`
+  formatierter Mittelwert im Zielkorridor
 - `{max:Thot:05.1f}`
   formatierter Maximalwert
 - `{current:Thot:05.1f}`

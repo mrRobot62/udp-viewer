@@ -196,7 +196,8 @@ Praktisch bedeutet das:
 
 ## 11. Abgrenzung zu Footer-Parametern
 
-Footer-Platzhalter wie `{mean:Thot}`, `{avg:Thot}`, `{max:Thot}` oder
+Footer-Platzhalter wie `{mean:Thot}`, `{avg:Thot}`, `{median:Thot}`,
+`{tail_avg:Thot}`, `{thr_avg:Thot}`, `{max:Thot}` oder
 `{current:Thot}` sind keine CSV-Felder und nicht Teil des
 UDP-Datenstroms.
 
@@ -207,6 +208,12 @@ gerenderten numerischen Plot-Werten berechnet:
   letzter gerenderter Wert der Plot-Serie
 - `{mean:Feldname}` und `{avg:Feldname}`
   Mittelwert der aktuell gerenderten numerischen Werte
+- `{median:Feldname}`
+  Median der aktuell gerenderten numerischen Werte
+- `{tail_avg:Feldname}`
+  Mittelwert über das letzte Viertel der aktuell sichtbaren Werte
+- `{thr_avg:Feldname}`
+  Mittelwert nur für Werte innerhalb des Zielkorridors
 - `{max:Feldname}`
   Maximalwert der aktuell gerenderten numerischen Werte
 

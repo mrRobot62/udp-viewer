@@ -188,10 +188,12 @@ Plus per-field keys such as:
 
 `footer_status_format` stores the custom footer format configured for
 one visualizer slot. It may contain placeholders such as `{samples}`,
-`{duration}`, `{Thot}`, `{mean:Thot}`, `{avg:Thot}`, `{max:Thot}`, or
-`{ch0}`. Plot statistics such as `mean` and `avg` are calculated inside
-the viewer from the currently rendered numeric plot values; they are not
-stored in or received from the UDP data stream.
+`{duration}`, `{Thot}`, `{mean:Thot}`, `{avg:Thot}`, `{median:Thot}`,
+`{tail_avg:Thot}`, `{thr_avg:Thot}`, `{max:Thot}`, or `{ch0}`. Plot
+statistics such as `mean`, `avg`, `median`, `tail_avg`, and `thr_avg`
+are calculated inside the viewer from the currently rendered numeric
+plot values; they are not stored in or received from the UDP data
+stream.
 
 ## 10. Live Logs and Screenshots
 

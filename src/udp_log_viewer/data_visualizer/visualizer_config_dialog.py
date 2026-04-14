@@ -70,7 +70,7 @@ class VisualizerConfigDialog(QDialog):
         self._footer_format = QLineEdit()
         self._footer_format.setToolTip(
             "Optional footer format. Use {samples}, {start}, {end}, {duration}, or field names like {Thot}. "
-            "For plot fields you can also use {current:Thot}, {mean:Thot}, {avg:Thot}, {max:Thot}, and format specs like {Thot:06.1f}. "
+            "For plot fields you can also use {current:Thot}, {mean:Thot}, {avg:Thot}, {max:Thot}, {median:Thot}, {tail_avg:Thot}, {thr_avg:Thot}, and format specs like {Thot:06.1f}. "
             "Use \\n for a line break."
         )
         self._footer_preset_combo = QComboBox()

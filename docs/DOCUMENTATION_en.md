@@ -331,13 +331,15 @@ The standard visualizer supports:
 - configurable line style
 - automatic redraw or frozen mode
 - footer status lines with placeholders such as `{samples}`, `{Thot}`,
-  `{current:Thot}`, `{mean:Thot}`, `{avg:Thot}`, and `{max:Thot}`
+  `{current:Thot}`, `{mean:Thot}`, `{avg:Thot}`, `{median:Thot}`,
+  `{tail_avg:Thot}`, `{thr_avg:Thot}`, and `{max:Thot}`
 - screenshot export to PNG
 
-The footer parameters `mean`, `avg`, `max`, `current`, and `latest` are
-calculated inside the viewer from the currently rendered numeric plot
-values. They are not values from the UDP data stream. With an active
-sliding window, they refer to the visible window.
+The footer parameters `mean`, `avg`, `median`, `tail_avg`, `thr_avg`,
+`max`, `current`, and `latest` are calculated inside the viewer from
+the currently rendered numeric plot values. They are not values from
+the UDP data stream. With an active sliding window, they refer to the
+visible window.
 
 ### 10.4 Logic visualizer
 

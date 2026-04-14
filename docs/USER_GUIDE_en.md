@@ -454,21 +454,30 @@ Additional internal plot placeholders:
 | `{latest:FieldName}` | alias for `{current:FieldName}` | currently rendered plot series |
 | `{mean:FieldName}` | mean value of the field | currently rendered numeric plot series |
 | `{avg:FieldName}` | alias for `{mean:FieldName}` | currently rendered numeric plot series |
+| `{median:FieldName}` | median value of the field | currently rendered numeric plot series |
+| `{tail_avg:FieldName}` | average across the last quarter of visible values | currently rendered numeric plot series |
+| `{thr_avg:FieldName}` | average only inside the target band | currently rendered numeric plot series |
 | `{max:FieldName}` | maximum value of the field | currently rendered numeric plot series |
 
-`mean`, `avg`, `max`, `current`, and `latest` are internal UDP Viewer
-values. They are not part of the UDP data stream. UDP Viewer calculates
-them while drawing the plot window from the numeric values that are
-currently rendered as a plot series.
+`mean`, `avg`, `median`, `tail_avg`, `thr_avg`, `max`, `current`, and
+`latest` are internal UDP Viewer values. They are not part of the UDP
+data stream. UDP Viewer calculates them while drawing the plot window
+from the numeric values currently rendered as a plot series.
 
 Important:
 
-- with an active sliding window, `mean`, `avg`, `max`, `current`, and
-  `latest` refer to the visible data window
+- with an active sliding window, `mean`, `avg`, `median`, `tail_avg`,
+  `thr_avg`, `max`, `current`, and `latest` refer to the visible data
+  window
 - without a sliding window, they refer to the currently rendered values
   in the plot
 - they are available only for numeric plot fields currently present in
   the plot
+- `tail_avg` averages the last quarter of the currently visible valid
+  values
+- `thr_avg` averages only values inside the target range; the viewer
+  prefers matching min/max series such as `{Thot_min}/{Thot_max}` and
+  otherwise falls back to generic `target_min/target_max`
 - logic windows do not provide these plot parameters
 - `{samples}`, `{start}`, `{end}`, and `{duration}` refer to the full
   slot buffer
@@ -488,6 +497,9 @@ Formatting can be added like in Python format strings:
 | `{Thot:05.1f}` | floating point value with leading zeros and minimum width 5, e.g. `072.3` |
 | `{mean:Thot:05.1f}` | formatted mean value of a plot field |
 | `{avg:Thot:05.1f}` | formatted mean value through the `avg` alias |
+| `{median:Thot:05.1f}` | formatted median value of a plot field |
+| `{tail_avg:Thot:05.1f}` | formatted average across the last quarter |
+| `{thr_avg:Thot:05.1f}` | formatted average inside the target band |
 | `{max:Thot:05.1f}` | formatted maximum value of a plot field |
 | `{current:Thot:05.1f}` | formatted current value of a plot field |
 | `{ch0:02.0f}` | logic value without decimals and with a leading zero |
