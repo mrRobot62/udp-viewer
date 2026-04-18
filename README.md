@@ -1,7 +1,7 @@
 # UDP Log Viewer
 
 Cross-platform UDP log viewer for ESP32 and other embedded systems, built with Python and PyQt5.
-
+ 
 ## Why using this tool?
 
 Debugging embedded devices over UDP is painful.
@@ -23,12 +23,18 @@ Complete German documentation:
 If you want to play around with an ESP32 & logging, please visit this demo repository
 https://github.com/mrRobot62/esp-udp-logging.git
 
-## Windows-User
+# Releases
+Latest stable release 0.16.3 ()
+Release candidate 0.17.0 ()
+
+## HowTo install for Windows-Users
 please use setup.exe to install this viewer
 
-## ToDo for MAC users
+## HowTo install for MAC users
 after installation this application is not signed and can't be started directly.
 You have to set this command: `xattr -dr com.apple.quarantine /Applications/UDPLogViewer.app` 
+
+
 
 ## Screenshots
 
