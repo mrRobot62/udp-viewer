@@ -25,7 +25,7 @@ https://github.com/mrRobot62/esp-udp-logging.git
 
 # Releases
 Latest stable release 0.16.3 (https://github.com/mrRobot62/udp-viewer/releases/tag/0.16.3)
-Release candidate 0.17.0 ()
+Release candidate 0.17.0 (https://github.com/mrRobot62/udp-viewer/releases/tag/0.17.0-RC1)
 
 ## HowTo install for Windows-Users
 please use setup.exe to install this viewer
