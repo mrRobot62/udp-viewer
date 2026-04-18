@@ -24,7 +24,7 @@ If you want to play around with an ESP32 & logging, please visit this demo repos
 https://github.com/mrRobot62/esp-udp-logging.git
 
 # Releases
-Latest stable release 0.16.3 ()
+Latest stable release 0.16.3 (https://github.com/mrRobot62/udp-viewer/releases/tag/0.16.3)
 Release candidate 0.17.0 ()
 
 ## HowTo install for Windows-Users
