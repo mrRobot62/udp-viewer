@@ -7,7 +7,7 @@ The format is based on Keep a Changelog and follows semantic versioning
 principles where applicable.
 
 ------------------------------------------------------------------------
-## 0.17.0 -- 2026-04-10
+## 0.17.0 -- 2026-04-22
 ### Added
 
 -   Expanded plot and logic visualizer color selection with 16
@@ -32,6 +32,8 @@ principles where applicable.
 -   Added plot footer field placeholders such as `{Thot}`,
     `{current:Thot}`, `{latest:Thot}`, `{mean:Thot}`, `{avg:Thot}`,
     and `{max:Thot}`
+-   Added advanced plot footer statistics `{median:FieldName}`,
+    `{tail_avg:FieldName}`, and threshold-aware `{thr_avg:FieldName}`
 -   Added logic footer channel placeholders such as `{ch0}` for the
     latest channel state
 -   Added Python-style footer format specifications such as
@@ -39,6 +41,8 @@ principles where applicable.
 -   Added user guide documentation for footer placeholders, `mean`/`avg`
     availability, and supported Python-style formatting variants
 -   Added bilingual release notes for `0.17.0`
+-   Added inline API documentation across classes, methods, and helper
+    functions in `src/udp_log_viewer`
 
 ### Improved
 
@@ -61,6 +65,8 @@ principles where applicable.
 -   Reworked bilingual user and technical documentation so footer
     placeholders, internal plot statistics, and configuration keys are
     documented consistently
+-   Extended bilingual documentation to describe `median`, `tail_avg`,
+    and threshold-aware footer statistics consistently
 -   Updated README documentation links to the current `0.17.0` release
     and added visualizer footer/color feature bullets
 
@@ -79,6 +85,9 @@ principles where applicable.
     color values when loading color widgets
 -   Avoided Qt test crashes by keeping a stable `QApplication` reference
     in visualizer dialog tests
+-   Reset transient plot and logic visualizer runtime state correctly on
+    `RESET`, so reopened logic windows resume rendering after a cleared
+    session without requiring an application restart
 
 ### Technical
 
@@ -90,7 +99,9 @@ principles where applicable.
 -   Added persistence for central footer status presets in preferences
 -   Expanded automated coverage for color selection, footer placeholder
     rendering, legacy `{stats}` migration, footer preset persistence,
-    preset filtering, sample-count placeholders, and version metadata
+    preset filtering, sample-count placeholders, advanced footer
+    statistics, reset-safe visualizer state handling, and version
+    metadata
 
 ------------------------------------------------------------------------
 ## 0.16.3 -- 2026-04-06

@@ -1,12 +1,13 @@
 # Release 0.17.0
 
-Release-Datum: 2026-04-10
+Release-Datum: 2026-04-22
 
 ## Zusammenfassung
 
 Version `0.17.0` erweitert die Visualizer-Konfiguration deutlich. Im
 Fokus stehen bessere Farbauswahl, kompakte frei definierbare
-Footer-Statuszeilen und zentral gepflegte Footer-Presets.
+Footer-Statuszeilen, zentral gepflegte Footer-Presets und zusätzliche
+Plot-Footer-Statistiken.
 
 ## Highlights
 
@@ -25,6 +26,11 @@ Footer-Statuszeilen und zentral gepflegte Footer-Presets.
 - Footer-Statuszeilen werden auf eine kompakte zweizeilige Anzeige
   begrenzt, damit lange Statuszeilen das Graph-Fenster nicht mehr
   verbreitern
+- Plot-Footer unterstützen jetzt zusätzliche Kennwerte wie `median`,
+  `tail_avg` und den zielkorridorbasierten Wert `thr_avg`
+- der Visualizer-Reset stellt flüchtige Laufzeitdaten jetzt vollständig
+  zurück, sodass Logic-Fenster nach Reset und Reconnect wieder korrekt
+  rendern
 
 ## Footer-Platzhalter
 
@@ -109,6 +115,8 @@ Der Release-Stand wurde mit fokussierten automatisierten Tests und
 einem Compile-Check validiert:
 
 - `tests/test_visualizer_footer_status.py`
+- `tests/test_visualizer_manager_close.py`
+- `tests/test_sliding_window_behavior.py`
 - `tests/test_visualizer_color_selection.py`
 - `tests/test_core_behavior.py`
 - `tests/test_preferences_store.py`

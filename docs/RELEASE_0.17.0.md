@@ -1,12 +1,13 @@
 # Release 0.17.0
 
-Release date: 2026-04-10
+Release date: 2026-04-22
 
 ## Summary
 
 Version `0.17.0` significantly expands the visualizer configuration.
 The main focus is better color selection, compact user-defined footer
-status lines, and centrally managed footer presets.
+status lines, centrally managed footer presets, and richer plot footer
+statistics.
 
 ## Highlights
 
@@ -22,6 +23,10 @@ status lines, and centrally managed footer presets.
   `Footer Format`
 - footer status lines are limited to a compact two-line display so long
   status text no longer expands graph windows horizontally
+- plot footers now support advanced statistics such as `median`,
+  `tail_avg`, and threshold-aware `thr_avg`
+- visualizer reset handling now restores transient runtime state so
+  logic windows render correctly after reset and reconnect
 
 ## Footer Placeholders
 
@@ -104,6 +109,8 @@ The release state was validated with focused automated tests and a
 compile check:
 
 - `tests/test_visualizer_footer_status.py`
+- `tests/test_visualizer_manager_close.py`
+- `tests/test_sliding_window_behavior.py`
 - `tests/test_visualizer_color_selection.py`
 - `tests/test_core_behavior.py`
 - `tests/test_preferences_store.py`
