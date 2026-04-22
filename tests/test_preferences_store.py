@@ -4,7 +4,7 @@ from pathlib import Path
 
 from PyQt5.QtCore import QSettings
 
-from udp_log_viewer.preferences import AppPreferences
+from udp_log_viewer.preferences import AppPreferences, FooterStatusPreset
 from udp_log_viewer.settings_store import SettingsStore
 
 
@@ -19,6 +19,10 @@ def test_preferences_are_persisted_in_config_ini(tmp_path: Path) -> None:
         log_path=str(tmp_path / "logs"),
         project_root=str(tmp_path / "projects"),
         visualizer_presets=(100, 150, 200, 300),
+        footer_status_presets=(
+            FooterStatusPreset("Compact", "all", "Start:{start}"),
+            FooterStatusPreset("Values", "plot", "Start:{start}\\nThot:{Thot}"),
+        ),
         plot_sliding_window_default=False,
         plot_window_size_default=150,
         logic_sliding_window_default=True,
@@ -35,6 +39,10 @@ def test_preferences_are_persisted_in_config_ini(tmp_path: Path) -> None:
     assert loaded.log_path == str(tmp_path / "logs")
     assert loaded.project_root == str(tmp_path / "projects")
     assert loaded.visualizer_presets == (100, 150, 200, 300)
+    assert loaded.footer_status_presets == (
+        FooterStatusPreset("Compact", "all", "Start:{start}"),
+        FooterStatusPreset("Values", "plot", "Start:{start}\\nThot:{Thot}"),
+    )
     assert loaded.plot_sliding_window_default is False
     assert loaded.plot_window_size_default == 150
     assert loaded.logic_sliding_window_default is True

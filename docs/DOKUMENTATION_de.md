@@ -256,8 +256,16 @@ Gespeichert werden unter anderem:
 - Maximalzahl an Samples
 - Default-Sliding-Window-Status
 - Default-Window-Size
+- `footer_status_format`
 - Achsenbeschriftungen und Achsenbereiche
 - Feldname, Skalierung, Aktiv-/Plot-Status, Zielachse, Stil, Farbe, Einheit pro Feld
+
+Globale Visualizer-Präferenzen speichern zusätzlich:
+
+- Fenstergrößen-Presets
+- Default-Sliding-Window-Status für Plot und Logic
+- Default-Window-Size für Plot und Logic
+- Footer-Status-Presets mit Name, Typ (`all`, `plot`, `logic`) und Formatstring
 
 ## 8. Logging-Verhalten
 
@@ -340,9 +348,19 @@ Der Standard-Visualizer unterstützt:
 - Sliding-Window-Steuerung im geöffneten Fenster
 - zwei Y-Achsen (`Y1`, `Y2`)
 - Linien- oder Step-Darstellung pro Feld
-- konfigurierbare Farbe und Linienstil
+- konfigurierbare Farbe mit 16 Preset-Farben oder HTML-Code `#RRGGBB`
+- konfigurierbaren Linienstil
 - automatisches Redraw oder Freeze-Modus
+- Footer-Statuszeilen mit Platzhaltern wie `{samples}`, `{Thot}`,
+  `{current:Thot}`, `{mean:Thot}`, `{avg:Thot}`, `{median:Thot}`,
+  `{tail_avg:Thot}`, `{thr_avg:Thot}` und `{max:Thot}`
 - Screenshot-Export nach PNG
+
+Die Footer-Parameter `mean`, `avg`, `median`, `tail_avg`, `thr_avg`,
+`max`, `current` und `latest` werden im Viewer aus den aktuell
+gerenderten numerischen Plot-Werten berechnet. Sie sind keine Werte aus
+dem UDP-Datenstrom. Bei aktivem Sliding Window beziehen sie sich auf
+das sichtbare Fenster.
 
 ### 10.4 Logic-Visualizer
 
@@ -353,6 +371,8 @@ Der Logic-Visualizer ist für binäre oder schwellwertbasierte Kanäle optimiert
 - Kanalnamen auf der Y-Achse
 - Sliding-Window-Steuerung im geöffneten Fenster
 - Cursor-Linie bei Mausbewegung
+- Footer-Statuszeilen mit Platzhaltern wie `{samples}`, `{start}`,
+  `{duration}` und `{ch0}`
 - interaktive Flanken- und Periodenmessung per Mausklick
 - Screenshot-Export nach PNG
 
@@ -425,11 +445,18 @@ Im Repository befinden sich Mischformen aus:
 
 Wichtiger Ist-Zustand:
 
-- `pytest -q` schlägt derzeit bereits während der Test-Collection fehl
-- Ursache: Das `src`-Layout ist in der aktuellen Testausführung nicht auf dem Importpfad
-- Typischer Fehler: `ModuleNotFoundError: No module named 'udp_log_viewer'`
+- fokussierte automatisierte Tests können aus dem Repository-Root mit
+  `pytest` ausgeführt werden
+- Visualizer- und Preferences-Tests decken Footer-Formatierung,
+  Farbauswahl, Preset-Persistenz und Dialogverhalten ab
+- GUI-lastiges Verhalten benötigt weiterhin fokussierte oder manuelle
+  Validierung, wenn der Test vom konkreten Qt-Fensterzustand abhängt
 
-Das bedeutet: Testdateien existieren, die Testinfrastruktur ist aber noch nicht so verdrahtet, dass sie im aktuellen Repository-Stand direkt lauffähig ist.
+Typischer fokussierter Testlauf:
+
+```bash
+pytest -q tests/test_visualizer_footer_status.py tests/test_visualizer_color_selection.py tests/test_core_behavior.py tests/test_preferences_store.py
+```
 
 ## 12. Packaging
 
@@ -453,9 +480,13 @@ Für Frozen Builds wird `cx_Freeze` verwendet, wobei das Paket `udp_log_viewer` 
 Während der Analyse sind folgende Inkonsistenzen aufgefallen:
 
 - Versionskonflikte
-  `pyproject.toml` verwendet `0.2.0`, `main.py` verwendet `0.15.0 (T3.6.2)`, die Freeze-Skripte verwenden `0.14.0`
+  die historische Backup-Datei `src/udp_log_viewer/main.py_1_` enthält
+  noch eine alte hart codierte Version und darf nicht als aktiver
+  Anwendungseinstieg betrachtet werden
 - Veraltete Dokumentation
-  die vorhandenen Root-README-Dateien decken den aktuellen Feature-Umfang nicht mehr vollständig ab
+  generierte PDF-Dateien müssen vor einem Binary-Release aus den
+  aktualisierten Markdown-Quellen neu erzeugt werden, falls PDFs
+  mitgeliefert werden
 - Abweichung in der Testausführung
   `scripts/dev_test.sh` aktiviert derzeit nur das virtuelle Environment, startet aber keine Tests
 - Drift zwischen Packaging und Doku
@@ -483,19 +514,19 @@ Typischer Entwicklerablauf:
 2. Projekt im Editable-Modus mit Dev-Abhängigkeiten installieren
 3. Anwendung aus dem Quellcode starten
 4. Replay- und Simulationsfunktionen für lokale Tests nutzen
-5. Vor verlässlichen `pytest`-Runs zuerst das Importpfadproblem des `src`-Layouts beheben
+5. fokussierte `pytest`-Suites für den geänderten Bereich ausführen
 
 ## 15. Empfohlene nächste Schritte
 
 Sinnvolle nächste Verbesserungen im Repository:
 
-- Versionierung an einer zentralen Stelle vereinheitlichen
-- Smoke-Skripte in echte `pytest`-Tests mit Assertions überführen
-- `pytest` ohne manuelle `PYTHONPATH`-Anpassungen lauffähig machen
-- CSV-Schemas für `[CSV_TEMP]` und `[CSV_LOGIC]` explizit dokumentieren
-- Schema von `config.ini` separat dokumentieren
-- Screenshots für das Visualizer-Subsystem ergänzen
-- Release- und Build-Anleitungen für macOS und Windows zentral dokumentieren
+- mitgelieferte PDF-Dokumentation vor einem Binary-Release aus den
+  aktualisierten Markdown-Quellen neu erzeugen
+- historische Backup-Dateien wie `main.py_1_` durch archivierte
+  Release-Referenzen ersetzen oder aus dem Source Tree entfernen
+- verbleibende Smoke-Skripte weiter in strenge `pytest`-Tests mit
+  Assertions überführen
+- neue Screenshots für die Visualizer-Footer-Preset-Oberfläche ergänzen
 
 ## 16. Weiterführende Referenzen
 
@@ -503,6 +534,7 @@ Sinnvolle nächste Verbesserungen im Repository:
 - [SUPPORTED_CSV_INPUT_FORMATS_de.md](../docs/SUPPORTED_CSV_INPUT_FORMATS_de.md)
 - [CONFIGURATION_REFERENCE_de.md](../docs/CONFIGURATION_REFERENCE_de.md)
 - [BUILD_AND_PACKAGING_REFERENCE_de.md](../docs/BUILD_AND_PACKAGING_REFERENCE_de.md)
+- [RELEASE_0.17.0_de.md](../docs/RELEASE_0.17.0_de.md)
 
 ## 17. Dateiverweise
 

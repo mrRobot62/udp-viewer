@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 @dataclass(slots=True)
 class VisualizerFieldConfig:
+    """Configuration container for VisualizerField."""
     field_name: str
     numeric: bool = True
     scale: int = 10
@@ -16,6 +17,7 @@ class VisualizerFieldConfig:
     unit: str = ""
 
     def __post_init__(self) -> None:
+        """Normalize derived values after dataclass initialization."""
         self.field_name = (self.field_name or "").strip()
         self.axis = self._normalize_axis(self.axis)
         self.render_style = self._normalize_render_style(self.render_style)
@@ -26,6 +28,7 @@ class VisualizerFieldConfig:
 
     @staticmethod
     def _normalize_scale(value: int | str | None) -> int:
+        """Normalize scale."""
         if value in (None, "", 0, "0"):
             return 1
         try:
@@ -40,6 +43,7 @@ class VisualizerFieldConfig:
 
     @staticmethod
     def _normalize_axis(value: str | None) -> str:
+        """Normalize axis."""
         normalized = (value or "Y1").strip().upper()
         if normalized not in ("Y1", "Y2"):
             return "Y1"
@@ -47,6 +51,7 @@ class VisualizerFieldConfig:
 
     @staticmethod
     def _normalize_render_style(value: str | None) -> str:
+        """Normalize render style."""
         normalized = (value or "Line").strip().title()
         if normalized not in ("Line", "Step"):
             return "Line"

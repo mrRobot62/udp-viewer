@@ -17,6 +17,7 @@ from ..preferences import AppPreferences
 
 
 class VisualizerManager:
+    """Coordinator for Visualizer."""
     def __init__(
         self,
         config_path: str | Path | None = None,
@@ -24,6 +25,7 @@ class VisualizerManager:
         preferences: AppPreferences | None = None,
         diagnostic_callback: Callable[[str], None] | None = None,
     ) -> None:
+        """Initialize VisualizerManager and prepare its initial state."""
         self.parser = CsvLogParser()
         self.preferences = preferences or AppPreferences()
         self.config_store = ConfigStore(config_path=config_path, preferences=self.preferences)
@@ -40,19 +42,23 @@ class VisualizerManager:
         self.output_dir: Path | None = None
 
     def load_configs(self) -> None:
+        """Load configs."""
         self.config_store = ConfigStore(config_path=self.config_store._config_path, preferences=self.preferences)
         self.configs_by_type = self.config_store.load_slot_configs()
         self.windows_by_slot.clear()
         self.sample_counters_by_slot.clear()
 
     def set_preferences(self, preferences: AppPreferences) -> None:
+        """Set preferences."""
         self.preferences = preferences
         self.config_store = ConfigStore(config_path=self.config_store._config_path, preferences=self.preferences)
 
     def save_configs(self) -> None:
+        """Save configs."""
         self.config_store.save_slot_configs(self.configs_by_type)
 
     def set_runtime_context(self, *, project_name: str | None, output_dir: str | Path | None) -> None:
+        """Set runtime context."""
         self.project_name = project_name.strip() if project_name else None
         self.output_dir = Path(output_dir) if output_dir is not None else None
         for window in self.windows_by_slot.values():
@@ -62,6 +68,7 @@ class VisualizerManager:
             )
 
     def process_log_line(self, line: str) -> int:
+        """Handle process log line."""
         accepted_samples = 0
         for graph_type in ("plot", "logic"):
             for slot_id in iter_slot_ids(graph_type):
@@ -84,6 +91,7 @@ class VisualizerManager:
         return accepted_samples
 
     def set_visualizers(self, configs: list[VisualizerConfig]) -> None:
+        """Set visualizers."""
         self.configs_by_type["plot"] = list(configs[:SLOT_COUNT]) + [
             VisualizerConfig(graph_type="plot") for _ in range(max(0, SLOT_COUNT - len(configs)))
         ]
@@ -96,9 +104,11 @@ class VisualizerManager:
 
     @property
     def visualizers(self) -> list[VisualizerConfig]:
+        """Return the currently known visualizer configurations."""
         return self.configs_by_type["plot"]
 
     def get_window(self, index: int) -> VisualizerWindow | LogicVisualizerWindow | None:
+        """Return window."""
         return self.windows_by_slot.get(VisualizerSlotId(graph_type="plot", slot_index=index))
 
     def get_slot_window(
@@ -106,12 +116,15 @@ class VisualizerManager:
         graph_type: VisualizerGraphType,
         slot_index: int,
     ) -> VisualizerWindow | LogicVisualizerWindow | None:
+        """Return slot window."""
         return self.windows_by_slot.get(VisualizerSlotId(graph_type=graph_type, slot_index=slot_index))
 
     def show_window(self, index: int) -> None:
+        """Handle show window."""
         self.show_windows("plot", slots=[index])
 
     def show_windows(self, graph_type: VisualizerGraphType, slots: list[int] | None = None) -> None:
+        """Handle show windows."""
         if not self.configs_by_type:
             self.load_configs()
 
@@ -151,12 +164,14 @@ class VisualizerManager:
                     self.close_window(slot_id)
 
     def close_window(self, slot: int | VisualizerSlotId) -> None:
+        """Close window."""
         slot_id = slot if isinstance(slot, VisualizerSlotId) else VisualizerSlotId(graph_type="plot", slot_index=slot)
         window = self.windows_by_slot.pop(slot_id, None)
         if window is not None:
             window.close()
 
     def close_all_windows(self) -> None:
+        """Close all windows."""
         for window in list(self.windows_by_slot.values()):
             try:
                 window.close()
@@ -165,30 +180,37 @@ class VisualizerManager:
         self.windows_by_slot.clear()
 
     def clear_all_buffers(self) -> None:
+        """Clear all buffers."""
         self.sample_counters_by_slot.clear()
         for window in self.windows_by_slot.values():
-            window.clear_samples()
+            window.reset_runtime_state(clear_samples=True)
 
     def clear_window_buffer(self, index: int) -> None:
+        """Clear window buffer."""
         slot_id = VisualizerSlotId(graph_type="plot", slot_index=index)
         self.sample_counters_by_slot[slot_id] = 0
         window = self.windows_by_slot.get(slot_id)
         if window is not None:
-            window.clear_samples()
+            window.reset_runtime_state(clear_samples=True)
 
     def configure_csv_temp(self, parent: QWidget | None = None) -> bool:
+        """Handle configure csv temp."""
         return self._configure_slots("plot", parent=parent)
 
     def configure_logic(self, parent: QWidget | None = None) -> bool:
+        """Handle configure logic."""
         return self._configure_slots("logic", parent=parent)
 
     def show_logic_window(self) -> None:
+        """Handle show logic window."""
         self.show_windows("logic")
 
     def get_config(self, slot_id: VisualizerSlotId) -> VisualizerConfig:
+        """Return config."""
         return self.configs_by_type[slot_id.graph_type][slot_id.slot_index]
 
     def _configure_slots(self, graph_type: VisualizerGraphType, parent: QWidget | None = None) -> bool:
+        """Internal helper for configure slots."""
         if not self.configs_by_type:
             self.load_configs()
 
@@ -199,6 +221,7 @@ class VisualizerManager:
             dialog = LogicVisualizerConfigDialog(
                 configs=configs,
                 current_slot=selected_slot,
+                footer_status_presets=self.preferences.footer_status_presets,
                 on_apply=apply_callback,
                 parent=parent,
             )
@@ -206,6 +229,7 @@ class VisualizerManager:
             dialog = VisualizerConfigDialog(
                 configs=configs,
                 current_slot=selected_slot,
+                footer_status_presets=self.preferences.footer_status_presets,
                 on_apply=apply_callback,
                 parent=parent,
             )
@@ -221,6 +245,7 @@ class VisualizerManager:
         configs: list[VisualizerConfig],
         selected_slot: int,
     ) -> None:
+        """Internal helper for apply dialog configs."""
         self.configs_by_type[graph_type] = [ConfigStore.clone_config(config) for config in configs]
         self.selected_slot_by_type[graph_type] = selected_slot
         self.save_configs()
@@ -237,6 +262,7 @@ class VisualizerManager:
         slot_id: VisualizerSlotId,
         config: VisualizerConfig,
     ) -> VisualizerWindow | LogicVisualizerWindow:
+        """Return or create window."""
         existing_window = self.windows_by_slot.get(slot_id)
         if existing_window is not None:
             return existing_window
@@ -270,6 +296,7 @@ class VisualizerManager:
         window: VisualizerWindow | LogicVisualizerWindow,
         slot_id: VisualizerSlotId,
     ) -> bool:
+        """Internal helper for window is available."""
         is_available = getattr(window, "is_gui_available", lambda: True)()
         if is_available:
             return True
@@ -279,5 +306,6 @@ class VisualizerManager:
         return False
 
     def _diag(self, message: str) -> None:
+        """Internal helper for diag."""
         if self.diagnostic_callback is not None:
             self.diagnostic_callback(message)

@@ -127,6 +127,7 @@ Aktuell relevante Schlüssel:
 - `timestamp_default`
 - `max_lines_default`
 - `visualizer_presets`
+- `footer_status_presets`
 - `plot_sliding_window_default`
 - `plot_window_size_default`
 - `logic_sliding_window_default`
@@ -141,6 +142,7 @@ autoscroll_default = true
 timestamp_default = true
 max_lines_default = 20000
 visualizer_presets = 100,150,200,300
+footer_status_presets = [{"name":"Compact","scope":"all","format":"Samples:{samples} Dauer:{duration}"}]
 plot_sliding_window_default = true
 plot_window_size_default = 200
 logic_sliding_window_default = true
@@ -213,6 +215,7 @@ Typische Schlüssel:
 - `y2_logarithmic`
 - `y2_min`
 - `y2_max`
+- `footer_status_format`
 - `field_count`
 
 Zusätzlich pro Feld:
@@ -227,6 +230,15 @@ Zusätzlich pro Feld:
 - `field_<n>_color`
 - `field_<n>_line_style`
 - `field_<n>_unit`
+
+`footer_status_format` speichert das benutzerdefinierte Footer-Format
+eines Visualizer-Slots. Es kann Platzhalter wie `{samples}`,
+`{duration}`, `{Thot}`, `{mean:Thot}`, `{avg:Thot}`, `{median:Thot}`,
+`{tail_avg:Thot}`, `{thr_avg:Thot}`, `{max:Thot}` oder `{ch0}`
+enthalten. Plot-Statistiken wie `mean`, `avg`, `median`, `tail_avg`
+und `thr_avg` werden im Viewer aus den aktuell gerenderten numerischen
+Plot-Werten berechnet; sie werden nicht im UDP-Datenstrom gespeichert
+oder empfangen.
 
 ## 11. Live-Logs
 

@@ -232,8 +232,19 @@ Stored values include:
 - `filter_string`
 - `graph_type`
 - max samples
+- default sliding-window state
+- default window size
+- `footer_status_format`
 - axis labels and ranges
 - per-field name, scale, active/plot flags, axis, style, color, unit
+
+Global visualizer preferences additionally store:
+
+- window-size presets
+- default sliding-window state for plot and logic
+- default window size for plot and logic
+- footer status presets with name, type (`all`, `plot`, `logic`), and
+  format string
 
 ## 8. Logging Behavior
 
@@ -313,12 +324,22 @@ The parser tolerates multiple line layouts, for example:
 The standard visualizer supports:
 
 - continuous sample buffering
-- optional windowed x-axis view
+- sliding-window controls in the open graph window
 - dual Y axes (`Y1`, `Y2`)
 - line or step rendering per field
-- configurable color and line style
+- configurable color with 16 preset colors or HTML code `#RRGGBB`
+- configurable line style
 - automatic redraw or frozen mode
+- footer status lines with placeholders such as `{samples}`, `{Thot}`,
+  `{current:Thot}`, `{mean:Thot}`, `{avg:Thot}`, `{median:Thot}`,
+  `{tail_avg:Thot}`, `{thr_avg:Thot}`, and `{max:Thot}`
 - screenshot export to PNG
+
+The footer parameters `mean`, `avg`, `median`, `tail_avg`, `thr_avg`,
+`max`, `current`, and `latest` are calculated inside the viewer from
+the currently rendered numeric plot values. They are not values from
+the UDP data stream. With an active sliding window, they refer to the
+visible window.
 
 ### 10.4 Logic visualizer
 
@@ -327,7 +348,10 @@ The logic visualizer is optimized for binary or thresholded channels:
 - up to 8 displayed channels
 - vertically separated step traces
 - channel labels on Y axis
+- sliding-window controls in the open graph window
 - hover cursor line on the plot
+- footer status lines with placeholders such as `{samples}`, `{start}`,
+  `{duration}`, and `{ch0}`
 - interactive edge and period measurement by mouse click
 - screenshot export to PNG
 
@@ -400,11 +424,18 @@ The repository contains a mix of:
 
 Important current state:
 
-- running `pytest -q` from the repository root currently fails during test collection
-- reason: the `src` layout is not on the import path in the current test execution setup
-- typical error: `ModuleNotFoundError: No module named 'udp_log_viewer'`
+- focused automated tests can be run from the repository root with
+  `pytest`
+- visualizer and preference tests cover footer formatting, color
+  selection, preset persistence, and dialog behavior
+- GUI-heavy behavior still needs focused or manual validation where the
+  test relies on Qt window state
 
-That means test infrastructure is present, but not fully wired for out-of-the-box execution in the current repository state.
+Typical focused command:
+
+```bash
+pytest -q tests/test_visualizer_footer_status.py tests/test_visualizer_color_selection.py tests/test_core_behavior.py tests/test_preferences_store.py
+```
 
 ## 12. Packaging
 
@@ -428,9 +459,12 @@ The frozen builds use `cx_Freeze` and package the `udp_log_viewer` package from 
 During analysis, the following inconsistencies were found:
 
 - Version mismatch
-  `pyproject.toml` declares `0.2.0`, `main.py` declares `0.15.0 (T3.6.2)`, and freeze scripts declare `0.14.0`
+  the historical backup file `src/udp_log_viewer/main.py_1_` still
+  contains an old hard-coded version and should not be treated as the
+  active application entry point
 - Documentation drift
-  existing root README files are only partial and no longer reflect the full current feature set
+  generated PDF files must be regenerated from the updated Markdown
+  sources before a binary release if PDFs are shipped
 - Test execution drift
   `scripts/dev_test.sh` currently only activates the virtual environment and does not run `pytest`
 - Packaging/docs drift
@@ -458,19 +492,19 @@ Typical developer workflow:
 2. Install editable project dependencies
 3. Run the app from source
 4. Use replay and simulation features for local testing
-5. Fix the `src` import path issue before relying on automated `pytest` runs
+5. Run focused `pytest` suites for the area being changed
 
 ## 15. Suggested Next Documentation/Engineering Improvements
 
 Recommended follow-up work for the repository:
 
-- unify versioning in one canonical location
-- convert the smoke-style tests into real `pytest` tests with assertions
-- make `pytest` work without manual `PYTHONPATH` adjustments
-- document the expected CSV schemas for `[CSV_TEMP]` and `[CSV_LOGIC]`
-- document the `config.ini` schema explicitly
-- add screenshots for the visualizer subsystem
-- add release/build instructions for both macOS and Windows in one place
+- regenerate shipped PDF documentation from the updated Markdown
+  sources before a binary release
+- replace historical backup files such as `main.py_1_` with archived
+  release references or remove them from the source tree
+- continue converting smoke-style scripts into strict `pytest` tests
+  with assertions
+- add updated screenshots for the new visualizer footer preset UI
 
 ## 16. File References
 
@@ -488,5 +522,8 @@ Primary files for further inspection:
 ## 17. Further References
 
 - [USER_GUIDE_en.md](../docs/USER_GUIDE_en.md)
+- [CONFIGURATION_REFERENCE_en.md](../docs/CONFIGURATION_REFERENCE_en.md)
+- [SUPPORTED_CSV_INPUT_FORMATS_en.md](../docs/SUPPORTED_CSV_INPUT_FORMATS_en.md)
 - [BUILD_AND_PACKAGING_REFERENCE_en.md](../docs/BUILD_AND_PACKAGING_REFERENCE_en.md)
+- [RELEASE_0.17.0.md](../docs/RELEASE_0.17.0.md)
 - [DOKUMENTATION_de.md](../docs/DOKUMENTATION_de.md)

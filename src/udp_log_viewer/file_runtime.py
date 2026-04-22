@@ -6,16 +6,19 @@ from pathlib import Path
 
 
 def default_save_name(stamp: str) -> str:
+    """Handle default save name."""
     return f"udp_log_{stamp}.txt"
 
 
 def flush_file_handle(handle: object | None) -> None:
+    """Handle flush file handle."""
     if handle is None:
         return
     handle.flush()
 
 
 def fsync_file_handle(handle: object | None) -> None:
+    """Handle fsync file handle."""
     if handle is None:
         return
     handle.flush()
@@ -23,10 +26,12 @@ def fsync_file_handle(handle: object | None) -> None:
 
 
 def copy_log_file(source: Path, target: str | Path) -> None:
+    """Copy log file."""
     shutil.copy2(str(source), str(target))
 
 
 def write_text_log(target: str | Path, content: str) -> None:
+    """Write text log."""
     with open(target, "w", encoding="utf-8", newline="\n") as handle:
         handle.write(content)
         if not content.endswith("\n"):

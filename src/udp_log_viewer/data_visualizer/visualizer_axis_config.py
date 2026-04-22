@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 @dataclass
 class VisualizerAxisConfig:
+    """Configuration container for VisualizerAxis."""
     label: str = ""
     min_value: float | None = None
     max_value: float | None = None

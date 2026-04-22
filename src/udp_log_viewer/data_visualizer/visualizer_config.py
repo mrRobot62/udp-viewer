@@ -1,14 +1,17 @@
 from dataclasses import dataclass, field
 
+from ..footer_format import normalize_footer_status_format
 from .visualizer_axis_config import VisualizerAxisConfig
 from .visualizer_field_config import VisualizerFieldConfig
 
 
 @dataclass(slots=True)
 class VisualizerConfig:
+    """Configuration container for Visualizer."""
     enabled: bool = False
     title: str = ""
     filter_string: str = ""
+    footer_status_format: str = ""
     show_legend: bool = True
     max_samples: int = 2000
     sliding_window_enabled: bool = True
@@ -23,13 +26,16 @@ class VisualizerConfig:
     fields: list[VisualizerFieldConfig] = field(default_factory=list)
 
     def __post_init__(self) -> None:
+        """Normalize derived values after dataclass initialization."""
         self.title = (self.title or "").strip()
         self.filter_string = (self.filter_string or "").strip()
+        self.footer_status_format = normalize_footer_status_format(self.footer_status_format)
         self.max_samples = self._normalize_max_samples(self.max_samples)
         self.default_window_size = self._normalize_window_size(self.default_window_size, self.max_samples)
 
     @property
     def is_routable(self) -> bool:
+        """Return whether routable."""
         return self.enabled and bool(self.filter_string) and bool(self.fields)
 
     @property
@@ -39,6 +45,7 @@ class VisualizerConfig:
 
     @staticmethod
     def _normalize_max_samples(value: int | str | None) -> int:
+        """Normalize max samples."""
         try:
             parsed = int(value) if value is not None else 2000
         except (TypeError, ValueError):
@@ -49,6 +56,7 @@ class VisualizerConfig:
 
     @staticmethod
     def _normalize_window_size(value: int | str | None, max_samples: int) -> int:
+        """Normalize window size."""
         try:
             parsed = int(value) if value is not None else 300
         except (TypeError, ValueError):

@@ -12,6 +12,7 @@ from ..preferences import AppPreferences
 
 
 class ConfigStore:
+    """Persistence helper for Config."""
     DEFAULT_VISUALIZER_COUNT = SLOT_COUNT
     LEGACY_SECTION_PREFIX = "visualizer_"
     SECTION_PREFIXES: dict[VisualizerGraphType, str] = {
@@ -24,10 +25,12 @@ class ConfigStore:
         config_path: str | Path | None = None,
         preferences: AppPreferences | None = None,
     ) -> None:
+        """Initialize ConfigStore and prepare its initial state."""
         self._config_path = Path(config_path) if config_path is not None else None
         self._preferences = preferences or AppPreferences()
 
     def load_slot_configs(self) -> dict[VisualizerGraphType, list[VisualizerConfig]]:
+        """Load slot configs."""
         configs = self._build_default_slot_config_map()
         parser = self._read_parser()
         if parser is None:
@@ -52,6 +55,7 @@ class ConfigStore:
         return configs
 
     def save_slot_configs(self, configs_by_type: dict[VisualizerGraphType, list[VisualizerConfig]]) -> None:
+        """Save slot configs."""
         if self._config_path is None:
             return
 
@@ -69,9 +73,11 @@ class ConfigStore:
         self._write_parser(parser)
 
     def load_visualizer_configs(self) -> list[VisualizerConfig]:
+        """Load visualizer configs."""
         return self.load_slot_configs()["plot"]
 
     def save_visualizer_configs(self, configs: list[VisualizerConfig]) -> None:
+        """Save visualizer configs."""
         slot_configs = self.load_slot_configs()
         slot_configs["plot"] = list(configs[: self.DEFAULT_VISUALIZER_COUNT]) + [
             self._build_empty_config("plot")
@@ -80,12 +86,14 @@ class ConfigStore:
         self.save_slot_configs(slot_configs)
 
     def _build_empty_slot_config_map(self) -> dict[VisualizerGraphType, list[VisualizerConfig]]:
+        """Build and return empty slot config map."""
         return {
             "plot": [self._build_empty_config("plot") for _ in range(self.DEFAULT_VISUALIZER_COUNT)],
             "logic": [self._build_empty_config("logic") for _ in range(self.DEFAULT_VISUALIZER_COUNT)],
         }
 
     def _build_default_slot_config_map(self) -> dict[VisualizerGraphType, list[VisualizerConfig]]:
+        """Build and return default slot config map."""
         configs = self._build_empty_slot_config_map()
         configs["plot"][0] = self._build_default_csv_temp_config(self._preferences)
         configs["plot"][1] = self._build_default_csv_host_plot_config(self._preferences)
@@ -96,6 +104,7 @@ class ConfigStore:
         self,
         parser: configparser.ConfigParser,
     ) -> dict[VisualizerGraphType, list[VisualizerConfig]]:
+        """Load legacy slot configs."""
         configs = self._build_empty_slot_config_map()
         next_index = {"plot": 0, "logic": 0}
 
@@ -119,6 +128,7 @@ class ConfigStore:
         return configs
 
     def _remove_owned_sections(self, parser: configparser.ConfigParser) -> None:
+        """Internal helper for remove owned sections."""
         for section in list(parser.sections()):
             if section.startswith(self.LEGACY_SECTION_PREFIX):
                 parser.remove_section(section)
@@ -134,11 +144,13 @@ class ConfigStore:
         *,
         graph_type: VisualizerGraphType,
     ) -> None:
+        """Save single config."""
         parser.add_section(section)
 
         parser.set(section, "enabled", str(bool(config.enabled)).lower())
         parser.set(section, "title", config.title)
         parser.set(section, "filter_string", config.filter_string)
+        parser.set(section, "footer_status_format", config.footer_status_format)
         parser.set(section, "show_legend", str(bool(config.show_legend)).lower())
         parser.set(section, "graph_type", graph_type)
         parser.set(section, "max_samples", str(config.max_samples))
@@ -192,6 +204,7 @@ class ConfigStore:
         section: str,
         base_config: VisualizerConfig,
     ) -> VisualizerConfig:
+        """Load single config."""
         fields: list[VisualizerFieldConfig] = []
         field_count = self._get_int(parser, section, "field_count", default=len(base_config.fields))
 
@@ -266,6 +279,7 @@ class ConfigStore:
             enabled=self._get_bool(parser, section, "enabled", default=base_config.enabled),
             title=parser.get(section, "title", fallback=base_config.title),
             filter_string=parser.get(section, "filter_string", fallback=base_config.filter_string),
+            footer_status_format=parser.get(section, "footer_status_format", fallback=base_config.footer_status_format),
             show_legend=self._get_bool(parser, section, "show_legend", default=base_config.show_legend),
             graph_type=parser.get(section, "graph_type", fallback=getattr(base_config, "graph_type", "plot")),
             max_samples=max_samples,
@@ -291,6 +305,7 @@ class ConfigStore:
 
     @staticmethod
     def _normalize_loaded_plot_config(config: VisualizerConfig) -> VisualizerConfig:
+        """Normalize loaded plot config."""
         if config.graph_type != "plot":
             return config
         legacy_filter_aliases = {
@@ -322,25 +337,30 @@ class ConfigStore:
         return config
 
     def _default_config_for_type(self, graph_type: VisualizerGraphType) -> VisualizerConfig:
+        """Internal helper for default config for type."""
         if graph_type == "logic":
             return self._build_default_logic_config(self._preferences)
         return self._build_default_csv_temp_config(self._preferences)
 
     @staticmethod
     def _build_empty_config(graph_type: VisualizerGraphType) -> VisualizerConfig:
+        """Build and return empty config."""
         return VisualizerConfig(enabled=False, graph_type=graph_type)
 
     @staticmethod
     def _is_empty_config(config: VisualizerConfig) -> bool:
+        """Return whether empty config."""
         return (
             not config.enabled
             and not config.title
             and not config.filter_string
+            and not config.footer_status_format
             and not config.window_geometry
             and not config.fields
         )
 
     def _read_parser(self) -> configparser.ConfigParser | None:
+        """Internal helper for read parser."""
         if self._config_path is None or not self._config_path.exists():
             return None
         parser = configparser.ConfigParser()
@@ -348,6 +368,7 @@ class ConfigStore:
         return parser
 
     def _write_parser(self, parser: configparser.ConfigParser) -> None:
+        """Internal helper for write parser."""
         if self._config_path is None:
             return
         self._config_path.parent.mkdir(parents=True, exist_ok=True)
@@ -356,10 +377,12 @@ class ConfigStore:
 
     @staticmethod
     def clone_config(config: VisualizerConfig) -> VisualizerConfig:
+        """Handle clone config."""
         return deepcopy(config)
 
     @staticmethod
     def _get_bool(parser: configparser.ConfigParser, section: str, key: str, default: bool) -> bool:
+        """Return bool."""
         try:
             return parser.getboolean(section, key, fallback=default)
         except ValueError:
@@ -367,6 +390,7 @@ class ConfigStore:
 
     @staticmethod
     def _get_int(parser: configparser.ConfigParser, section: str, key: str, default: int) -> int:
+        """Return int."""
         try:
             return parser.getint(section, key, fallback=default)
         except ValueError:
@@ -379,6 +403,7 @@ class ConfigStore:
         key: str,
         default: float | None,
     ) -> float | None:
+        """Return float or none."""
         raw = parser.get(section, key, fallback="")
         if raw == "":
             return default
@@ -389,6 +414,7 @@ class ConfigStore:
 
     @staticmethod
     def _build_default_csv_temp_config(preferences: AppPreferences | None = None) -> VisualizerConfig:
+        """Build and return default csv temp config."""
         prefs = preferences or AppPreferences()
         return VisualizerConfig(
             enabled=True,
@@ -421,6 +447,7 @@ class ConfigStore:
 
     @staticmethod
     def _build_default_csv_host_plot_config(preferences: AppPreferences | None = None) -> VisualizerConfig:
+        """Build and return default csv host plot config."""
         prefs = preferences or AppPreferences()
         return VisualizerConfig(
             enabled=True,
@@ -450,6 +477,7 @@ class ConfigStore:
 
     @staticmethod
     def _build_default_logic_config(preferences: AppPreferences | None = None) -> VisualizerConfig:
+        """Build and return default logic config."""
         prefs = preferences or AppPreferences()
         return VisualizerConfig(
             enabled=True,

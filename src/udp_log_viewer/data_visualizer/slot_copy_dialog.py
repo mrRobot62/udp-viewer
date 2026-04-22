@@ -6,7 +6,9 @@ from .visualizer_slot import SLOT_COUNT
 
 
 class SlotCopyDialog(QDialog):
+    """Dialog for SlotCopy."""
     def __init__(self, current_slot: int, parent: QWidget | None = None) -> None:
+        """Initialize SlotCopyDialog and prepare its initial state."""
         super().__init__(parent)
         self.setWindowTitle("Copy from SLOT to SLOT")
         self.setModal(True)
@@ -37,7 +39,9 @@ class SlotCopyDialog(QDialog):
         layout.addWidget(buttons)
 
     def source_slot(self) -> int:
+        """Return the selected source slot number."""
         return self._from_slot.value() - 1
 
     def target_slot(self) -> int:
+        """Return the selected target slot number."""
         return self._to_slot.value() - 1

@@ -6,6 +6,7 @@ from pathlib import Path
 
 @dataclass
 class LiveLogState:
+    """Runtime state container for LiveLog."""
     active_path: Path | None = None
     last_session_path: Path | None = None
     handle: object | None = None
@@ -15,12 +16,14 @@ class LiveLogState:
 
 
 def ensure_logs_dir(logs_dir: str | Path) -> Path:
+    """Ensure logs dir."""
     path = Path(logs_dir)
     path.mkdir(parents=True, exist_ok=True)
     return path
 
 
 def open_live_log(logs_dir: str | Path, stamp: str, filename: str | None = None) -> tuple[object, Path]:
+    """Open live log."""
     base_dir = ensure_logs_dir(logs_dir)
     path = base_dir / (filename or f"udp_live_{stamp}.txt")
     handle = open(path, "w", encoding="utf-8", newline="\n")
@@ -35,6 +38,7 @@ def ensure_active_live_log(
     stamp: str,
     filename: str | None = None,
 ) -> Path:
+    """Ensure active live log."""
     if state.handle is not None and state.active_path is not None:
         return state.active_path
     handle, path = open_live_log(logs_dir, stamp, filename=filename)
@@ -49,11 +53,13 @@ def reset_live_log_session(
     stamp: str,
     filename: str | None = None,
 ) -> Path:
+    """Reset live log session."""
     close_live_log(state)
     return ensure_active_live_log(state, logs_dir, stamp, filename=filename)
 
 
 def close_live_log(state: LiveLogState) -> None:
+    """Close live log."""
     try:
         if state.handle is not None:
             try:
@@ -69,6 +75,7 @@ def close_live_log(state: LiveLogState) -> None:
 
 
 def append_live_log_line(state: LiveLogState, line: str) -> bool:
+    """Append live log line."""
     if state.handle is None:
         return False
     state.handle.write(line + "\n")
@@ -76,6 +83,7 @@ def append_live_log_line(state: LiveLogState, line: str) -> bool:
 
 
 def format_bytes(size: int) -> str:
+    """Format bytes."""
     if size < 1024:
         return f"{size} B"
     if size < 1024 * 1024:
@@ -86,6 +94,7 @@ def format_bytes(size: int) -> str:
 
 
 def live_status_snippet(active_path: Path | None) -> str:
+    """Handle live status snippet."""
     if active_path is None:
         return ""
     try:
@@ -110,6 +119,7 @@ def build_connection_status(
     paused_dropped: int = 0,
     paused: bool = False,
 ) -> str:
+    """Build and return connection status."""
     if connected:
         paused_text = ""
         if paused:

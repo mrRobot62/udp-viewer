@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 
 @dataclass(slots=True)
 class VisualizerSample:
+    """Structured sample container for Visualizer data."""
     timestamp_raw: str
     filter_string: str
     sample_index: int
@@ -10,4 +11,5 @@ class VisualizerSample:
 
     @property
     def has_any_value(self) -> bool:
+        """Return whether any value."""
         return any(value is not None for value in self.values_by_name.values())

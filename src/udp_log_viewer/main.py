@@ -128,6 +128,7 @@ class PatternEditDialog(QDialog):
         *,
         show_color: bool,
     ) -> None:
+        """Initialize PatternEditDialog and prepare its initial state."""
         super().__init__(parent)
         self.setWindowTitle(title)
         self.setModal(True)
@@ -182,6 +183,7 @@ class PatternEditDialog(QDialog):
         layout.addWidget(btns)
 
     def result_data(self) -> Tuple[int, PatternSlot]:
+        """Return the edited slot index together with its normalized slot data."""
         idx = int(self.sb_slot.value()) - 1
         slot = PatternSlot(
             pattern=self.ed_pattern.text().strip(),
@@ -193,6 +195,7 @@ class PatternEditDialog(QDialog):
 
 def _get_local_ipv4() -> str:
     # Best-effort non-blocking local IP detection (no external traffic required).
+    """Return local ipv4."""
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         try:
@@ -209,6 +212,7 @@ def _get_local_ipv4() -> str:
 
 class MainWindow(QMainWindow):
     # INI keys (config.ini)
+    """Window controller for Main."""
     _INI_SECTION_RULES = "rules"
     _INI_KEY_FILTER = "filter_slots_json"
     _INI_KEY_EXCLUDE = "exclude_slots_json"
@@ -216,6 +220,7 @@ class MainWindow(QMainWindow):
     _QSETTINGS_CONFIG_PATH_KEY = "config/selected_path"
 
     def __init__(self) -> None:
+        """Initialize MainWindow and prepare its initial state."""
         super().__init__()
 
         # QSettings (small UI toggles are ok here)
@@ -345,6 +350,7 @@ class MainWindow(QMainWindow):
     # ---------------- Helpers ----------------
 
     def _resolve_config_path(self) -> Path:
+        """Resolve config path."""
         return resolve_config_path(
             self._settings,
             settings_key=self._QSETTINGS_CONFIG_PATH_KEY,
@@ -353,6 +359,7 @@ class MainWindow(QMainWindow):
         )
 
     def _prompt_for_config_path(self, suggested_path: Path) -> Path:
+        """Internal helper for prompt for config path."""
         QMessageBox.information(
             self,
             "Config.ini Missing",
@@ -370,23 +377,29 @@ class MainWindow(QMainWindow):
 
     @staticmethod
     def _now_stamp() -> str:
+        """Internal helper for now stamp."""
         return _dt.datetime.now().strftime("%Y%m%d_%H%M%S")
 
     def _default_save_name(self) -> str:
+        """Internal helper for default save name."""
         return self._build_log_filename("udp_log", self._now_stamp())
 
     def _build_log_filename(self, stem: str, stamp: str) -> str:
+        """Build and return log filename."""
         return build_project_filename(self._project_name(), stem, stamp, ".txt")
 
     def _project_name(self) -> str | None:
+        """Internal helper for project name."""
         return self._active_project.name if self._active_project is not None else None
 
     def _project_output_dir(self) -> Path | None:
+        """Internal helper for project output dir."""
         if self._active_project is None:
             return None
         return self._active_project.output_dir
 
     def _preferred_log_dir(self) -> Path:
+        """Internal helper for preferred log dir."""
         if self._active_project is not None:
             return self._active_project.output_dir
         configured = (self._preferences.log_path or "").strip()
@@ -395,20 +408,24 @@ class MainWindow(QMainWindow):
         return self._default_logs_dir
 
     def _preferred_project_root_dir(self) -> Path:
+        """Internal helper for preferred project root dir."""
         configured = (self._preferences.project_root or "").strip()
         if configured:
             return Path(configured).expanduser()
         return Path(self._paths_cfg.project_root)
 
     def _default_save_path(self) -> Path:
+        """Internal helper for default save path."""
         return self._preferred_log_dir() / self._default_save_name()
 
     def _update_window_title(self) -> None:
+        """Update window title."""
         self.setWindowTitle(
             f"UDP Log Viewer — {APP_VERSION} — {self._local_ip}{build_project_title_suffix(self._project_name())}"
         )
 
     def _sync_runtime_context(self) -> None:
+        """Internal helper for sync runtime context."""
         self._visualizer_manager.set_runtime_context(
             project_name=self._project_name(),
             output_dir=self._project_output_dir(),
@@ -416,6 +433,7 @@ class MainWindow(QMainWindow):
         self._update_window_title()
 
     def _reset_active_project(self) -> None:
+        """Reset active project."""
         self._active_project = None
         self._preferences.project_root = ""
         default_root = get_default_project_root_dir()
@@ -425,9 +443,11 @@ class MainWindow(QMainWindow):
         self._sync_runtime_context()
 
     def _ensure_logs_dir(self) -> Path:
+        """Ensure logs dir."""
         return ensure_logs_dir(self._preferred_log_dir())
 
     def _open_new_live_log(self) -> None:
+        """Open new live log."""
         try:
             stamp = self._now_stamp()
             path = reset_live_log_session(
@@ -444,6 +464,7 @@ class MainWindow(QMainWindow):
             self.log.appendPlainText(f"[UI/ERROR] Could not create live logfile: {e}")
 
     def _ensure_active_live_log(self) -> None:
+        """Ensure active live log."""
         try:
             stamp = self._now_stamp()
             path = ensure_active_live_log(
@@ -460,12 +481,15 @@ class MainWindow(QMainWindow):
             self.log.appendPlainText(f"[UI/ERROR] Could not prepare live logfile: {e}")
 
     def _close_live_log(self) -> None:
+        """Close live log."""
         close_live_log(self._connection_state)
 
     def _is_connected(self) -> bool:
+        """Return whether connected."""
         return self._listener is not None
 
     def _set_action_checked_without_signal(self, action: QAction | None, checked: bool) -> None:
+        """Set action checked without signal."""
         if action is None:
             return
         action.blockSignals(True)
@@ -473,6 +497,7 @@ class MainWindow(QMainWindow):
         action.blockSignals(False)
 
     def _require_connected_for_generated_data(self, action: QAction | None = None) -> bool:
+        """Internal helper for require connected for generated data."""
         if self._is_connected():
             return True
         self._set_action_checked_without_signal(action, False)
@@ -480,12 +505,14 @@ class MainWindow(QMainWindow):
         return False
 
     def _set_generated_data_actions_enabled(self, enabled: bool) -> None:
+        """Set generated data actions enabled."""
         for action_name in ("act_simulate", "act_simulate_temperature", "act_simulate_logic"):
             action = getattr(self, action_name, None)
             if action is not None:
                 action.setEnabled(enabled)
 
     def _append_to_live_log(self, line: str) -> None:
+        """Append to live log."""
         if self._connection_state.handle is None:
             return
         try:
@@ -511,6 +538,7 @@ class MainWindow(QMainWindow):
     # ---------------- UI ----------------
 
     def _build_actions(self) -> None:
+        """Build and return actions."""
         file_menu = self.menuBar().addMenu("File")
 
         self.act_open_log = QAction("Open Log…", self)
@@ -594,6 +622,7 @@ class MainWindow(QMainWindow):
 
 
     def _chip_style(self, color: str) -> str:
+        """Internal helper for chip style."""
         bg = "#f5f5f5"
         if color.lower() == "red":
             bg = "#ffecec"
@@ -619,6 +648,7 @@ class MainWindow(QMainWindow):
         )
 
     def _configure_main_shortcuts(self) -> None:
+        """Internal helper for configure main shortcuts."""
         self._save_shortcuts = []
         for sequence in ("Ctrl+S", "Meta+S", "F12"):
             shortcut = QShortcut(QKeySequence(sequence), self)
@@ -626,6 +656,7 @@ class MainWindow(QMainWindow):
             self._save_shortcuts.append(shortcut)
 
     def _configure_main_focus_navigation(self) -> None:
+        """Internal helper for configure main focus navigation."""
         self._main_tab_widgets = [
             self.btn_project,
             self.btn_save,
@@ -653,6 +684,7 @@ class MainWindow(QMainWindow):
             widget.installEventFilter(self)
 
     def eventFilter(self, watched, event):
+        """Handle custom focus-navigation shortcuts before default Qt processing."""
         if (
             hasattr(self, "_main_tab_widgets")
             and QEvent is not None
@@ -665,6 +697,7 @@ class MainWindow(QMainWindow):
         return super().eventFilter(watched, event)
 
     def _move_main_focus(self, *, forward: bool) -> None:
+        """Internal helper for move main focus."""
         widgets = [widget for widget in getattr(self, "_main_tab_widgets", []) if widget.isVisible() and widget.isEnabled()]
         if not widgets:
             return
@@ -677,6 +710,7 @@ class MainWindow(QMainWindow):
         widgets[next_index].setFocus(Qt.TabFocusReason)
 
     def _build_ui(self) -> None:
+        """Build and return ui."""
         root = QWidget(self)
         self.setCentralWidget(root)
 
@@ -901,12 +935,15 @@ class MainWindow(QMainWindow):
     # ---------------- Settings ----------------
 
     def _load_settings(self) -> None:
+        """Load settings."""
         self._ui_state = self._settings_store.load_ui_state(self._ui_state)
 
     def _save_settings(self) -> None:
+        """Save settings."""
         self._settings_store.save_ui_state(self._ui_state)
 
     def _apply_state_to_widgets(self) -> None:
+        """Internal helper for apply state to widgets."""
         widgets = [
             self.ed_bind_ip,
             self.ed_port,
@@ -927,6 +964,7 @@ class MainWindow(QMainWindow):
                 widget.blockSignals(False)
 
     def on_settings_edited(self) -> None:
+        """Handle settings edited events."""
         self._ui_state.bind_ip = self.ed_bind_ip.text().strip() or "0.0.0.0"
         try:
             self._ui_state.port = int(self.ed_port.text().strip())
@@ -944,6 +982,7 @@ class MainWindow(QMainWindow):
         self._update_connection_ui()
 
     def on_preferences_clicked(self) -> None:
+        """Handle preferences clicked events."""
         dialog = PreferencesDialog(self._preferences, self)
         dialog.restore_button().clicked.connect(lambda: dialog.set_preferences(AppPreferences()))
         dialog.apply_button().clicked.connect(
@@ -954,6 +993,7 @@ class MainWindow(QMainWindow):
         self._apply_preferences(dialog.result_preferences())
 
     def _apply_preferences(self, preferences: AppPreferences) -> None:
+        """Internal helper for apply preferences."""
         self._preferences = preferences
         self._settings_store.save_preferences(self._preferences)
         self._settings_store.ini_set("paths", "logs_dir", str(self._preferred_log_dir()))
@@ -977,6 +1017,7 @@ class MainWindow(QMainWindow):
     #     return slots_to_json(slots)
 
     def _load_filter_slots(self) -> None:
+        """Load filter slots."""
         self._filter_slots = strip_slot_colors(self._settings_store.load_rule_slots(
             ini_section=self._INI_SECTION_RULES,
             ini_key=self._INI_KEY_FILTER,
@@ -985,6 +1026,7 @@ class MainWindow(QMainWindow):
         ))
 
     def _save_filter_slots(self) -> None:
+        """Save filter slots."""
         self._filter_slots = strip_slot_colors(self._filter_slots)
         self._settings_store.save_rule_slots(
             self._filter_slots,
@@ -994,6 +1036,7 @@ class MainWindow(QMainWindow):
         )
 
     def _load_exclude_slots(self) -> None:
+        """Load exclude slots."""
         self._exclude_slots = strip_slot_colors(self._settings_store.load_rule_slots(
             ini_section=self._INI_SECTION_RULES,
             ini_key=self._INI_KEY_EXCLUDE,
@@ -1002,6 +1045,7 @@ class MainWindow(QMainWindow):
         ))
 
     def _save_exclude_slots(self) -> None:
+        """Save exclude slots."""
         self._exclude_slots = strip_slot_colors(self._exclude_slots)
         self._settings_store.save_rule_slots(
             self._exclude_slots,
@@ -1011,6 +1055,7 @@ class MainWindow(QMainWindow):
         )
 
     def _load_highlight_slots(self) -> None:
+        """Load highlight slots."""
         self._hl_slots = self._settings_store.load_rule_slots(
             ini_section=self._INI_SECTION_RULES,
             ini_key=self._INI_KEY_HL,
@@ -1019,6 +1064,7 @@ class MainWindow(QMainWindow):
         )
 
     def _save_highlight_slots(self) -> None:
+        """Save highlight slots."""
         self._settings_store.save_rule_slots(
             self._hl_slots,
             ini_section=self._INI_SECTION_RULES,
@@ -1029,33 +1075,41 @@ class MainWindow(QMainWindow):
     # ---------------- Filter matching ----------------
 
     def _compile_slot_patterns(self, slots: List[PatternSlot]) -> List[List[object]]:
+        """Compile slot patterns."""
         return compile_slot_patterns(slots)
 
     def _match_include_slots(self, line: str) -> bool:
+        """Return whether include slots."""
         return match_include_slots(line, self._filter_slot_patterns)
 
     def _match_exclude_slots(self, line: str) -> bool:
+        """Return whether exclude slots."""
         return match_exclude_slots(line, self._exclude_slot_patterns)
 
     def _rebuild_filter_patterns(self) -> None:
+        """Rebuild filter patterns."""
         self._filter_slot_patterns = self._compile_slot_patterns(self._filter_slots)
         self._exclude_slot_patterns = self._compile_slot_patterns(self._exclude_slots)
 
     # ---------------- Highlight ----------------
 
     def _rebuild_highlight_rules(self) -> None:
+        """Rebuild highlight rules."""
         self._hl_rules = build_highlight_rules(self._hl_slots)
 
     def _apply_highlighter(self) -> None:
+        """Internal helper for apply highlighter."""
         self._highlighter.set_rules(self._hl_rules)
         self.statusBar().showMessage(f"Highlight rules active: {len(self._hl_rules)}", 2000)
 
     # ---------------- Chip UI helpers ----------------
 
     def _find_first_free_slot(self, slots: List[PatternSlot]) -> Optional[int]:
+        """Internal helper for find first free slot."""
         return find_first_free_slot(slots)
 
     def _refresh_chips(self, layout: QHBoxLayout, slots: List[PatternSlot], on_edit, on_remove, *, show_color: bool) -> None:
+        """Refresh chips."""
         while layout.count():
             item = layout.takeAt(0)
             w = item.widget()
@@ -1088,6 +1142,7 @@ class MainWindow(QMainWindow):
         layout.addStretch(1)
 
     def _refresh_filter_chips(self) -> None:
+        """Refresh filter chips."""
         self._refresh_chips(
             self._filter_chips_layout,
             self._filter_slots,
@@ -1097,6 +1152,7 @@ class MainWindow(QMainWindow):
         )
 
     def _refresh_exclude_chips(self) -> None:
+        """Refresh exclude chips."""
         self._refresh_chips(
             self._exclude_chips_layout,
             self._exclude_slots,
@@ -1106,6 +1162,7 @@ class MainWindow(QMainWindow):
         )
 
     def _refresh_highlight_chips(self) -> None:
+        """Refresh highlight chips."""
         self._refresh_chips(
             self._hl_chips_layout,
             self._hl_slots,
@@ -1117,6 +1174,7 @@ class MainWindow(QMainWindow):
     # ---------------- Dialog actions ----------------
 
     def _open_slot_dialog(self, title: str, slots: List[PatternSlot], slot_index: int) -> Optional[Tuple[int, PatternSlot]]:
+        """Open slot dialog."""
         show_color = title == "Highlight"
         if slot_index < 0:
             free = self._find_first_free_slot(slots)
@@ -1150,6 +1208,7 @@ class MainWindow(QMainWindow):
     # Filter
 
     def on_filter_add_clicked(self) -> None:
+        """Handle filter add clicked events."""
         res = self._open_slot_dialog("Filter", self._filter_slots, -1)
         if res is None:
             return
@@ -1160,6 +1219,7 @@ class MainWindow(QMainWindow):
         self._refresh_filter_chips()
 
     def on_filter_edit_clicked(self, idx: int) -> None:
+        """Handle filter edit clicked events."""
         res = self._open_slot_dialog("Filter", self._filter_slots, idx)
         if res is None:
             return
@@ -1174,6 +1234,7 @@ class MainWindow(QMainWindow):
         self._refresh_filter_chips()
 
     def on_filter_remove_clicked(self, idx: int) -> None:
+        """Handle filter remove clicked events."""
         if not (0 <= idx < SLOT_COUNT):
             return
         self._filter_slots[idx] = PatternSlot()
@@ -1182,6 +1243,7 @@ class MainWindow(QMainWindow):
         self._refresh_filter_chips()
 
     def on_filter_reset_clicked(self) -> None:
+        """Handle filter reset clicked events."""
         self._filter_slots = [PatternSlot() for _ in range(SLOT_COUNT)]
         self._rebuild_filter_patterns()
         self._save_filter_slots()
@@ -1191,6 +1253,7 @@ class MainWindow(QMainWindow):
     # Exclude
 
     def on_exclude_add_clicked(self) -> None:
+        """Handle exclude add clicked events."""
         res = self._open_slot_dialog("Exclude", self._exclude_slots, -1)
         if res is None:
             return
@@ -1201,6 +1264,7 @@ class MainWindow(QMainWindow):
         self._refresh_exclude_chips()
 
     def on_exclude_edit_clicked(self, idx: int) -> None:
+        """Handle exclude edit clicked events."""
         res = self._open_slot_dialog("Exclude", self._exclude_slots, idx)
         if res is None:
             return
@@ -1215,6 +1279,7 @@ class MainWindow(QMainWindow):
         self._refresh_exclude_chips()
 
     def on_exclude_remove_clicked(self, idx: int) -> None:
+        """Handle exclude remove clicked events."""
         if not (0 <= idx < SLOT_COUNT):
             return
         self._exclude_slots[idx] = PatternSlot()
@@ -1223,6 +1288,7 @@ class MainWindow(QMainWindow):
         self._refresh_exclude_chips()
 
     def on_exclude_reset_clicked(self) -> None:
+        """Handle exclude reset clicked events."""
         self._exclude_slots = [PatternSlot() for _ in range(SLOT_COUNT)]
         self._rebuild_filter_patterns()
         self._save_exclude_slots()
@@ -1232,6 +1298,7 @@ class MainWindow(QMainWindow):
     # Highlight
 
     def on_hl_add_clicked(self) -> None:
+        """Handle hl add clicked events."""
         res = self._open_slot_dialog("Highlight", self._hl_slots, -1)
         if res is None:
             return
@@ -1243,6 +1310,7 @@ class MainWindow(QMainWindow):
         self._refresh_highlight_chips()
 
     def on_hl_edit_clicked(self, idx: int) -> None:
+        """Handle hl edit clicked events."""
         res = self._open_slot_dialog("Highlight", self._hl_slots, idx)
         if res is None:
             return
@@ -1258,6 +1326,7 @@ class MainWindow(QMainWindow):
         self._refresh_highlight_chips()
 
     def on_hl_remove_clicked(self, idx: int) -> None:
+        """Handle hl remove clicked events."""
         if not (0 <= idx < SLOT_COUNT):
             return
         self._hl_slots[idx] = PatternSlot()
@@ -1267,6 +1336,7 @@ class MainWindow(QMainWindow):
         self._refresh_highlight_chips()
 
     def on_hl_reset_clicked(self) -> None:
+        """Handle hl reset clicked events."""
         self._hl_slots = [PatternSlot() for _ in range(SLOT_COUNT)]
         self._rebuild_highlight_rules()
         self._apply_highlighter()
@@ -1277,6 +1347,7 @@ class MainWindow(QMainWindow):
     # ---------------- Replay / Inject ----------------
 
     def _dispatch_log_line(self, line: str, *, is_live_source: bool) -> None:
+        """Internal helper for dispatch log line."""
         raw_line = line
 
         try:
@@ -1310,9 +1381,11 @@ class MainWindow(QMainWindow):
         self._queue.append(out_line)
 
     def _ingest_line(self, line: str) -> None:
+        """Internal helper for ingest line."""
         self._dispatch_log_line(line, is_live_source=False)
 
     def _replay_tick(self) -> None:
+        """Internal helper for replay tick."""
         if self._replay_requires_connection and not self._is_connected():
             self.on_stop_replay_clicked()
             return
@@ -1326,6 +1399,7 @@ class MainWindow(QMainWindow):
             self._ingest_line(line)
 
     def _replay_tick_temperature(self) -> None:
+        """Internal helper for replay tick temperature."""
         if self._replay_temperature_requires_connection and not self._is_connected():
             self.on_stop_replay_temperature_clicked()
             return
@@ -1340,6 +1414,7 @@ class MainWindow(QMainWindow):
 
 
     def on_open_log_clicked(self) -> None:
+        """Handle open log clicked events."""
         path, _ = QFileDialog.getOpenFileName(
             self,
             "Open Log",
@@ -1367,6 +1442,7 @@ class MainWindow(QMainWindow):
     # simulation CSV Temperature lines
     # -------------------------------------------------------
     def on_replay_sample_temperature_clicked(self) -> None:
+        """Handle replay sample temperature clicked events."""
         if not self._require_connected_for_generated_data():
             return
         self.on_stop_replay_temperature_clicked()
@@ -1377,6 +1453,7 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage("Replay: plot sample", 2000)
 
     def on_stop_replay_temperature_clicked(self) -> None:
+        """Handle stop replay temperature clicked events."""
         if self._replay_timer_temperature.isActive():
             self._replay_timer_temperature.stop()
         self._replay_lines_temperature.clear()
@@ -1388,6 +1465,7 @@ class MainWindow(QMainWindow):
     # simulation user friendly log entries
     # -------------------------------------------------------
     def on_replay_sample_clicked(self) -> None:
+        """Handle replay sample clicked events."""
         if not self._require_connected_for_generated_data():
             return
         self.on_stop_replay_clicked()
@@ -1398,6 +1476,7 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage("Replay: sample", 2000)
 
     def on_stop_replay_clicked(self) -> None:
+        """Handle stop replay clicked events."""
         if self._replay_timer.isActive():
             self._replay_timer.stop()
         self._replay_lines.clear()
@@ -1408,26 +1487,32 @@ class MainWindow(QMainWindow):
     # ---------------- Simulation (Tools menu) ----------------
 
     def on_visualizer_csv_temp_config_clicked(self) -> None:
+        """Handle visualizer csv temp config clicked events."""
         changed = self._visualizer_manager.configure_csv_temp(parent=self)
         if changed:
             self.statusBar().showMessage("Plot visualizer config saved", 3000)
 
     def on_visualizer_csv_temp_show_clicked(self) -> None:
+        """Handle visualizer csv temp show clicked events."""
         self._visualizer_manager.show_windows("plot")
 
     def on_visualizer_logic_config_clicked(self) -> None:
+        """Handle visualizer logic config clicked events."""
         changed = self._visualizer_manager.configure_logic(parent=self)
         if changed:
             self.statusBar().showMessage("Logic visualizer config saved", 3000)
 
 
     def on_visualizer_logic_show_clicked(self) -> None:
+        """Handle visualizer logic show clicked events."""
         self._visualizer_manager.show_windows("logic")
 
     def _on_visualizer_diagnostic(self, message: str) -> None:
+        """Handle visualizer diagnostic events."""
         self.log.appendPlainText(message)
 
     def on_simulate_toggled(self, checked: bool) -> None:
+        """Handle simulate toggled events."""
         if checked:
             if not self._require_connected_for_generated_data(self.act_simulate):
                 return
@@ -1436,6 +1521,7 @@ class MainWindow(QMainWindow):
             self._stop_simulation()
 
     def on_simulate_toggled_temperature(self, checked: bool) -> None:
+        """Handle simulate toggled temperature events."""
         if checked:
             if not self._require_connected_for_generated_data(self.act_simulate_temperature):
                 return
@@ -1444,6 +1530,7 @@ class MainWindow(QMainWindow):
             self._stop_simulation_temperature()
 
     def on_simulate_logic_toggled(self, checked: bool) -> None:
+        """Handle simulate logic toggled events."""
         if checked:
             if not self._require_connected_for_generated_data(self.act_simulate_logic):
                 self._sim_logic_enabled = False
@@ -1456,6 +1543,7 @@ class MainWindow(QMainWindow):
             self._sim_logic_timer.stop()
 
     def _start_simulation(self) -> None:
+        """Internal helper for start simulation."""
         if self._sim_timer.isActive():
             return
         self._sim_enabled = True
@@ -1464,6 +1552,7 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage("Simulation: ON (default profile)", 2500)
 
     def _start_simulation_temperature(self) -> None:
+        """Internal helper for start simulation temperature."""
         if self._sim_temperature_timer.isActive():
             return
         self._sim_temperature_enabled = True
@@ -1473,12 +1562,14 @@ class MainWindow(QMainWindow):
 
 
     def _stop_simulation(self) -> None:
+        """Internal helper for stop simulation."""
         self._sim_enabled = False
         if self._sim_timer.isActive():
             self._sim_timer.stop()
         self.statusBar().showMessage("Simulation: OFF", 1500)
 
     def _stop_simulation_temperature(self) -> None:
+        """Internal helper for stop simulation temperature."""
         self._sim_temperature_enabled = False
         if self._sim_temperature_timer.isActive():
             self._sim_temperature_timer.stop()
@@ -1486,6 +1577,7 @@ class MainWindow(QMainWindow):
 
 
     def _on_sim_tick(self) -> None:
+        """Handle sim tick events."""
         if not self._sim_enabled or not self._is_connected():
             return
         line = self._sim_next_line()
@@ -1493,10 +1585,12 @@ class MainWindow(QMainWindow):
 
 
     def _sim_next_line(self) -> str:
+        """Internal helper for sim next line."""
         return next_text_simulation_line(self._text_simulation)
 
 
     def _on_sim_temperature_tick(self) -> None:
+        """Handle sim temperature tick events."""
         if not self._sim_temperature_enabled or not self._is_connected():
             return
         for line in next_temperature_plot_simulation_lines(self._sim_temperature_state):
@@ -1504,6 +1598,7 @@ class MainWindow(QMainWindow):
 
 
     def _on_sim_logic_tick(self) -> None:
+        """Handle sim logic tick events."""
         if not self._sim_logic_enabled or not self._is_connected():
             return
         self._ingest_line(next_client_logic_simulation_line(self._sim_logic_state))
@@ -1514,6 +1609,7 @@ class MainWindow(QMainWindow):
     # ---------------- Log limits ----------------
 
     def _enforce_log_limit(self) -> None:
+        """Internal helper for enforce log limit."""
         max_lines = int(self._ui_state.max_lines) if self._ui_state.max_lines else DEFAULT_MAX_LINES
         if max_lines < 1000:
             max_lines = 1000
@@ -1539,6 +1635,7 @@ class MainWindow(QMainWindow):
     # ---------------- UDP listener ----------------
 
     def _start_listener(self) -> bool:
+        """Internal helper for start listener."""
         if self._listener is not None:
             return True
 
@@ -1567,6 +1664,7 @@ class MainWindow(QMainWindow):
         return True
 
     def _stop_listener(self) -> None:
+        """Internal helper for stop listener."""
         if self._listener is None:
             return
         t = self._listener
@@ -1576,6 +1674,7 @@ class MainWindow(QMainWindow):
         self._close_live_log()
 
     def _clear_session_buffers(self) -> None:
+        """Clear session buffers."""
         self.log.clear()
         self._queue.clear()
         self._connection_state.trimmed_lines_total = 0
@@ -1591,6 +1690,7 @@ class MainWindow(QMainWindow):
         self._visualizer_manager.clear_all_buffers()
 
     def _reset_runtime_sources(self) -> None:
+        """Reset runtime sources."""
         self.on_stop_replay_clicked()
         self.on_stop_replay_temperature_clicked()
         self._stop_simulation()
@@ -1608,6 +1708,7 @@ class MainWindow(QMainWindow):
             action.blockSignals(False)
 
     def _reset_session(self) -> Path | None:
+        """Reset session."""
         self._reset_runtime_sources()
         self._stop_listener()
         self._clear_session_buffers()
@@ -1619,14 +1720,17 @@ class MainWindow(QMainWindow):
         return self._connection_state.active_path
 
     def _on_line_received(self, line: str) -> None:
+        """Handle line received events."""
         self._dispatch_log_line(line, is_live_source=True)
 
     def _on_listener_status(self, msg: str) -> None:
+        """Handle listener status events."""
         self.statusBar().showMessage(msg, 1500)
         if self._listener is not None:
             QTimer.singleShot(1600, self._update_connection_ui)
 
     def _on_listener_error(self, msg: str) -> None:
+        """Handle listener error events."""
         self._append_log_line(f"[UI/ERROR] {msg}", write_live=True)
         if self._ui_state.autoscroll:
             self.log.verticalScrollBar().setValue(self.log.verticalScrollBar().maximum())
@@ -1651,6 +1755,7 @@ class MainWindow(QMainWindow):
     #     )
 
     def _on_rx_stats(self, packets: int, lines: int) -> None:
+        """Handle rx stats events."""
         self._connection_state.rx_packets = packets
         self._connection_state.rx_lines = lines
         if self._listener is None:
@@ -1673,6 +1778,7 @@ class MainWindow(QMainWindow):
         )
 
     def _flush_log_queue(self) -> None:
+        """Internal helper for flush log queue."""
         try:
             if not self._queue:
                 return
@@ -1703,6 +1809,7 @@ class MainWindow(QMainWindow):
     # ---------------- UI actions ----------------
 
     def on_save_clicked(self) -> Path | None:
+        """Handle save clicked events."""
         selected_path, _ = QFileDialog.getSaveFileName(
             self,
             "Save Log",
@@ -1746,6 +1853,7 @@ class MainWindow(QMainWindow):
             return None
 
     def on_project_clicked(self) -> None:
+        """Handle project clicked events."""
         dialog = ProjectDialog(
             self._active_project,
             default_root_dir=self._preferred_project_root_dir(),
@@ -1787,11 +1895,13 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"Project active: {project.output_dir}", 4000)
 
     def on_clear_clicked(self) -> None:
+        """Handle clear clicked events."""
         self.log.clear()
         self._connection_state.trimmed_lines_total = 0
         self.statusBar().showMessage("Cleared (UI only)", 2000)
 
     def on_reset_clicked(self) -> None:
+        """Handle reset clicked events."""
         new_live_log = self._reset_session()
         self._reset_active_project()
         if new_live_log is not None:
@@ -1800,6 +1910,7 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Session reset. Listener OFF.", 4000)
 
     def on_copy_clicked(self) -> None:
+        """Handle copy clicked events."""
         cursor = self.log.textCursor()
         selected = cursor.selectedText()
         if selected:
@@ -1810,6 +1921,7 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Copied all", 2000)
 
     def _current_session_log_path(self) -> Path | None:
+        """Internal helper for current session log path."""
         if self._connection_state.active_path is not None:
             return self._connection_state.active_path
         if self._connection_state.last_session_path is not None and self._connection_state.last_session_path.exists():
@@ -1817,6 +1929,7 @@ class MainWindow(QMainWindow):
         return None
 
     def _has_session_logs_to_save(self) -> bool:
+        """Return whether session logs to save."""
         if self._connection_state.rx_lines > 0:
             return True
 
@@ -1834,6 +1947,7 @@ class MainWindow(QMainWindow):
         return False
 
     def _confirm_save_logs_before_exit(self) -> bool:
+        """Internal helper for confirm save logs before exit."""
         if not MainWindow._has_session_logs_to_save(self):
             return True
 
@@ -1856,6 +1970,7 @@ class MainWindow(QMainWindow):
         return True
 
     def on_connect_toggled(self) -> None:
+        """Handle connect toggled events."""
         requested = self.btn_connect.isChecked()
         saved_path: Path | None = None
 
@@ -1926,6 +2041,7 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage(f"Saved: {saved_path}", 5000)
 
     def on_pause_toggled(self) -> None:
+        """Handle pause toggled events."""
         if self._listener is None:
             self.btn_pause.setChecked(False)
             self._pause_buffer, self._pause_dropped, self._ui_paused = reset_pause_state(
@@ -1956,6 +2072,7 @@ class MainWindow(QMainWindow):
         self._update_connection_ui()
 
     def on_timestamp_changed(self) -> None:
+        """Handle timestamp changed events."""
         self._ui_state.timestamp_enabled = self.chk_timestamp.isChecked()
         self._save_settings()
         self.statusBar().showMessage(
@@ -1964,11 +2081,13 @@ class MainWindow(QMainWindow):
         )
 
     def on_autoscroll_changed(self) -> None:
+        """Handle autoscroll changed events."""
         self._ui_state.autoscroll = self.chk_autoscroll.isChecked()
         self._save_settings()
         self.statusBar().showMessage(f"Auto-Scroll: {'ON' if self._ui_state.autoscroll else 'OFF'}", 2000)
 
     def _update_connection_ui(self) -> None:
+        """Update connection ui."""
         connected = self._listener is not None
         self._set_generated_data_actions_enabled(connected)
 
@@ -2029,9 +2148,11 @@ class MainWindow(QMainWindow):
 
     @staticmethod
     def _format_timestamp_prefix(dt: datetime) -> str:
+        """Internal helper for format timestamp prefix."""
         return dt.strftime("%Y%m%d-%H:%M:%S.") + f"{dt.microsecond//1000:03d}"
 
     def _append_log_line(self, line: str, *, write_live: bool = False) -> None:
+        """Append log line."""
         out_line = line
         if self._ui_state.timestamp_enabled:
             out_line = f"{self._format_timestamp_prefix(datetime.now())} {line}"
@@ -2048,11 +2169,13 @@ class MainWindow(QMainWindow):
             self.log.verticalScrollBar().setValue(self.log.verticalScrollBar().maximum())
 
     def _live_status_snippet(self) -> str:
+        """Internal helper for live status snippet."""
         return live_status_snippet(self._connection_state.active_path)
 
     # ---------------- Qt overrides ----------------
 
     def closeEvent(self, event) -> None:
+        """Handle closeEvent."""
         if not self._confirm_save_logs_before_exit():
             event.ignore()
             return
@@ -2077,6 +2200,7 @@ class MainWindow(QMainWindow):
 
 
 def main() -> int:
+    """Start the Qt application and return its exit code."""
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
     QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
 

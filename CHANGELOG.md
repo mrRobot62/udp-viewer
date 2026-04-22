@@ -7,6 +7,103 @@ The format is based on Keep a Changelog and follows semantic versioning
 principles where applicable.
 
 ------------------------------------------------------------------------
+## 0.17.0 -- 2026-04-22
+### Added
+
+-   Expanded plot and logic visualizer color selection with 16
+    predefined, visually distinct colors
+-   Added editable HTML color-code input for visualizer fields using the
+    `#RRGGBB` format
+-   Synchronized color presets and manual color input so selecting a
+    preset writes the corresponding hex code and manual edits switch the
+    selection to `Custom`
+-   Added per-slot footer format fields for plot and logic visualizers
+    so users can define the footer status text with placeholders
+-   Added reusable footer status presets in the central `Preferences...`
+    dialog under the `Visualizer` tab
+-   Added footer preset table editing with `ADD`, `DEL`, `UP`, and
+    `DOWN` actions
+-   Added footer preset type scoping with `All`, `Plot`, and `Logic` so
+    plot and logic slot dialogs only show applicable presets
+-   Added a footer preset dropdown to plot and logic visualizer slot
+    configuration dialogs
+-   Added footer placeholders `{samples}`, `{start}`, `{end}`, and
+    `{duration}` for both plot and logic visualizers
+-   Added plot footer field placeholders such as `{Thot}`,
+    `{current:Thot}`, `{latest:Thot}`, `{mean:Thot}`, `{avg:Thot}`,
+    and `{max:Thot}`
+-   Added advanced plot footer statistics `{median:FieldName}`,
+    `{tail_avg:FieldName}`, and threshold-aware `{thr_avg:FieldName}`
+-   Added logic footer channel placeholders such as `{ch0}` for the
+    latest channel state
+-   Added Python-style footer format specifications such as
+    `{samples:04d}`, `{Thot:03.1f}`, and `{mean:Thot:04.1f}`
+-   Added user guide documentation for footer placeholders, `mean`/`avg`
+    availability, and supported Python-style formatting variants
+-   Added bilingual release notes for `0.17.0`
+-   Added inline API documentation across classes, methods, and helper
+    functions in `src/udp_log_viewer`
+
+### Improved
+
+-   Limited visualizer footer labels to a compact two-line layout and
+    enabled wrapping so long footer text no longer forces graph windows
+    to grow horizontally
+-   Preserved manual footer editing by switching the preset dropdown to
+    `Custom` whenever the configured text no longer matches a preset
+-   Limited footer preset names to 12 characters for readable dropdowns
+    and table entries
+-   Added a multi-line footer format editor in `Preferences...` so
+    preset formats can be edited with real line breaks instead of only
+    escaped `\n` sequences
+-   Enforced unique footer preset names during preference normalization;
+    the first matching name is kept
+-   Updated default footer presets to use compact custom formats instead
+    of the previous long automatic statistics line
+-   Updated footer preset defaults and templates to include total sample
+    count via `{samples}`
+-   Reworked bilingual user and technical documentation so footer
+    placeholders, internal plot statistics, and configuration keys are
+    documented consistently
+-   Extended bilingual documentation to describe `median`, `tail_avg`,
+    and threshold-aware footer statistics consistently
+-   Updated README documentation links to the current `0.17.0` release
+    and added visualizer footer/color feature bullets
+
+### Fixed
+
+-   Fixed Preferences dialog footer-preset button layout so `ADD`,
+    `DELETE`, `UP`, and `DOWN` appear together below the preset table
+-   Replaced the Preferences dialog `OK` button with `Save` and placed
+    `Apply` between `Cancel` and `Save`
+-   Removed the legacy plot `MAX/Mean/Current` status block from
+    configured footer templates by normalizing old `{stats}` placeholders
+    out of existing configs and presets
+-   Kept the legacy plot statistics footer only as a fallback when no
+    custom footer format is configured
+-   Preserved existing legacy named colors by mapping them to the new hex
+    color values when loading color widgets
+-   Avoided Qt test crashes by keeping a stable `QApplication` reference
+    in visualizer dialog tests
+-   Reset transient plot and logic visualizer runtime state correctly on
+    `RESET`, so reopened logic windows resume rendering after a cleared
+    session without requiring an application restart
+
+### Technical
+
+-   Bumped application and package version metadata to `0.17.0`
+-   Added shared color-selection and footer-format helper modules for
+    reuse across plot and logic visualizer dialogs/windows
+-   Added persistence for custom footer status formats in visualizer slot
+    configs
+-   Added persistence for central footer status presets in preferences
+-   Expanded automated coverage for color selection, footer placeholder
+    rendering, legacy `{stats}` migration, footer preset persistence,
+    preset filtering, sample-count placeholders, advanced footer
+    statistics, reset-safe visualizer state handling, and version
+    metadata
+
+------------------------------------------------------------------------
 ## 0.16.3 -- 2026-04-06
 ### Fixed
 

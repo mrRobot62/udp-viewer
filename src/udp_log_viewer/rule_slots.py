@@ -10,12 +10,14 @@ from .udp_log_utils import compile_patterns
 
 @dataclass
 class PatternSlot:
+    """Single filter, exclude, or highlight slot definition."""
     pattern: str = ""
     mode: str = "Substring"
     color: str = "None"
 
 
 def slots_from_json(raw: str, slot_count: int) -> List[PatternSlot]:
+    """Handle slots from json."""
     if not raw:
         return [PatternSlot() for _ in range(slot_count)]
     try:
@@ -38,15 +40,18 @@ def slots_from_json(raw: str, slot_count: int) -> List[PatternSlot]:
 
 
 def slots_to_json(slots: List[PatternSlot]) -> str:
+    """Handle slots to json."""
     items = [{"pattern": s.pattern, "mode": s.mode, "color": s.color} for s in slots]
     return json.dumps(items, ensure_ascii=False)
 
 
 def strip_slot_colors(slots: List[PatternSlot]) -> List[PatternSlot]:
+    """Handle strip slot colors."""
     return [PatternSlot(pattern=slot.pattern, mode=slot.mode, color="None") for slot in slots]
 
 
 def compile_slot_patterns(slots: List[PatternSlot]) -> List[List[object]]:
+    """Compile slot patterns."""
     compiled: List[List[object]] = []
     for slot in slots:
         if not slot.pattern.strip():
@@ -58,6 +63,7 @@ def compile_slot_patterns(slots: List[PatternSlot]) -> List[List[object]]:
 
 
 def match_all_patterns(line: str, patterns: List[object]) -> bool:
+    """Return whether all patterns."""
     for pattern in patterns:
         try:
             if hasattr(pattern, "search"):
@@ -75,6 +81,7 @@ def match_all_patterns(line: str, patterns: List[object]) -> bool:
 
 
 def match_include_slots(line: str, compiled_patterns: List[List[object]]) -> bool:
+    """Return whether include slots."""
     if not compiled_patterns:
         return True
     for patterns in compiled_patterns:
@@ -84,6 +91,7 @@ def match_include_slots(line: str, compiled_patterns: List[List[object]]) -> boo
 
 
 def match_exclude_slots(line: str, compiled_patterns: List[List[object]]) -> bool:
+    """Return whether exclude slots."""
     for patterns in compiled_patterns:
         if match_all_patterns(line, patterns):
             return True
@@ -91,6 +99,7 @@ def match_exclude_slots(line: str, compiled_patterns: List[List[object]]) -> boo
 
 
 def build_highlight_rules(slots: List[PatternSlot]) -> List[HighlightRule]:
+    """Build and return highlight rules."""
     rules: List[HighlightRule] = []
     for slot in slots:
         if not slot.pattern.strip():
@@ -104,6 +113,7 @@ def build_highlight_rules(slots: List[PatternSlot]) -> List[HighlightRule]:
 
 
 def find_first_free_slot(slots: List[PatternSlot]) -> Optional[int]:
+    """Find first free slot."""
     for index, slot in enumerate(slots):
         if not slot.pattern.strip():
             return index

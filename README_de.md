@@ -2,6 +2,11 @@
 
 Plattformübergreifender UDP Log Viewer für ESP32 und andere Embedded-Systeme, entwickelt mit Python und PyQt5.
 
+- Integrierter Plot-Visualizer für Zeitreihen
+- Integrierter Logic-Analyzer für digitale Signale
+
+![Intro](assets/UDP-LOG-VIEWER4.gif)
+
 ## Warum dieses Tool?
 
 Das Debuggen von Embedded-Systemen über UDP ist mühsam.
@@ -13,13 +18,17 @@ Vollständige deutsche Dokumentation:
 
 - [docs/DOKUMENTATION_de.md](docs/DOKUMENTATION_de.md)
 - [docs/USER_GUIDE_de.md](docs/USER_GUIDE_de.md)
-- [docs/RELEASE_0.16.3_de.md](docs/RELEASE_0.16.3_de.md)
+- [docs/CONFIGURATION_REFERENCE_de.md](docs/CONFIGURATION_REFERENCE_de.md)
+- [docs/SUPPORTED_CSV_INPUT_FORMATS_de.md](docs/SUPPORTED_CSV_INPUT_FORMATS_de.md)
+- [docs/RELEASE_0.17.0_de.md](docs/RELEASE_0.17.0_de.md)
 
 Vollständige englische Dokumentation:
 
 - [docs/DOCUMENTATION_en.md](docs/DOCUMENTATION_en.md)
 - [docs/USER_GUIDE_en.md](docs/USER_GUIDE_en.md)
-- [docs/RELEASE_0.16.3.md](docs/RELEASE_0.16.3.md)
+- [docs/CONFIGURATION_REFERENCE_en.md](docs/CONFIGURATION_REFERENCE_en.md)
+- [docs/SUPPORTED_CSV_INPUT_FORMATS_en.md](docs/SUPPORTED_CSV_INPUT_FORMATS_en.md)
+- [docs/RELEASE_0.17.0.md](docs/RELEASE_0.17.0.md)
 
 ## Demo-Projekt zur UDP-Nutzung auf ESP32
 
@@ -82,6 +91,8 @@ Die aktuelle Codebasis enthält:
 - integrierte Simulation für Text-, Temperatur- und Logic-Traffic
 - CSV-basierte Datenvisualisierung
 - Logic-Kanal-Visualisierung
+- Visualizer-Farbauswahl mit 16 Preset-Farben und HTML-Code `#RRGGBB`
+- konfigurierbare Visualizer-Footer mit Presets, Platzhaltern und Formatierung
 - Flanken- und Periodenmessung direkt im Logic-Graphen
 - Laufzeit-`Legend`-Umschaltung in Plot- und Logic-Fenstern
 - tastaturgesteuerte Screenshot-/Save-Kürzel und explizite `TAB`-Navigation im Haupt- und in den Graph-Fenstern

@@ -20,23 +20,26 @@ from PyQt5.QtWidgets import (
 )
 
 from .config_store import ConfigStore
+from .color_selection_widget import ColorSelectionWidget
 from .slot_copy_dialog import SlotCopyDialog
 from .visualizer_axis_config import VisualizerAxisConfig
 from .visualizer_config import VisualizerConfig
 from .visualizer_field_config import VisualizerFieldConfig
 from .visualizer_slot import SLOT_COUNT
+from ..preferences import FooterStatusPreset
 
 
 class LogicVisualizerConfigDialog(QDialog):
-    COLOR_OPTIONS = ("red", "blue", "green", "orange", "purple", "black", "gray")
-
+    """Dialog for LogicVisualizerConfig."""
     def __init__(
         self,
         configs: list[VisualizerConfig],
         current_slot: int = 0,
+        footer_status_presets: tuple[FooterStatusPreset, ...] = (),
         on_apply: Callable[[list[VisualizerConfig], int], None] | None = None,
         parent=None,
     ):
+        """Initialize LogicVisualizerConfigDialog and prepare its initial state."""
         super().__init__(parent)
         self.setWindowTitle("Logic Visualizer Config")
         self.resize(980, 620)
@@ -44,6 +47,7 @@ class LogicVisualizerConfigDialog(QDialog):
         while len(self._configs) < SLOT_COUNT:
             self._configs.append(VisualizerConfig(graph_type="logic"))
         self._current_slot = max(0, min(current_slot, SLOT_COUNT - 1))
+        self._footer_status_presets = tuple(preset for preset in footer_status_presets if preset.scope in ("all", "logic"))
         self._on_apply = on_apply
         self._loaded_form_config = ConfigStore.clone_config(self._configs[self._current_slot])
         self._switch_guard = False
@@ -70,6 +74,18 @@ class LogicVisualizerConfigDialog(QDialog):
         self.ed_filter = QLineEdit()
         self.ed_filter.setMinimumWidth(420)
         self.ed_filter.setToolTip("Only log lines matching this filter are routed into this logic slot.")
+        self.ed_footer_format = QLineEdit()
+        self.ed_footer_format.setToolTip(
+            "Optional footer format. Use {samples}, {start}, {end}, {duration}, or channel names like {ch0}. "
+            "Use format specs like {ch0:02.0f}. Use \\n for a line break."
+        )
+        self.cb_footer_preset = QComboBox()
+        self.cb_footer_preset.addItem("Custom", "")
+        for preset in self._footer_status_presets:
+            self.cb_footer_preset.addItem(preset.name, preset.format)
+        self.cb_footer_preset.setToolTip("Apply one of the reusable footer format presets.")
+        self.cb_footer_preset.currentIndexChanged.connect(self._on_footer_preset_changed)
+        self.ed_footer_format.textChanged.connect(self._sync_footer_preset_combo)
         self.chk_show_legend = QCheckBox()
         self.chk_show_legend.setToolTip("Show or hide the legend by default in the logic visualizer window.")
 
@@ -100,6 +116,13 @@ class LogicVisualizerConfigDialog(QDialog):
         identity_row.addWidget(QLabel("Filter"))
         identity_row.addWidget(self.ed_filter, 1)
         layout.addLayout(identity_row)
+
+        footer_row = QHBoxLayout()
+        footer_row.addWidget(QLabel("Preset"))
+        footer_row.addWidget(self.cb_footer_preset)
+        footer_row.addWidget(QLabel("Footer Format"))
+        footer_row.addWidget(self.ed_footer_format, 1)
+        layout.addLayout(footer_row)
 
         options_row = QHBoxLayout()
         options_row.addWidget(QLabel("Show Legend"))
@@ -165,13 +188,16 @@ class LogicVisualizerConfigDialog(QDialog):
         self._load_slot_into_form(self._current_slot)
 
     def result_configs(self) -> list[VisualizerConfig]:
+        """Return the full slot configuration map collected from the dialog."""
         self._configs[self._current_slot] = self._read_form_config()
         return [ConfigStore.clone_config(config) for config in self._configs]
 
     def current_slot(self) -> int:
+        """Return the currently selected slot number."""
         return self._current_slot
 
     def _persist_current_config(self) -> list[VisualizerConfig]:
+        """Internal helper for persist current config."""
         configs = self.result_configs()
         self._loaded_form_config = ConfigStore.clone_config(self._configs[self._current_slot])
         if self._on_apply is not None:
@@ -179,18 +205,23 @@ class LogicVisualizerConfigDialog(QDialog):
         return configs
 
     def _on_apply_clicked(self) -> None:
+        """Handle apply clicked events."""
         self._persist_current_config()
 
     def _on_save_clicked(self) -> None:
+        """Handle save clicked events."""
         self._persist_current_config()
         self.accept()
 
     def _load_slot_into_form(self, slot_index: int) -> None:
+        """Load slot into form."""
         config = ConfigStore.clone_config(self._configs[slot_index])
         self._switch_guard = True
         self.chk_enabled.setChecked(config.enabled)
         self.ed_title.setText(config.title)
         self.ed_filter.setText(config.filter_string)
+        self.ed_footer_format.setText(config.footer_status_format)
+        self._sync_footer_preset_combo(config.footer_status_format)
         self.chk_show_legend.setChecked(getattr(config, "show_legend", True))
         self.sb_max.setValue(config.max_samples)
         self.chk_sliding_default.setChecked(config.sliding_window_enabled)
@@ -209,6 +240,7 @@ class LogicVisualizerConfigDialog(QDialog):
         self._loaded_form_config = self._read_form_config()
 
     def _read_form_config(self) -> VisualizerConfig:
+        """Internal helper for read form config."""
         new_fields = []
         for row in range(self.table.rowCount()):
             field_name = self.table.item(row, 0).text().strip() if self.table.item(row, 0) else ""
@@ -217,7 +249,8 @@ class LogicVisualizerConfigDialog(QDialog):
 
             active = self.table.cellWidget(row, 1).currentText() == "yes"
             plot = self.table.cellWidget(row, 2).currentText() == "yes"
-            color = self.table.cellWidget(row, 3).currentText()
+            color_widget = self.table.cellWidget(row, 3)
+            color = color_widget.color_code() if isinstance(color_widget, ColorSelectionWidget) else "gray"
 
             new_fields.append(
                 VisualizerFieldConfig(
@@ -238,6 +271,7 @@ class LogicVisualizerConfigDialog(QDialog):
             enabled=self.chk_enabled.isChecked(),
             title=self.ed_title.text().strip(),
             filter_string=self.ed_filter.text().strip(),
+            footer_status_format=self.ed_footer_format.text().strip(),
             show_legend=self.chk_show_legend.isChecked(),
             max_samples=self.sb_max.value(),
             sliding_window_enabled=self.chk_sliding_default.isChecked(),
@@ -256,9 +290,11 @@ class LogicVisualizerConfigDialog(QDialog):
         )
 
     def _has_unsaved_changes(self) -> bool:
+        """Return whether unsaved changes."""
         return self._read_form_config() != self._loaded_form_config
 
     def _confirm_slot_change(self) -> str:
+        """Internal helper for confirm slot change."""
         if not self._has_unsaved_changes():
             return "keep"
         box = QMessageBox(self)
@@ -278,23 +314,28 @@ class LogicVisualizerConfigDialog(QDialog):
         return "cancel"
 
     def _change_slot(self, next_slot: int) -> None:
+        """Internal helper for change slot."""
         self._current_slot = next_slot
         self._load_slot_into_form(next_slot)
 
     def _reset_slot_spin(self) -> None:
+        """Reset slot spin."""
         self._switch_guard = True
         self.sb_slot.setValue(self._current_slot + 1)
         self._switch_guard = False
 
     def _save_and_switch_slot(self, next_slot: int) -> None:
+        """Save and switch slot."""
         self._persist_current_config()
         self._change_slot(next_slot)
 
     def _discard_and_switch_slot(self, next_slot: int) -> None:
+        """Internal helper for discard and switch slot."""
         self._configs[self._current_slot] = ConfigStore.clone_config(self._loaded_form_config)
         self._change_slot(next_slot)
 
     def _on_slot_changed(self, value: int) -> None:
+        """Handle slot changed events."""
         if self._switch_guard:
             return
         next_slot = value - 1
@@ -313,6 +354,7 @@ class LogicVisualizerConfigDialog(QDialog):
         self._change_slot(next_slot)
 
     def add_row(self, field_name: str, active: bool, plot: bool, color: str) -> None:
+        """Handle add row."""
         row = self.table.rowCount()
         self.table.insertRow(row)
 
@@ -330,13 +372,10 @@ class LogicVisualizerConfigDialog(QDialog):
         plot_combo.setToolTip("Choose whether this logic channel is drawn in the logic visualizer.")
         self.table.setCellWidget(row, 2, plot_combo)
 
-        color_combo = QComboBox()
-        color_combo.addItems(list(self.COLOR_OPTIONS))
-        color_combo.setCurrentText(color if color in self.COLOR_OPTIONS else "gray")
-        color_combo.setToolTip("Choose the display color used for this logic channel.")
-        self.table.setCellWidget(row, 3, color_combo)
+        self.table.setCellWidget(row, 3, ColorSelectionWidget(color))
 
     def _on_copy(self) -> None:
+        """Handle copy events."""
         self._configs[self._current_slot] = self._read_form_config()
         dialog = SlotCopyDialog(self._current_slot, parent=self)
         if dialog.exec_() != dialog.Accepted:
@@ -348,10 +387,12 @@ class LogicVisualizerConfigDialog(QDialog):
             self._load_slot_into_form(self._current_slot)
 
     def _on_clear(self) -> None:
+        """Handle clear events."""
         self._configs[self._current_slot] = VisualizerConfig(graph_type="logic")
         self._load_slot_into_form(self._current_slot)
 
     def _move_up(self):
+        """Internal helper for move up."""
         row = self.table.currentRow()
         if row <= 0:
             return
@@ -359,28 +400,56 @@ class LogicVisualizerConfigDialog(QDialog):
         self.table.selectRow(row - 1)
 
     def _move_down(self):
+        """Internal helper for move down."""
         row = self.table.currentRow()
         if row < 0 or row >= self.table.rowCount() - 1:
             return
         self._swap_rows(row, row + 1)
         self.table.selectRow(row + 1)
 
+    def _on_footer_preset_changed(self) -> None:
+        """Handle footer preset changed events."""
+        preset_format = self.cb_footer_preset.currentData()
+        if not preset_format:
+            return
+        self.ed_footer_format.blockSignals(True)
+        self.ed_footer_format.setText(str(preset_format))
+        self.ed_footer_format.blockSignals(False)
+        self._sync_footer_preset_combo(self.ed_footer_format.text())
+
+    def _sync_footer_preset_combo(self, current_text: str) -> None:
+        """Internal helper for sync footer preset combo."""
+        text = (current_text or "").strip()
+        self.cb_footer_preset.blockSignals(True)
+        index = 0
+        for current_index in range(1, self.cb_footer_preset.count()):
+            if str(self.cb_footer_preset.itemData(current_index) or "").strip() == text:
+                index = current_index
+                break
+        self.cb_footer_preset.setCurrentIndex(index)
+        self.cb_footer_preset.blockSignals(False)
+
     def _swap_rows(self, row_a: int, row_b: int):
+        """Internal helper for swap rows."""
         values_a = self._row_values(row_a)
         values_b = self._row_values(row_b)
         self._set_row_values(row_a, values_b)
         self._set_row_values(row_b, values_a)
 
     def _row_values(self, row: int) -> dict:
+        """Internal helper for row values."""
         return {
             "field_name": self.table.item(row, 0).text() if self.table.item(row, 0) else "",
             "active": self.table.cellWidget(row, 1).currentText(),
             "plot": self.table.cellWidget(row, 2).currentText(),
-            "color": self.table.cellWidget(row, 3).currentText(),
+            "color": self.table.cellWidget(row, 3).color_code(),
         }
 
     def _set_row_values(self, row: int, values: dict):
+        """Set row values."""
         self.table.item(row, 0).setText(values["field_name"])
         self.table.cellWidget(row, 1).setCurrentText(values["active"])
         self.table.cellWidget(row, 2).setCurrentText(values["plot"])
-        self.table.cellWidget(row, 3).setCurrentText(values["color"])
+        color_widget = self.table.cellWidget(row, 3)
+        if isinstance(color_widget, ColorSelectionWidget):
+            color_widget.set_color(values["color"])

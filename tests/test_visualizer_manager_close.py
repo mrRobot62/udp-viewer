@@ -9,6 +9,7 @@ class _DummyWindow:
         self.closed = False
         self.project_name = None
         self.output_dir = None
+        self.reset_runtime_calls: list[bool] = []
 
     def close(self) -> None:
         self.closed = True
@@ -16,6 +17,9 @@ class _DummyWindow:
     def update_runtime_context(self, *, project_name, output_dir) -> None:
         self.project_name = project_name
         self.output_dir = output_dir
+
+    def reset_runtime_state(self, *, clear_samples: bool = False) -> None:
+        self.reset_runtime_calls.append(clear_samples)
 
 
 def test_close_all_windows_closes_and_clears_registry() -> None:
@@ -46,3 +50,23 @@ def test_set_runtime_context_keeps_open_windows() -> None:
     assert window.project_name == "Demo"
     assert str(window.output_dir) == "/tmp/demo"
     assert manager.windows_by_slot == {slot_id: window}
+
+
+def test_clear_all_buffers_resets_transient_window_state() -> None:
+    manager = VisualizerManager()
+    first = _DummyWindow()
+    second = _DummyWindow()
+    manager.windows_by_slot = {
+        VisualizerSlotId("plot", 0): first,
+        VisualizerSlotId("logic", 1): second,
+    }  # type: ignore[assignment]
+    manager.sample_counters_by_slot = {
+        VisualizerSlotId("plot", 0): 15,
+        VisualizerSlotId("logic", 1): 8,
+    }
+
+    manager.clear_all_buffers()
+
+    assert manager.sample_counters_by_slot == {}
+    assert first.reset_runtime_calls == [True]
+    assert second.reset_runtime_calls == [True]

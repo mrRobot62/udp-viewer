@@ -142,9 +142,37 @@ field. UDP Viewer can only visualize that data when:
 - field count matches
 - field meaning is configured correctly in the visualizer
 
-## 11. Relevant Source Files
+## 11. Boundary to Footer Parameters
+
+Footer placeholders such as `{mean:Thot}`, `{avg:Thot}`,
+`{median:Thot}`, `{tail_avg:Thot}`, `{thr_avg:Thot}`, `{max:Thot}`, or
+`{current:Thot}` are not CSV fields and are not part of the UDP data
+stream.
+
+These values are calculated inside UDP Viewer from the already parsed
+and currently rendered numeric plot values:
+
+- `{current:FieldName}` and `{latest:FieldName}`
+  latest rendered value of the plot series
+- `{mean:FieldName}` and `{avg:FieldName}`
+  average of the currently rendered numeric values
+- `{median:FieldName}`
+  median of the currently rendered numeric values
+- `{tail_avg:FieldName}`
+  average across the last quarter of the currently visible values
+- `{thr_avg:FieldName}`
+  average only for values inside the target band
+- `{max:FieldName}`
+  maximum of the currently rendered numeric values
+
+With an active sliding window, these values refer to the visible data
+window. Global footer values such as `{samples}`, `{start}`, `{end}`,
+and `{duration}` refer to the full slot buffer.
+
+## 12. Relevant Source Files
 
 - [csv_log_parser.py](../src/udp_log_viewer/data_visualizer/csv_log_parser.py)
 - [config_store.py](../src/udp_log_viewer/data_visualizer/config_store.py)
 - [visualizer_config.py](../src/udp_log_viewer/data_visualizer/visualizer_config.py)
 - [visualizer_field_config.py](../src/udp_log_viewer/data_visualizer/visualizer_field_config.py)
+- [visualizer_window.py](../src/udp_log_viewer/data_visualizer/visualizer_window.py)

@@ -5,7 +5,16 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 import re
+from statistics import median
 
+from .footer_status import (
+    build_footer_context,
+    format_footer_template,
+    format_footer_value,
+    parse_footer_timestamp,
+    resolve_footer_context_placeholder,
+    split_footer_placeholder,
+)
 from .visualizer_axis_config import VisualizerAxisConfig
 from .visualizer_config import VisualizerConfig
 from .visualizer_sample import VisualizerSample
@@ -58,6 +67,7 @@ if TYPE_CHECKING:
 WINDOW_SIZE_MIN = 1
 WINDOW_SIZE_MAX = 5000
 def _build_window_size_tooltip(max_samples: int) -> str:
+    """Build and return window size tooltip."""
     return f"Number of most recent samples shown when the sliding window is enabled. Allowed range: {WINDOW_SIZE_MIN} to {max(WINDOW_SIZE_MIN, min(max_samples, WINDOW_SIZE_MAX))}."
 
 
@@ -67,21 +77,18 @@ SCREENSHOT_SHORTCUT_TIPS = "Screenshot shortcuts: Ctrl+Shift+S, Cmd+Shift+S, or 
 
 @dataclass(slots=True, frozen=True)
 class PlotMeasurement:
+    """Selected measurement span for the plot visualizer."""
     start_index: int
     end_index: int | None
 
 
 def parse_plot_timestamp(timestamp_raw: str) -> datetime | None:
-    value = (timestamp_raw or "").strip()
-    if not value:
-        return None
-    try:
-        return datetime.strptime(value.split(" ")[0], "%Y%m%d-%H:%M:%S.%f")
-    except ValueError:
-        return None
+    """Parse a visualizer sample timestamp for plot measurements."""
+    return parse_footer_timestamp(timestamp_raw)
 
 
 def format_plot_measurement_duration(start_time: datetime | None, end_time: datetime | None) -> str:
+    """Format a plot measurement span as ``MM:SS.hh``."""
     if start_time is None or end_time is None:
         return "--:--.--"
     delta_ms = max(0, int(round((end_time - start_time).total_seconds() * 1000.0)))
@@ -91,28 +98,9 @@ def format_plot_measurement_duration(start_time: datetime | None, end_time: date
     return f"{minutes:02d}:{seconds:02d}.{hundredths:02d}"
 
 
-def _format_status_time(value: datetime | None) -> str:
-    if value is None:
-        return "--:--:--"
-    return value.strftime("%H:%M:%S")
-
-
-def _format_status_duration(start_time: datetime | None, end_time: datetime | None) -> str:
-    if start_time is None or end_time is None:
-        return "--:--:--"
-    total_seconds = max(0, int((end_time - start_time).total_seconds()))
-    hours, remainder = divmod(total_seconds, 3600)
-    minutes, seconds = divmod(remainder, 60)
-    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
-
-
-def build_plot_footer_status(samples: list[VisualizerSample], series_metadata: list[dict[str, object]]) -> str:
-    first_time = parse_plot_timestamp(samples[0].timestamp_raw) if samples else None
-    last_time = parse_plot_timestamp(samples[-1].timestamp_raw) if samples else None
-    parts = [
-        f"Start: {_format_status_time(first_time)}",
-        f"Duration: {_format_status_duration(first_time, last_time)}",
-    ]
+def _build_plot_stats_text(series_metadata: list[dict[str, object]]) -> str:
+    """Build and return plot stats text."""
+    parts: list[str] = []
     for meta in series_metadata:
         field_name = str(meta.get("field_name", "")).strip()
         if not field_name:
@@ -129,13 +117,225 @@ def build_plot_footer_status(samples: list[VisualizerSample], series_metadata: l
     return " - ".join(parts)
 
 
+def _build_plot_field_lookup(series_metadata: list[dict[str, object]]) -> dict[str, dict[str, object]]:
+    """Build and return plot field lookup."""
+    return {
+        str(meta.get("field_name", "")).strip().lower(): meta
+        for meta in series_metadata
+        if str(meta.get("field_name", "")).strip()
+    }
+
+
+def _extract_numeric_values(meta: dict[str, object]) -> list[float]:
+    """Return the numeric values stored for a plot series."""
+    values = meta.get("y_values")
+    if not isinstance(values, list):
+        return []
+    return [float(value) for value in values if value is not None]
+
+
+def _compute_tail_average(values: list[float]) -> float | None:
+    """Return the average across the trailing quarter of the visible values."""
+    if not values:
+        return None
+    tail_count = max(1, len(values) // 4)
+    tail_values = values[-tail_count:]
+    return sum(tail_values) / len(tail_values)
+
+
+def _candidate_threshold_field_names(field_name: str) -> list[str]:
+    """Return likely companion threshold field names for a measured series."""
+    normalized = field_name.strip().lower()
+    if not normalized:
+        return []
+    candidates = [
+        f"{normalized}_min",
+        f"{normalized}_max",
+        f"{normalized}_target_min",
+        f"{normalized}_target_max",
+    ]
+    if normalized.startswith("t") and len(normalized) > 1:
+        suffix = normalized[1:]
+        candidates.extend(
+            [
+                f"target_{suffix}_min",
+                f"target_{suffix}_max",
+                f"{suffix}_min",
+                f"{suffix}_max",
+            ]
+        )
+    return candidates
+
+
+def _resolve_threshold_series(
+    field_name: str,
+    field_lookup: dict[str, dict[str, object]],
+) -> tuple[list[float | None] | None, list[float | None] | None]:
+    """Resolve lower and upper threshold series for a measured field."""
+    lower_series = None
+    upper_series = None
+
+    for candidate in _candidate_threshold_field_names(field_name):
+        meta = field_lookup.get(candidate)
+        if meta is None:
+            continue
+        values = meta.get("y_values")
+        if not isinstance(values, list):
+            continue
+        if candidate.endswith("_min"):
+            lower_series = values
+        elif candidate.endswith("_max"):
+            upper_series = values
+
+    generic_min = field_lookup.get("target_min")
+    generic_max = field_lookup.get("target_max")
+    if lower_series is None and isinstance(generic_min.get("y_values") if generic_min else None, list):
+        lower_series = generic_min.get("y_values")
+    if upper_series is None and isinstance(generic_max.get("y_values") if generic_max else None, list):
+        upper_series = generic_max.get("y_values")
+    return lower_series, upper_series
+
+
+def _compute_threshold_average(
+    meta: dict[str, object],
+    field_lookup: dict[str, dict[str, object]],
+) -> float | None:
+    """Return the average across samples inside the available target band."""
+    field_name = str(meta.get("field_name", "")).strip()
+    values = meta.get("y_values")
+    if not field_name or not isinstance(values, list):
+        return None
+
+    lower_series, upper_series = _resolve_threshold_series(field_name, field_lookup)
+    if lower_series is None and upper_series is None:
+        return None
+
+    filtered: list[float] = []
+    for index, raw_value in enumerate(values):
+        if raw_value is None:
+            continue
+        numeric_value = float(raw_value)
+        lower = lower_series[index] if lower_series is not None and index < len(lower_series) else None
+        upper = upper_series[index] if upper_series is not None and index < len(upper_series) else None
+        if lower is not None and numeric_value < float(lower):
+            continue
+        if upper is not None and numeric_value > float(upper):
+            continue
+        filtered.append(numeric_value)
+
+    if not filtered:
+        return None
+    return sum(filtered) / len(filtered)
+
+
+def _resolve_plot_metric_value(
+    metric: str,
+    meta: dict[str, object],
+    field_lookup: dict[str, dict[str, object]],
+) -> float | int | None:
+    """Resolve a single computed footer metric for a plot field."""
+    metric_aliases = {
+        "current": "latest",
+        "latest": "latest",
+        "mean": "mean",
+        "avg": "mean",
+        "max": "max",
+        "median": "median",
+        "tail_avg": "tail_avg",
+        "thr_avg": "thr_avg",
+        "thres_avg": "thr_avg",
+        "threshold_avg": "thr_avg",
+    }
+    metric_key = metric_aliases.get(metric)
+    if metric_key is None:
+        return None
+    if metric_key in {"latest", "mean", "max"}:
+        return meta.get(metric_key)
+
+    numeric_values = _extract_numeric_values(meta)
+    if metric_key == "median":
+        return median(numeric_values) if numeric_values else None
+    if metric_key == "tail_avg":
+        return _compute_tail_average(numeric_values)
+    if metric_key == "thr_avg":
+        return _compute_threshold_average(meta, field_lookup)
+    return None
+
+
+def _resolve_plot_footer_placeholder(key: str, context: dict[str, object], series_metadata: list[dict[str, object]]) -> str | None:
+    """Resolve plot footer placeholder."""
+    normalized = key.strip()
+    if not normalized:
+        return None
+    direct = resolve_footer_context_placeholder(normalized, context)
+    if direct is not None:
+        return direct
+
+    parts = normalized.split(":")
+    field_lookup = _build_plot_field_lookup(series_metadata)
+    if len(parts) >= 2 and parts[0].strip().lower() in {
+        "current",
+        "latest",
+        "mean",
+        "avg",
+        "max",
+        "median",
+        "tail_avg",
+        "thr_avg",
+        "thres_avg",
+        "threshold_avg",
+    }:
+        metric = parts[0].strip().lower()
+        field_name = parts[1].strip().lower()
+        format_spec = ":".join(parts[2:]).strip() if len(parts) > 2 else ""
+        meta = field_lookup.get(field_name)
+        if meta is None:
+            return None
+        unit = str(meta.get("unit", "") or "")
+        metric_value = _resolve_plot_metric_value(metric, meta, field_lookup)
+        if metric_value is None:
+            return None
+        return _format_plot_value(metric_value, unit, format_spec=format_spec)
+
+    field_name, format_spec = split_footer_placeholder(normalized)
+    meta = field_lookup.get(field_name.lower())
+    if meta is None:
+        return None
+    return _format_plot_value(meta.get("latest"), str(meta.get("unit", "") or ""), format_spec=format_spec)
+
+
+def build_plot_footer_status(
+    samples: list[VisualizerSample],
+    series_metadata: list[dict[str, object]],
+    footer_status_format: str = "",
+) -> str:
+    """Build and return plot footer status."""
+    context = build_footer_context(samples)
+    stats_text = _build_plot_stats_text(series_metadata)
+    formatted = format_footer_template(
+        footer_status_format,
+        lambda key: _resolve_plot_footer_placeholder(key, context, series_metadata),
+    )
+    if formatted:
+        return formatted
+    parts = [
+        f"Start: {context['start']}",
+        f"Duration: {context['duration']}",
+    ]
+    if stats_text:
+        parts.append(stats_text)
+    return " - ".join(parts)
+
+
 def advance_plot_measurement(measurement: PlotMeasurement | None, clicked_index: int) -> PlotMeasurement:
+    """Advance plot measurement."""
     if measurement is None or measurement.end_index is not None:
         return PlotMeasurement(start_index=clicked_index, end_index=None)
     return PlotMeasurement(start_index=measurement.start_index, end_index=clicked_index)
 
 
 def choose_plot_measurement_label_anchor(start_x: int, end_x: int, label_text: str) -> tuple[float, str]:
+    """Choose plot measurement label anchor."""
     span = abs(end_x - start_x)
     min_span_for_center = max(4, len(label_text) // 2)
     if span >= min_span_for_center:
@@ -144,6 +344,7 @@ def choose_plot_measurement_label_anchor(start_x: int, end_x: int, label_text: s
 
 
 class VisualizerWindow:
+    """Window controller for Visualizer."""
     def __init__(
         self,
         config: VisualizerConfig,
@@ -152,6 +353,7 @@ class VisualizerWindow:
         project_name: str | None = None,
         output_dir: str | Path | None = None,
     ) -> None:
+        """Initialize VisualizerWindow and prepare its initial state."""
         self.config = config
         self.screenshot_dir = Path(screenshot_dir) if screenshot_dir is not None else None
         self.window_size_presets = tuple(window_size_presets or DEFAULT_VISUALIZER_PRESETS)
@@ -169,17 +371,33 @@ class VisualizerWindow:
         self._ensure_widget()
 
     def append_sample(self, sample: VisualizerSample) -> None:
+        """Append sample."""
         self.samples.append(sample)
         self._trim_samples_if_needed()
         if self.auto_refresh_enabled:
             self.refresh_plot()
 
     def clear_samples(self) -> None:
+        """Clear samples."""
         self.samples.clear()
         self.freeze_sample_index = None
         self.rebuild_plot()
 
+    def reset_runtime_state(self, *, clear_samples: bool = False) -> None:
+        """Reset transient runtime state to the slot defaults."""
+        if clear_samples:
+            self.samples.clear()
+        self.auto_refresh_enabled = True
+        self.freeze_sample_index = None
+        self.runtime_sliding_window_enabled = bool(self.config.sliding_window_enabled)
+        self.runtime_window_size = self._normalize_runtime_window_size(self.config.default_window_size)
+        self.runtime_show_legend = bool(self.config.show_legend)
+        if self._widget is not None:
+            self._widget.reset_interaction_state()
+        self.rebuild_plot()
+
     def set_auto_refresh(self, enabled: bool) -> None:
+        """Set auto refresh."""
         self.auto_refresh_enabled = enabled
         if enabled:
             self.freeze_sample_index = None
@@ -188,36 +406,43 @@ class VisualizerWindow:
         self.freeze_sample_index = len(self.samples)
 
     def set_runtime_sliding_window_enabled(self, enabled: bool) -> None:
+        """Set runtime sliding window enabled."""
         self.runtime_sliding_window_enabled = bool(enabled)
         self.rebuild_plot()
 
     def set_runtime_window_size(self, value: int) -> None:
+        """Set runtime window size."""
         self.runtime_window_size = self._normalize_runtime_window_size(value)
         self.rebuild_plot()
 
     def set_runtime_show_legend(self, enabled: bool) -> None:
+        """Set runtime show legend."""
         self.runtime_show_legend = bool(enabled)
         self.rebuild_plot()
 
     def reset_runtime_window(self) -> None:
+        """Reset runtime window."""
         self.runtime_sliding_window_enabled = bool(self.config.sliding_window_enabled)
         self.runtime_window_size = self._normalize_runtime_window_size(self.config.default_window_size)
         self.runtime_show_legend = bool(self.config.show_legend)
         self.rebuild_plot()
 
     def refresh_plot(self) -> None:
+        """Refresh plot."""
         self.refresh_request_count += 1
         widget = self._ensure_widget()
         if widget is not None:
             widget.refresh_plot()
 
     def rebuild_plot(self) -> None:
+        """Rebuild plot."""
         self.rebuild_request_count += 1
         widget = self._ensure_widget()
         if widget is not None:
             widget.rebuild_plot()
 
     def show(self) -> None:
+        """Show the underlying Qt window."""
         widget = self._ensure_widget()
         if widget is not None:
             widget.show()
@@ -225,30 +450,36 @@ class VisualizerWindow:
             widget.activateWindow()
 
     def update_runtime_context(self, *, project_name: str | None, output_dir: str | Path | None) -> None:
+        """Update runtime context."""
         self.project_name = (project_name or "").strip() or None
         self.output_dir = Path(output_dir) if output_dir is not None else None
         if self._widget is not None:
             self._widget.setWindowTitle(self._widget._build_window_title())
 
     def set_initial_position(self, *, slot_index: int, group_offset: int = 0) -> None:
+        """Set initial position."""
         widget = self._ensure_widget()
         if widget is not None and hasattr(widget, "set_initial_position"):
             widget.set_initial_position(slot_index=slot_index, group_offset=group_offset)
 
     def close(self) -> None:
+        """Close the underlying Qt window or runtime resource."""
         if self._widget is not None:
             self._widget.close()
 
     def save_screenshot(self) -> Path | None:
+        """Save screenshot."""
         widget = self._ensure_widget()
         if widget is None:
             return None
         return widget.save_screenshot()
 
     def is_gui_available(self) -> bool:
+        """Return whether gui available."""
         return self._ensure_widget() is not None
 
     def get_visible_samples_for_test(self) -> list[VisualizerSample]:
+        """Return visible samples for test."""
         visible = self.samples[: self.freeze_sample_index] if self.freeze_sample_index is not None else self.samples
         if not visible:
             return []
@@ -257,6 +488,7 @@ class VisualizerWindow:
         return list(visible[-self.runtime_window_size :])
 
     def _ensure_widget(self) -> "_VisualizerWindowWidget | None":
+        """Ensure widget."""
         if self._widget is not None:
             return self._widget
         if not self._can_create_widget():
@@ -265,6 +497,7 @@ class VisualizerWindow:
         return self._widget
 
     def _trim_samples_if_needed(self) -> None:
+        """Internal helper for trim samples if needed."""
         max_samples = self.config.max_samples
         if len(self.samples) <= max_samples:
             return
@@ -274,6 +507,7 @@ class VisualizerWindow:
             self.freeze_sample_index = max(0, self.freeze_sample_index - overflow)
 
     def _normalize_runtime_window_size(self, value: int | str | None) -> int:
+        """Normalize runtime window size."""
         try:
             parsed = int(value) if value is not None else self.config.default_window_size
         except (TypeError, ValueError):
@@ -284,6 +518,7 @@ class VisualizerWindow:
 
     @staticmethod
     def _can_create_widget() -> bool:
+        """Return whether create widget."""
         if not (_PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE):
             return False
         try:
@@ -380,7 +615,10 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
 
             self._status_label = QLabel("")
             self._footer_label = QLabel(build_plot_footer_status([], []))
-            self._footer_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            self._footer_label.setWordWrap(True)
+            self._footer_label.setMinimumWidth(0)
+            self._footer_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
+            self._footer_label.setMaximumHeight(self.fontMetrics().lineSpacing() * 2 + 8)
 
             top_bar = QHBoxLayout()
             top_bar.addWidget(self._auto_refresh_checkbox)
@@ -614,6 +852,13 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
             self._legend_checkbox.blockSignals(False)
             self._window_size_spin.blockSignals(False)
 
+        def reset_interaction_state(self) -> None:
+            """Clear transient widget interaction state after a session reset."""
+            self._measurement = None
+            self._status_label.setText("")
+            self._hide_annotation()
+            self._sync_runtime_controls()
+
         def _render_plot(self) -> None:
             self.setWindowTitle(self._build_window_title())
             self._annotation = None
@@ -680,7 +925,13 @@ if _PYQT_AVAILABLE and _MATPLOTLIB_AVAILABLE:
 
             self._apply_axis_settings(samples)
 
-            self._footer_label.setText(build_plot_footer_status(self._controller.samples, self._series_metadata))
+            self._footer_label.setText(
+                build_plot_footer_status(
+                    self._controller.samples,
+                    self._series_metadata,
+                    self._controller.config.footer_status_format,
+                )
+            )
 
             self._draw_end_labels()
             if plotted_y1 and self._controller.runtime_show_legend:
@@ -1122,6 +1373,9 @@ else:
         def show(self) -> None:
             pass
 
+        def reset_interaction_state(self) -> None:
+            pass
+
         def raise_(self) -> None:
             pass
 
@@ -1136,6 +1390,7 @@ else:
 
 
 def _to_matplotlib_linestyle(value: str | None) -> str:
+    """Internal helper for to matplotlib linestyle."""
     normalized = (value or "solid").strip().lower()
     mapping = {
         "solid": "-",
@@ -1146,9 +1401,12 @@ def _to_matplotlib_linestyle(value: str | None) -> str:
     return mapping.get(normalized, "-")
 
 
-def _format_plot_value(value: float | int | None, unit: str = "") -> str:
+def _format_plot_value(value: float | int | None, unit: str = "", *, format_spec: str = "") -> str:
+    """Internal helper for format plot value."""
     if value is None:
         return "-"
+    if format_spec:
+        return format_footer_value(float(value), format_spec, unit)
     formatted = f"{float(value):.1f}".rstrip("0").rstrip(".")
     if unit:
         return f"{formatted} {unit}"
@@ -1162,6 +1420,7 @@ def _build_staggered_label_offsets(
     min_gap_points: int = 14,
     max_offset_points: int = 42,
 ) -> dict[int, int]:
+    """Build and return staggered label offsets."""
     axis_series = [meta for meta in series_metadata if meta.get("axis") is axis]
     if len(axis_series) <= 1:
         return {id(meta): 0 for meta in axis_series}
@@ -1190,6 +1449,7 @@ def _build_staggered_label_offsets(
 
 
 def _uses_binary_step_axis(fields, *, axis: str) -> bool:
+    """Internal helper for uses binary step axis."""
     for field in fields:
         if not getattr(field, "active", False):
             continue

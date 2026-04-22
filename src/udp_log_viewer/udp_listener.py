@@ -25,6 +25,7 @@ class UdpListenerThread(QThread):
     rx_stats = pyqtSignal(int, int)  # packets, lines
 
     def __init__(self, bind_ip: str, port: int, *, parent=None) -> None:
+        """Initialize UdpListenerThread and prepare its initial state."""
         super().__init__(parent)
         self._bind_ip = bind_ip
         self._port = port
@@ -36,6 +37,7 @@ class UdpListenerThread(QThread):
         self._lines = 0
 
     def stop(self) -> None:
+        """Handle stop."""
         self._stop_evt.set()
         # Closing the socket will unblock select()/recvfrom().
         if self._sock is not None:
@@ -46,17 +48,20 @@ class UdpListenerThread(QThread):
 
     @staticmethod
     def _split_lines(text: str) -> List[str]:
+        """Internal helper for split lines."""
         text = text.replace("\r\n", "\n").replace("\r", "\n")
         parts = text.split("\n")
         return [p for p in parts if p.strip() != ""]
 
     @staticmethod
     def _is_ebadf(e: BaseException) -> bool:
+        """Return whether ebadf."""
         if isinstance(e, OSError):
             return getattr(e, "errno", None) == errno.EBADF
         return False
 
     def run(self) -> None:
+        """Run the worker loop for this thread."""
         sock: Optional[socket.socket] = None
         try:
             self.status_changed.emit(f"Binding UDP {self._bind_ip}:{self._port} ...")

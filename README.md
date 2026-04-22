@@ -1,7 +1,12 @@
-# UDP Log Viewer
+# UDP Log Viewer with Plot & Logic Analyzer for Embedded Debugging
+UDP Log Viewer with integrated Plot and Logic Analyzer for embedded systems debugging (Arduino, ESP32, MCU, IoT)
 
-Cross-platform UDP log viewer for ESP32 and other embedded systems, built with Python and PyQt5.
- 
+- Built-in Plot Visualizer (time series data)
+- Built-in Logic Analyzer (digital signals)
+
+![Intro](assets/UDP-LOG-VIEWER4.gif)
+
+
 ## Why using this tool?
 
 Debugging embedded devices over UDP is painful.
@@ -13,29 +18,28 @@ Complete English documentation:
 
 - [docs/DOCUMENTATION_en.md](docs/DOCUMENTATION_en.md)
 - [docs/USER_GUIDE_en.md](docs/USER_GUIDE_en.md)
-- [docs/RELEASE_0.16.3.md](docs/RELEASE_0.16.3.md)
+- [docs/CONFIGURATION_REFERENCE_en.md](docs/CONFIGURATION_REFERENCE_en.md)
+- [docs/SUPPORTED_CSV_INPUT_FORMATS_en.md](docs/SUPPORTED_CSV_INPUT_FORMATS_en.md)
+- [docs/RELEASE_0.17.0.md](docs/RELEASE_0.17.0.md)
 
 Complete German documentation:
 
 - [docs/DOKUMENTATION_de.md](docs/DOKUMENTATION_de.md)
+- [docs/USER_GUIDE_de.md](docs/USER_GUIDE_de.md)
+- [docs/CONFIGURATION_REFERENCE_de.md](docs/CONFIGURATION_REFERENCE_de.md)
+- [docs/SUPPORTED_CSV_INPUT_FORMATS_de.md](docs/SUPPORTED_CSV_INPUT_FORMATS_de.md)
+- [docs/RELEASE_0.17.0_de.md](docs/RELEASE_0.17.0_de.md)
 
 ## HowTo use UDP on EPS32 Demo project
 If you want to play around with an ESP32 & logging, please visit this demo repository
 https://github.com/mrRobot62/esp-udp-logging.git
 
-# Releases
-- Latest stable release 0.16.3 (https://github.com/mrRobot62/udp-viewer/releases/tag/0.16.3)
-
-- Release candidate 0.17.0 (https://github.com/mrRobot62/udp-viewer/releases/tag/0.17.0-RC1)
-
-## HowTo install for Windows-Users
+## Windows-User
 please use setup.exe to install this viewer
 
-## HowTo install for MAC users
+## ToDo for MAC users
 after installation this application is not signed and can't be started directly.
 You have to set this command: `xattr -dr com.apple.quarantine /Applications/UDPLogViewer.app` 
-
-
 
 ## Screenshots
 
@@ -84,19 +88,41 @@ The current codebase includes:
 - built-in simulation for text, temperature, and logic traffic
 - CSV-based data visualization
 - logic-channel visualization
+- visualizer color selection with 16 preset colors and HTML code `#RRGGBB`
+- configurable visualizer footers with presets, placeholders, and formatting
 - edge and period measurement directly inside the logic graph
 - runtime `Legend` toggle in plot and logic graph windows
 - keyboard-driven screenshot/save shortcuts and explicit `TAB` navigation in the main and graph windows
 - macOS and Windows packaging scripts
 
-## Run From Source
 
+
+## Quick-Start (from source)
+```
+git clone ...
+pip install -r requirements.txt
+python main.py
+```
+
+## Install & Run
+- MacOSX
+  - download DMG and install
+  - run this `xattr -dr com.apple.quarantine /Applications/UDPLogViewer.app` 
+- Windows
+  - download setup.exe and run
+
+## Run From Source
 ```bash
 python -m venv venv
 source venv/bin/activate
 pip install -e .[dev]
 udp-log-viewer
 ```
+## 🧪 Testing
+
+The project includes a comprehensive test suite under `/tests`.
+
+
 
 ## Developer Bootstrap
 

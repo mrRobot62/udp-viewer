@@ -194,10 +194,37 @@ Praktisch bedeutet das:
 - der UDP-Viewer bildet diese Struktur über die Graph-Konfiguration nach
 - die Viewer-Dokumentation beschreibt nur die aktuelle Eingabeinterpretation
 
-## 11. Relevante Quelldateien
+## 11. Abgrenzung zu Footer-Parametern
+
+Footer-Platzhalter wie `{mean:Thot}`, `{avg:Thot}`, `{median:Thot}`,
+`{tail_avg:Thot}`, `{thr_avg:Thot}`, `{max:Thot}` oder
+`{current:Thot}` sind keine CSV-Felder und nicht Teil des
+UDP-Datenstroms.
+
+Diese Werte werden im UDP-Viewer aus den bereits geparsten und aktuell
+gerenderten numerischen Plot-Werten berechnet:
+
+- `{current:Feldname}` und `{latest:Feldname}`
+  letzter gerenderter Wert der Plot-Serie
+- `{mean:Feldname}` und `{avg:Feldname}`
+  Mittelwert der aktuell gerenderten numerischen Werte
+- `{median:Feldname}`
+  Median der aktuell gerenderten numerischen Werte
+- `{tail_avg:Feldname}`
+  Mittelwert über das letzte Viertel der aktuell sichtbaren Werte
+- `{thr_avg:Feldname}`
+  Mittelwert nur für Werte innerhalb des Zielkorridors
+- `{max:Feldname}`
+  Maximalwert der aktuell gerenderten numerischen Werte
+
+Bei aktivem Sliding Window beziehen sich diese Werte auf das sichtbare
+Datenfenster. Globale Footer-Werte wie `{samples}`, `{start}`, `{end}`
+und `{duration}` beziehen sich dagegen auf den gesamten Slot-Puffer.
+
+## 12. Relevante Quelldateien
 
 - [csv_log_parser.py](../src/udp_log_viewer/data_visualizer/csv_log_parser.py)
 - [config_store.py](../src/udp_log_viewer/data_visualizer/config_store.py)
 - [visualizer_config.py](../src/udp_log_viewer/data_visualizer/visualizer_config.py)
 - [visualizer_field_config.py](../src/udp_log_viewer/data_visualizer/visualizer_field_config.py)
-
+- [visualizer_window.py](../src/udp_log_viewer/data_visualizer/visualizer_window.py)
