@@ -58,6 +58,18 @@ def test_live_status_snippet_for_existing_file(tmp_path: Path) -> None:
     assert "B" in snippet
 
 
+def test_tcp_status_counts_bytes_instead_of_packets() -> None:
+    """TCP stream reads must never appear as network packet counts."""
+    text = build_connection_status(
+        connected=True, bind_ip="127.0.0.1", port=10514,
+        shown_lines=2, trimmed_lines_total=0, highlight_count=0,
+        protocol="tcp", rx_bytes=2**33, rx_lines=2,
+    )
+    assert "TCP" in text
+    assert f"bytes={2**33}" in text
+    assert "pkts=" not in text
+
+
 def test_ensure_active_live_log_reuses_existing_open_file(tmp_path: Path) -> None:
     handle, path = open_live_log(tmp_path, "20260331_101500", filename="first.txt")
     state = LiveLogState(active_path=path, handle=handle)

@@ -13,16 +13,15 @@ class UdpListenerThread(QThread):
     """
     Background UDP listener (non-blocking, thread-based).
 
-    Important:
-    - stop() closes the socket to unblock select()/recvfrom().
-    - Those operations may raise EBADF (Errno 9) during shutdown.
-      This must NOT be treated as an error.
+    Socket operations and cleanup stay in the worker. The bounded select
+    timeout lets stop() request shutdown without waiting in the GUI thread.
     """
 
     line_received = pyqtSignal(str)
     status_changed = pyqtSignal(str)
     error = pyqtSignal(str)
-    rx_stats = pyqtSignal(int, int)  # packets, lines
+    rx_stats = pyqtSignal(object, object)  # packets, lines (unbounded Python integers)
+    ready = pyqtSignal()
 
     def __init__(self, bind_ip: str, port: int, *, parent=None) -> None:
         """Initialize UdpListenerThread and prepare its initial state."""
@@ -37,14 +36,8 @@ class UdpListenerThread(QThread):
         self._lines = 0
 
     def stop(self) -> None:
-        """Handle stop."""
+        """Request shutdown; the worker closes its socket within one poll cycle."""
         self._stop_evt.set()
-        # Closing the socket will unblock select()/recvfrom().
-        if self._sock is not None:
-            try:
-                self._sock.close()
-            except Exception:
-                pass
 
     @staticmethod
     def _split_lines(text: str) -> List[str]:
@@ -76,8 +69,10 @@ class UdpListenerThread(QThread):
                 except OSError:
                     pass
             sock.bind((self._bind_ip, self._port))
+            self._port = sock.getsockname()[1]
             sock.setblocking(False)
 
+            self.ready.emit()
             self.status_changed.emit(f"Listening UDP {self._bind_ip}:{self._port}")
 
             while not self._stop_evt.is_set():
@@ -90,6 +85,8 @@ class UdpListenerThread(QThread):
                     self.error.emit(f"select failed: {e}")
                     break
 
+                if self._stop_evt.is_set():
+                    break
                 if not rlist:
                     continue
 

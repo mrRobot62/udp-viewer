@@ -13,6 +13,7 @@ class LiveLogState:
     trimmed_lines_total: int = 0
     rx_packets: int = 0
     rx_lines: int = 0
+    rx_bytes: int = 0
 
 
 def ensure_logs_dir(logs_dir: str | Path) -> Path:
@@ -114,24 +115,28 @@ def build_connection_status(
     highlight_count: int,
     rx_packets: int = 0,
     rx_lines: int = 0,
+    protocol: str = "udp",
+    rx_bytes: int = 0,
     live_snippet: str = "",
     paused_tail: int = 0,
     paused_dropped: int = 0,
     paused: bool = False,
 ) -> str:
-    """Build and return connection status."""
+    """Format transport-specific counters without treating TCP reads as packets."""
+    transport = protocol.upper()
+    received = f"bytes={rx_bytes}" if protocol == "tcp" else f"pkts={rx_packets}"
     if connected:
         paused_text = ""
         if paused:
             paused_text = f" — PAUSED (tail={paused_tail} drop={paused_dropped})"
         live_text = f" — {live_snippet}" if live_snippet else ""
         return (
-            f"Listener: ON — {bind_ip}:{port} — "
-            f"pkts={rx_packets} lines={rx_lines} — shown={shown_lines} "
+            f"Listener: ON — {transport} {bind_ip}:{port} — "
+            f"{received} lines={rx_lines} — shown={shown_lines} "
             f"dropped={trimmed_lines_total} — HL={highlight_count}"
             f"{live_text}{paused_text}"
         )
     return (
-        f"Listener: OFF — {bind_ip}:{port} — "
+        f"Listener: OFF — {transport} {bind_ip}:{port} — "
         f"shown={shown_lines} dropped={trimmed_lines_total} — HL={highlight_count}"
     )

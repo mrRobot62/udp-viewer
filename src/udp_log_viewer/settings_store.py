@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import configparser
+import re
+import uuid
 from pathlib import Path
 
 from PyQt5.QtCore import QSettings
@@ -22,6 +24,10 @@ class SettingsStore:
     def load_ui_state(self, default_state: UiState) -> UiState:
         """Load ui state."""
         return UiState(
+            protocol=self._load_protocol(),
+            discovery_enabled=self._settings.value("net/discovery_enabled", False, type=bool),
+            discovery_port=self._load_discovery_port(),
+            server_id=self._load_server_id(),
             bind_ip=self._settings.value("net/bind_ip", default_state.bind_ip, type=str),
             port=self._settings.value("net/port", default_state.port, type=int),
             autoscroll=self._settings.value("ui/autoscroll", default_state.autoscroll, type=bool),
@@ -33,12 +39,38 @@ class SettingsStore:
 
     def save_ui_state(self, state: UiState) -> None:
         """Save ui state."""
+        self._settings.setValue("net/discovery_enabled", state.discovery_enabled)
+        self._settings.setValue("net/discovery_port", state.discovery_port)
+        self._settings.setValue("net/server_id", state.server_id)
         self._settings.setValue("net/bind_ip", state.bind_ip)
+        self._settings.setValue("net/protocol", state.protocol)
         self._settings.setValue("net/port", int(state.port))
         self._settings.setValue("ui/autoscroll", bool(state.autoscroll))
         self._settings.setValue("ui/timestamp", bool(state.timestamp_enabled))
         self._settings.setValue("log/max_lines", int(state.max_lines))
         self._settings.sync()
+
+    def _load_server_id(self) -> str:
+        """Keep a persistent ASCII identity for automatic sender selection."""
+        value = self._settings.value("net/server_id", "", type=str)
+        if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", value):
+            value = uuid.uuid4().hex
+            self._settings.setValue("net/server_id", value)
+            self._settings.sync()
+        return value
+
+    def _load_discovery_port(self) -> int:
+        """Use the standard discovery port for missing or malformed settings."""
+        try:
+            port = int(self._settings.value("net/discovery_port", 10515))
+            return port if 1 <= port <= 65535 else 10515
+        except (ValueError, TypeError):
+            return 10515
+
+    def _load_protocol(self) -> str:
+        """Read the transport, defaulting legacy or invalid settings to UDP."""
+        value = self._settings.value("net/protocol", "udp", type=str).strip().lower()
+        return value if value in ("udp", "tcp") else "udp"
 
     def load_preferences(self) -> AppPreferences:
         """Load preferences."""

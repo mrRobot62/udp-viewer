@@ -32,6 +32,25 @@ def test_settings_store_roundtrips_ui_state(tmp_path: Path) -> None:
     assert loaded.max_lines == 1234
 
 
+@pytest.mark.parametrize("protocol", ["udp", "tcp"])
+def test_protocol_roundtrip(tmp_path: Path, protocol: str) -> None:
+    """Persist either supported transport through QSettings."""
+    settings = QSettings(str(tmp_path / "settings.ini"), QSettings.IniFormat)
+    store = SettingsStore(settings, tmp_path / "config.ini")
+    store.save_ui_state(UiState(protocol=protocol))
+    assert store.load_ui_state(UiState()).protocol == protocol
+
+
+@pytest.mark.parametrize("stored", [None, "", "invalid", "TCP"])
+def test_protocol_legacy_and_normalization(tmp_path: Path, stored: str | None) -> None:
+    """Default legacy/invalid transport settings to UDP and normalize case."""
+    settings = QSettings(str(tmp_path / "settings.ini"), QSettings.IniFormat)
+    if stored is not None:
+        settings.setValue("net/protocol", stored)
+    store = SettingsStore(settings, tmp_path / "config.ini")
+    assert store.load_ui_state(UiState()).protocol == ("tcp" if stored == "TCP" else "udp")
+
+
 def test_settings_store_roundtrips_rule_slots(tmp_path: Path) -> None:
     qsettings_path = tmp_path / "settings.ini"
     qsettings = QSettings(str(qsettings_path), QSettings.IniFormat)

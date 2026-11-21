@@ -9,7 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Deque, List, Optional, Tuple
 
-from PyQt5.QtCore import QEvent, Qt, QSettings, QTimer
+from PyQt5.QtCore import QEvent, Qt, QSettings, QThread, QTimer, pyqtSlot
 from PyQt5.QtGui import QFont, QIntValidator, QKeySequence, QTextCursor
 from PyQt5.QtWidgets import (
     QAction,
@@ -55,7 +55,6 @@ from .highlighter import HighlightRule, LogHighlighter
 from .listener_runtime import (
     parse_listener_request,
     reset_pause_state,
-    stop_listener_thread,
 )
 from .replay_simulation import (
     TemperaturePlotSimulationState,
@@ -92,6 +91,7 @@ from .project_runtime import (
     is_valid_project_name,
 )
 from .udp_listener import UdpListenerThread
+from .tcp_listener import TcpListenerThread
 from .udp_log_utils import drain_queue
 from .data_visualizer.visualizer_manager import VisualizerManager
 
@@ -243,8 +243,13 @@ class MainWindow(QMainWindow):
             max_lines=self._preferences.max_lines_default,
         )
 
-        # UDP listener
-        self._listener: Optional[UdpListenerThread] = None
+        # Network workers remain owned until their asynchronous shutdown finishes.
+        self._listener: UdpListenerThread | TcpListenerThread | None = None
+        self._stopping_listeners: set[QThread] = set()
+        self._listener_ready = False
+        self._listener_status = ""
+        self._listener_error_text = ""
+        self._close_pending = False
         self._connection_state = LiveLogState()
 
         # Queue + batching for UI
@@ -485,8 +490,8 @@ class MainWindow(QMainWindow):
         close_live_log(self._connection_state)
 
     def _is_connected(self) -> bool:
-        """Return whether connected."""
-        return self._listener is not None
+        """Return whether the local listener has successfully bound its socket."""
+        return self._listener is not None and self._listener_ready
 
     def _set_action_checked_without_signal(self, action: QAction | None, checked: bool) -> None:
         """Set action checked without signal."""
@@ -667,8 +672,12 @@ class MainWindow(QMainWindow):
             self.btn_pause,
             self.chk_autoscroll,
             self.chk_timestamp,
+            self.cb_protocol,
             self.ed_bind_ip,
             self.ed_port,
+            self.chk_discovery,
+            self.sp_discovery_port,
+            self.ed_server_id,
             self.ed_max_lines,
             self.btn_filter_add,
             self.btn_filter_reset,
@@ -751,7 +760,7 @@ class MainWindow(QMainWindow):
         self.btn_connect.setText("CONNECT")
         self.btn_connect.setFocusPolicy(Qt.StrongFocus)
         self.btn_connect.setCheckable(True)
-        self.btn_connect.setToolTip("Start or stop the UDP listener for the configured bind IP and port.")
+        self.btn_connect.setToolTip("Start or stop the UDP listener or TCP server on the configured local address.")
         self.btn_connect.clicked.connect(self.on_connect_toggled)
 
         self.btn_pause = QToolButton()
@@ -802,7 +811,7 @@ class MainWindow(QMainWindow):
         self.ed_bind_ip = QLineEdit()
         self.ed_bind_ip.setFocusPolicy(Qt.StrongFocus)
         self.ed_bind_ip.setPlaceholderText("0.0.0.0")
-        self.ed_bind_ip.setToolTip("UDP bind address. Use 0.0.0.0 to listen on all local network interfaces.")
+        self.ed_bind_ip.setToolTip("Local bind address. Use 0.0.0.0 to listen on all local network interfaces.")
         self.ed_bind_ip.editingFinished.connect(self.on_settings_edited)
 
         lbl_port = QLabel("Port:")
@@ -810,7 +819,7 @@ class MainWindow(QMainWindow):
         self.ed_port.setFocusPolicy(Qt.StrongFocus)
         self.ed_port.setValidator(QIntValidator(1, 65535, self))
         self.ed_port.setPlaceholderText("10514")
-        self.ed_port.setToolTip("UDP port used by the listener.")
+        self.ed_port.setToolTip("Local UDP or TCP listening port.")
         self.ed_port.editingFinished.connect(self.on_settings_edited)
 
         lbl_max = QLabel("Max lines:")
@@ -827,6 +836,33 @@ class MainWindow(QMainWindow):
         settings_layout.addWidget(self.ed_port, 0, 3)
         settings_layout.addWidget(lbl_max, 0, 4)
         settings_layout.addWidget(self.ed_max_lines, 0, 5)
+
+        self.cb_protocol = QComboBox()
+        self.cb_protocol.addItems(["UDP", "TCP"])
+        self.cb_protocol.setToolTip("UDP datagrams or TCP server: one sender, UTF-8 lines terminated by LF/CRLF.")
+        self.cb_protocol.currentTextChanged.connect(self.on_settings_edited)
+        settings_layout.addWidget(QLabel("Protocol:"), 1, 0)
+        settings_layout.addWidget(self.cb_protocol, 1, 1)
+        self.lbl_network_status = QLabel("Listener OFF")
+        self.lbl_network_status.setWordWrap(True)
+        self.lbl_network_status.setTextFormat(Qt.PlainText)
+        settings_layout.addWidget(self.lbl_network_status, 1, 2, 1, 4)
+
+        self.chk_discovery = QCheckBox("Auto server discovery")
+        self.chk_discovery.setToolTip("Answer ESP32 discovery requests while the TCP server is free.")
+        self.sp_discovery_port = QSpinBox()
+        self.sp_discovery_port.setRange(1, 65535)
+        self.sp_discovery_port.setValue(10515)
+        self.ed_server_id = QLineEdit()
+        self.ed_server_id.setReadOnly(True)
+        self.ed_server_id.setToolTip("Stable server ID; copy into WIFI_LOGGING_SERVER_ID to select this viewer.")
+        settings_layout.addWidget(self.chk_discovery, 2, 0, 1, 2)
+        settings_layout.addWidget(QLabel("Discovery UDP port:"), 2, 2)
+        settings_layout.addWidget(self.sp_discovery_port, 2, 3)
+        settings_layout.addWidget(QLabel("Server ID:"), 2, 4)
+        settings_layout.addWidget(self.ed_server_id, 2, 5)
+        self.chk_discovery.toggled.connect(self.on_settings_edited)
+        self.sp_discovery_port.valueChanged.connect(self.on_settings_edited)
 
         settings_layout.setColumnStretch(1, 1)
         root_layout.addWidget(settings_frame)
@@ -945,6 +981,9 @@ class MainWindow(QMainWindow):
     def _apply_state_to_widgets(self) -> None:
         """Internal helper for apply state to widgets."""
         widgets = [
+            self.chk_discovery,
+            self.sp_discovery_port,
+            self.cb_protocol,
             self.ed_bind_ip,
             self.ed_port,
             self.chk_autoscroll,
@@ -954,6 +993,10 @@ class MainWindow(QMainWindow):
         for widget in widgets:
             widget.blockSignals(True)
         try:
+            self.chk_discovery.setChecked(self._ui_state.discovery_enabled)
+            self.sp_discovery_port.setValue(self._ui_state.discovery_port)
+            self.ed_server_id.setText(self._ui_state.server_id)
+            self.cb_protocol.setCurrentText(self._ui_state.protocol.upper())
             self.ed_bind_ip.setText(self._ui_state.bind_ip)
             self.ed_port.setText(str(self._ui_state.port))
             self.chk_autoscroll.setChecked(self._ui_state.autoscroll)
@@ -965,6 +1008,9 @@ class MainWindow(QMainWindow):
 
     def on_settings_edited(self) -> None:
         """Handle settings edited events."""
+        self._ui_state.discovery_enabled = self.chk_discovery.isChecked()
+        self._ui_state.discovery_port = self.sp_discovery_port.value()
+        self._ui_state.protocol = self.cb_protocol.currentText().lower()
         self._ui_state.bind_ip = self.ed_bind_ip.text().strip() or "0.0.0.0"
         try:
             self._ui_state.port = int(self.ed_port.text().strip())
@@ -1632,14 +1678,18 @@ class MainWindow(QMainWindow):
 
         self._connection_state.trimmed_lines_total += remove_n
 
-    # ---------------- UDP listener ----------------
+    # ---------------- Network listener ----------------
 
     def _start_listener(self) -> bool:
-        """Internal helper for start listener."""
+        """Start the selected transport after validating its local endpoint."""
+        if self._stopping_listeners or self._close_pending:
+            return False
         if self._listener is not None:
             return True
 
-        request, error = parse_listener_request(self.ed_bind_ip.text(), self.ed_port.text())
+        request, error = parse_listener_request(
+            self.ed_bind_ip.text(), self.ed_port.text(), self.cb_protocol.currentText()
+        )
         if request is None:
             title = "Missing Port" if "empty" in (error or "").lower() else "Invalid Port"
             QMessageBox.warning(self, title, error or "Invalid listener settings.")
@@ -1647,31 +1697,84 @@ class MainWindow(QMainWindow):
 
         self._ui_state.bind_ip = request.bind_ip
         self._ui_state.port = request.port
+        self._ui_state.protocol = request.protocol
+        self._save_settings()
 
         self._connection_state.rx_packets = 0
         self._connection_state.rx_lines = 0
+        self._connection_state.rx_bytes = 0
 
-        t = UdpListenerThread(request.bind_ip, request.port, parent=self)
-        t.line_received.connect(self._on_line_received)
+        listener_class = TcpListenerThread if request.protocol == "tcp" else UdpListenerThread
+        options = {}
+        if request.protocol == "tcp" and self._ui_state.discovery_enabled:
+            options = {"discovery_port": self._ui_state.discovery_port, "server_id": self._ui_state.server_id}
+        t = listener_class(request.bind_ip, request.port, parent=self, **options)
+        t.line_received.connect(self._on_network_line)
         t.status_changed.connect(self._on_listener_status)
         t.error.connect(self._on_listener_error)
         t.rx_stats.connect(self._on_rx_stats)
+        t.ready.connect(self._on_listener_ready)
+        t.finished.connect(self._on_listener_finished)
 
         self._listener = t
-        t.start()
-
+        self._listener_ready = False
+        self._listener_status = f"Starting {request.protocol.upper()} {request.bind_ip}:{request.port}"
+        self._listener_error_text = ""
         self._ensure_active_live_log()
+        t.start()
         return True
 
     def _stop_listener(self) -> None:
-        """Internal helper for stop listener."""
+        """Invalidate queued worker signals and request a nonblocking stop."""
         if self._listener is None:
             return
         t = self._listener
         self._listener = None
-
-        stop_listener_thread(t, wait_ms=800)
+        self._listener_ready = False
+        self._stopping_listeners.add(t)
+        t.stop()
         self._close_live_log()
+
+    @pyqtSlot()
+    def _on_listener_ready(self) -> None:
+        """Enable receive controls only after the current worker has bound."""
+        if self.sender() is self._listener:
+            self._listener_ready = True
+            self._update_connection_ui()
+
+    @pyqtSlot()
+    def _on_listener_finished(self) -> None:
+        """Handle unexpected worker exit and retain ownership until joined."""
+        worker = self.sender()
+        if worker is self._listener:
+            self._listener = None
+            self._listener_ready = False
+            self._close_live_log()
+            self._reset_runtime_sources()
+            self._ui_paused = False
+            self._pause_buffer.clear()
+            self._pause_dropped = 0
+            self.btn_pause.setChecked(False)
+        self._stopping_listeners.add(worker)
+        self._reap_listeners()
+
+    def _reap_listeners(self) -> None:
+        """Poll completion without blocking Qt or destroying running threads."""
+        for worker in tuple(self._stopping_listeners):
+            if worker.wait(0):
+                self._stopping_listeners.remove(worker)
+                worker.deleteLater()
+        self._update_connection_ui()
+        if self._stopping_listeners:
+            QTimer.singleShot(10, self._reap_listeners)
+        elif self._close_pending:
+            QTimer.singleShot(0, self.close)
+
+    @pyqtSlot(str)
+    def _on_network_line(self, line: str) -> None:
+        """Ignore queued lines belonging to a stopped or previous session."""
+        if self.sender() is self._listener:
+            self._on_line_received(line)
 
     def _clear_session_buffers(self) -> None:
         """Clear session buffers."""
@@ -1680,6 +1783,7 @@ class MainWindow(QMainWindow):
         self._connection_state.trimmed_lines_total = 0
         self._connection_state.rx_packets = 0
         self._connection_state.rx_lines = 0
+        self._connection_state.rx_bytes = 0
         self._pause_buffer, self._pause_dropped, self._ui_paused = reset_pause_state(
             self._pause_buffer,
             maxlen=self._pause_buffer.maxlen or 2000,
@@ -1723,14 +1827,21 @@ class MainWindow(QMainWindow):
         """Handle line received events."""
         self._dispatch_log_line(line, is_live_source=True)
 
+    @pyqtSlot(str)
     def _on_listener_status(self, msg: str) -> None:
-        """Handle listener status events."""
-        self.statusBar().showMessage(msg, 1500)
-        if self._listener is not None:
-            QTimer.singleShot(1600, self._update_connection_ui)
+        """Keep current transport and peer status visible independently of counters."""
+        if self.sender() is not self._listener:
+            return
+        self._listener_status = msg
+        self._update_connection_ui()
 
+    @pyqtSlot(str)
     def _on_listener_error(self, msg: str) -> None:
-        """Handle listener error events."""
+        """Report errors from the current session and retain the last diagnostic."""
+        if self.sender() is not self._listener:
+            return
+        self._listener_error_text = msg
+        self._update_connection_ui()
         self._append_log_line(f"[UI/ERROR] {msg}", write_live=True)
         if self._ui_state.autoscroll:
             self.log.verticalScrollBar().setValue(self.log.verticalScrollBar().maximum())
@@ -1754,12 +1865,16 @@ class MainWindow(QMainWindow):
     #         + paused_txt
     #     )
 
+    @pyqtSlot(object, object)
     def _on_rx_stats(self, packets: int, lines: int) -> None:
-        """Handle rx stats events."""
-        self._connection_state.rx_packets = packets
-        self._connection_state.rx_lines = lines
-        if self._listener is None:
+        """Track UDP datagrams or TCP bytes, plus complete nonblank lines."""
+        if self.sender() is not self._listener or self._listener is None:
             return
+        if self._ui_state.protocol == "tcp":
+            self._connection_state.rx_bytes = packets
+        else:
+            self._connection_state.rx_packets = packets
+        self._connection_state.rx_lines = lines
         self.statusBar().showMessage(
             build_connection_status(
                 connected=True,
@@ -1769,6 +1884,8 @@ class MainWindow(QMainWindow):
                 trimmed_lines_total=self._connection_state.trimmed_lines_total,
                 highlight_count=len(self._hl_rules),
                 rx_packets=packets,
+                protocol=self._ui_state.protocol,
+                rx_bytes=self._connection_state.rx_bytes,
                 rx_lines=lines,
                 live_snippet=self._live_status_snippet(),
                 paused_tail=len(self._pause_buffer),
@@ -1989,7 +2106,7 @@ class MainWindow(QMainWindow):
             self.btn_pause.setChecked(False)
             self.btn_pause.blockSignals(False)
 
-            self._append_log_line(f"[UI/INFO] Listening on {self._ui_state.bind_ip}:{self._ui_state.port}", write_live=False)
+            self._append_log_line(f"[UI/INFO] Starting {self._ui_state.protocol.upper()} on {self._ui_state.bind_ip}:{self._ui_state.port}", write_live=False)
             if self._connection_state.active_path is not None:
                 self.log.appendPlainText(f"[UI/INFO] Live logfile: {self._connection_state.active_path}")
         else:
@@ -2014,6 +2131,10 @@ class MainWindow(QMainWindow):
                     return
                 if clicked == yes:
                     saved_path = self.on_save_clicked()
+                    if saved_path is None:
+                        self.btn_connect.setChecked(True)
+                        self._update_connection_ui()
+                        return
 
             self._stop_listener()
 
@@ -2087,14 +2208,27 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"Auto-Scroll: {'ON' if self._ui_state.autoscroll else 'OFF'}", 2000)
 
     def _update_connection_ui(self) -> None:
-        """Update connection ui."""
-        connected = self._listener is not None
+        """Reflect listener readiness, asynchronous shutdown and network errors."""
+        active = self._listener is not None
+        stopping = bool(self._stopping_listeners)
+        connected = self._is_connected()
+        busy = active or stopping or self._close_pending
+        for widget in (self.cb_protocol, self.ed_bind_ip, self.ed_port):
+            widget.setEnabled(not busy)
+        self.chk_discovery.setEnabled(not busy and self.cb_protocol.currentText() == "TCP")
+        self.sp_discovery_port.setEnabled(not busy and self.cb_protocol.currentText() == "TCP" and self.chk_discovery.isChecked())
+        self.btn_connect.setEnabled(not stopping and not self._close_pending)
+        self.btn_connect.setChecked(active)
+        status = self._listener_status if active else ("Stopping listener ..." if stopping else "Listener OFF")
+        if self._listener_error_text:
+            status += f" — Last error: {self._listener_error_text}"
+        self.lbl_network_status.setText(status)
         self._set_generated_data_actions_enabled(connected)
 
         if connected:
             self.chk_timestamp.setEnabled(False)
 
-            self.btn_connect.setText("CONNECTED")
+            self.btn_connect.setText("LISTENING" if self._ui_state.protocol == "tcp" else "CONNECTED")
             self.btn_connect.setStyleSheet("QToolButton { background-color: #2ecc71; font-weight: bold; }")
 
             self.btn_pause.setEnabled(True)
@@ -2114,6 +2248,8 @@ class MainWindow(QMainWindow):
                     trimmed_lines_total=self._connection_state.trimmed_lines_total,
                     highlight_count=len(self._hl_rules),
                     rx_packets=self._connection_state.rx_packets,
+                    protocol=self._ui_state.protocol,
+                    rx_bytes=self._connection_state.rx_bytes,
                     rx_lines=self._connection_state.rx_lines,
                     live_snippet=self._live_status_snippet(),
                     paused_tail=len(self._pause_buffer),
@@ -2122,8 +2258,8 @@ class MainWindow(QMainWindow):
                 )
             )
         else:
-            self.chk_timestamp.setEnabled(True)
-            self.btn_connect.setText("CONNECT")
+            self.chk_timestamp.setEnabled(not busy)
+            self.btn_connect.setText("STOPPING" if stopping else ("STARTING" if active else "CONNECT"))
             self.btn_connect.setStyleSheet("QToolButton { background-color: #b0b0b0; font-weight: bold; }")
 
             self.btn_pause.setEnabled(False)
@@ -2133,6 +2269,7 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage(
                 build_connection_status(
                     connected=False,
+                    protocol=self._ui_state.protocol,
                     bind_ip=self._ui_state.bind_ip,
                     port=self._ui_state.port,
                     shown_lines=self.log.document().blockCount(),
@@ -2175,22 +2312,18 @@ class MainWindow(QMainWindow):
     # ---------------- Qt overrides ----------------
 
     def closeEvent(self, event) -> None:
-        """Handle closeEvent."""
-        if not self._confirm_save_logs_before_exit():
+        """Defer closing the window until network workers finish asynchronously."""
+        if not self._close_pending and not self._confirm_save_logs_before_exit():
             event.ignore()
             return
-        try:
-            self.on_stop_replay_clicked()
-        except Exception:
-            pass
-        try:
-            self._stop_simulation()
-        except Exception:
-            pass
-        try:
-            self._stop_listener()
-        except Exception:
-            pass
+        self._close_pending = True
+        self._reset_runtime_sources()
+        self._stop_listener()
+        if self._stopping_listeners:
+            event.ignore()
+            self._update_connection_ui()
+            return
+        self._close_live_log()
         try:
             self._visualizer_manager.close_all_windows()
         except Exception:

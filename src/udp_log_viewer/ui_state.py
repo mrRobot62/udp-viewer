@@ -11,3 +11,7 @@ class UiState:
     autoscroll: bool = True
     timestamp_enabled: bool = False
     max_lines: int = 20000
+    protocol: str = "udp"
+    discovery_enabled: bool = False
+    discovery_port: int = 10515
+    server_id: str = ""

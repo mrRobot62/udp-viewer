@@ -10,10 +10,14 @@ class ListenerRequest:
     """Validated listener startup parameters from the main window."""
     bind_ip: str
     port: int
+    protocol: str = "udp"
 
 
-def parse_listener_request(bind_ip_text: str, port_text: str) -> tuple[ListenerRequest | None, str | None]:
-    """Parse listener request."""
+def parse_listener_request(bind_ip_text: str, port_text: str, protocol: str = "udp") -> tuple[ListenerRequest | None, str | None]:
+    """Validate the transport and port, defaulting an empty bind IP to all interfaces."""
+    protocol = protocol.strip().lower()
+    if protocol not in ("udp", "tcp"):
+        return None, "Protocol must be UDP or TCP."
     bind_ip = bind_ip_text.strip() or "0.0.0.0"
     port_raw = port_text.strip()
 
@@ -27,7 +31,7 @@ def parse_listener_request(bind_ip_text: str, port_text: str) -> tuple[ListenerR
     except Exception:
         return None, "Port must be a number between 1 and 65535."
 
-    return ListenerRequest(bind_ip=bind_ip, port=port), None
+    return ListenerRequest(bind_ip=bind_ip, port=port, protocol=protocol), None
 
 
 def reset_pause_state(pause_buffer: Deque[str], *, maxlen: int = 2000) -> tuple[Deque[str], int, bool]:

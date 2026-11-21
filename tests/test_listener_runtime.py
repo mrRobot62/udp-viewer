@@ -24,6 +24,20 @@ def test_parse_listener_request_rejects_invalid_port() -> None:
     assert error == "Port must be a number between 1 and 65535."
 
 
+def test_parse_tcp_listener_request() -> None:
+    """Normalize the selected protocol without changing endpoint validation."""
+    request, error = parse_listener_request("127.0.0.1", "10514", "TCP")
+    assert error is None
+    assert request == ListenerRequest("127.0.0.1", 10514, "tcp")
+
+
+def test_parse_listener_rejects_unknown_protocol() -> None:
+    """Reject unsupported transports before starting a worker."""
+    request, error = parse_listener_request("", "10514", "other")
+    assert request is None
+    assert error == "Protocol must be UDP or TCP."
+
+
 def test_reset_pause_state_clears_buffer() -> None:
     buffer = deque(["a", "b"], maxlen=2000)
 
