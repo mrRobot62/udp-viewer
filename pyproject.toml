@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "udp-log-viewer"
-version = "0.18.0"
+dynamic = ["version"]
 description = "Lightweight UDP/TCP log viewer (PyQt5) for ESP32 text logs."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -23,3 +23,6 @@ dev = [
 
 [project.scripts]
 udp-log-viewer = "udp_log_viewer.main:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "udp_log_viewer.__version__"}

@@ -7,7 +7,7 @@ from pathlib import Path
 
 from PyQt5.QtCore import QSettings
 
-from .rule_slots import PatternSlot, slots_from_json, slots_to_json
+from .rule_slots import PatternSlot, normalize_rule_operator, slots_from_json, slots_to_json
 from .ui_state import UiState
 from .preferences import AppPreferences
 
@@ -24,6 +24,8 @@ class SettingsStore:
     def load_ui_state(self, default_state: UiState) -> UiState:
         """Load ui state."""
         return UiState(
+            filter_operator=normalize_rule_operator(self._settings.value("filter/operator", "AND", type=str), "AND"),
+            exclude_operator=normalize_rule_operator(self._settings.value("exclude/operator", "OR", type=str), "OR"),
             protocol=self._load_protocol(),
             discovery_enabled=self._settings.value("net/discovery_enabled", False, type=bool),
             discovery_port=self._load_discovery_port(),
@@ -39,6 +41,8 @@ class SettingsStore:
 
     def save_ui_state(self, state: UiState) -> None:
         """Save ui state."""
+        self._settings.setValue("filter/operator", normalize_rule_operator(state.filter_operator, "AND"))
+        self._settings.setValue("exclude/operator", normalize_rule_operator(state.exclude_operator, "OR"))
         self._settings.setValue("net/discovery_enabled", state.discovery_enabled)
         self._settings.setValue("net/discovery_port", state.discovery_port)
         self._settings.setValue("net/server_id", state.server_id)

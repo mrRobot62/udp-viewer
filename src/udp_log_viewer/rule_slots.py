@@ -80,22 +80,26 @@ def match_all_patterns(line: str, patterns: List[object]) -> bool:
     return True
 
 
-def match_include_slots(line: str, compiled_patterns: List[List[object]]) -> bool:
-    """Return whether include slots."""
+def normalize_rule_operator(value: str, default: str) -> str:
+    """Normalize a persisted AND/OR selection, retaining legacy defaults."""
+    operator = str(value).strip().upper()
+    return operator if operator in ("AND", "OR") else default
+
+
+def match_include_slots(line: str, compiled_patterns: List[List[object]], operator: str = "AND") -> bool:
+    """Combine active include slots; an empty group accepts every line."""
     if not compiled_patterns:
         return True
-    for patterns in compiled_patterns:
-        if not match_all_patterns(line, patterns):
-            return False
-    return True
+    matches = (match_all_patterns(line, patterns) for patterns in compiled_patterns)
+    return any(matches) if normalize_rule_operator(operator, "AND") == "OR" else all(matches)
 
 
-def match_exclude_slots(line: str, compiled_patterns: List[List[object]]) -> bool:
-    """Return whether exclude slots."""
-    for patterns in compiled_patterns:
-        if match_all_patterns(line, patterns):
-            return True
-    return False
+def match_exclude_slots(line: str, compiled_patterns: List[List[object]], operator: str = "OR") -> bool:
+    """Combine active exclusion slots; an empty group never excludes a line."""
+    if not compiled_patterns:
+        return False
+    matches = (match_all_patterns(line, patterns) for patterns in compiled_patterns)
+    return all(matches) if normalize_rule_operator(operator, "OR") == "AND" else any(matches)
 
 
 def build_highlight_rules(slots: List[PatternSlot]) -> List[HighlightRule]:

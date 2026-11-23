@@ -15,3 +15,5 @@ class UiState:
     discovery_enabled: bool = False
     discovery_port: int = 10515
     server_id: str = ""
+    filter_operator: str = "AND"
+    exclude_operator: str = "OR"

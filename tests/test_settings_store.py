@@ -10,6 +10,28 @@ from udp_log_viewer.settings_store import SettingsStore
 from udp_log_viewer.ui_state import UiState
 
 
+@pytest.mark.parametrize("include, exclude", [("AND", "OR"), ("OR", "AND")])
+def test_rule_operator_roundtrip(tmp_path: Path, include: str, exclude: str) -> None:
+    """Remember independent filter and exclude selections across store instances."""
+    path = tmp_path / "settings.ini"
+    store = SettingsStore(QSettings(str(path), QSettings.IniFormat), tmp_path / "config.ini")
+    store.save_ui_state(UiState(filter_operator=include, exclude_operator=exclude))
+    restored = SettingsStore(QSettings(str(path), QSettings.IniFormat), tmp_path / "config.ini")
+    state = restored.load_ui_state(UiState())
+    assert (state.filter_operator, state.exclude_operator) == (include, exclude)
+
+
+@pytest.mark.parametrize("stored", [None, "invalid", ""])
+def test_rule_operator_legacy_defaults(tmp_path: Path, stored: str | None) -> None:
+    """Existing configurations retain include-AND and exclude-OR behavior."""
+    settings = QSettings(str(tmp_path / "settings.ini"), QSettings.IniFormat)
+    if stored is not None:
+        settings.setValue("filter/operator", stored)
+        settings.setValue("exclude/operator", stored)
+    state = SettingsStore(settings, tmp_path / "config.ini").load_ui_state(UiState())
+    assert (state.filter_operator, state.exclude_operator) == ("AND", "OR")
+
+
 def test_settings_store_roundtrips_ui_state(tmp_path: Path) -> None:
     qsettings_path = tmp_path / "settings.ini"
     qsettings = QSettings(str(qsettings_path), QSettings.IniFormat)

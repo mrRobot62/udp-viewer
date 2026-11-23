@@ -87,6 +87,55 @@ def send(endpoint, protocol, payload):
             sender.sendto(payload, endpoint)
 
 
+def test_filter_operator_controls_apply_to_new_lines_and_preserve_visualizers(window, monkeypatch):
+    """UI choices govern display/file filtering; all input still reaches visualizers."""
+    app, view = window
+    assert view.cb_filter_operator.currentText() == "AND"
+    assert view.cb_exclude_operator.currentText() == "OR"
+    visualized = []
+    monkeypatch.setattr(view._visualizer_manager, "process_log_line", visualized.append)
+    view._filter_slots = [PatternSlot("ADC"), PatternSlot("PCF")]
+    view._exclude_slots = [PatternSlot("ADC"), PatternSlot("debug")]
+    view._rebuild_filter_patterns()
+    view._ensure_active_live_log()
+    view.cb_filter_operator.setCurrentText("OR")
+    view.cb_exclude_operator.setCurrentText("AND")
+    for line in ("ADC ready", "PCF debug", "ADC debug", "unrelated"):
+        view._on_line_received(line)
+    assert list(view._queue) == ["ADC ready", "PCF debug"]
+    view.cb_exclude_operator.setCurrentText("OR")
+    view._on_line_received("PCF debug new")
+    view._on_line_received("PCF ready new")
+    assert list(view._queue) == ["ADC ready", "PCF debug", "PCF ready new"]
+    assert len(visualized) == 6
+    view._connection_state.handle.flush()
+    saved = view._connection_state.active_path.read_text(encoding="utf-8")
+    assert "ADC ready\n" in saved and "PCF debug\n" in saved
+    assert "ADC debug" not in saved and "PCF debug new" not in saved
+    assert "PCF ready new" in saved
+    view._load_settings()
+    view._apply_state_to_widgets()
+    assert view.cb_filter_operator.currentText() == "OR"
+    assert view.cb_exclude_operator.currentText() == "OR"
+
+
+def test_rule_resets_preserve_selected_operators(window):
+    """Deleting/resetting rules keeps the user's independent AND/OR choices."""
+    app, view = window
+    view.cb_filter_operator.setCurrentText("OR")
+    view.cb_exclude_operator.setCurrentText("AND")
+    view._filter_slots = [PatternSlot("ADC")]
+    view._exclude_slots = [PatternSlot("debug")]
+    view.on_filter_reset_clicked()
+    view.on_exclude_reset_clicked()
+    assert view.cb_filter_operator.currentText() == "OR"
+    assert view.cb_exclude_operator.currentText() == "AND"
+    assert view._match_include_slots("anything")
+    assert not view._match_exclude_slots("anything")
+    state = view._settings_store.load_ui_state(view._ui_state)
+    assert (state.filter_operator, state.exclude_operator) == ("OR", "AND")
+
+
 def test_discovery_controls_and_listener_lifecycle(window):
     """Persist discovery controls and tie the responder to the selected TCP session."""
     app, view = window

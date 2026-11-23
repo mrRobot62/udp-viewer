@@ -14,7 +14,14 @@ from udp_log_viewer.udp_log_utils import compile_patterns, match_exclude, match_
 
 
 def test_package_version_is_consistent() -> None:
-    assert __version__ == "0.18.0"
+    from pathlib import Path
+    import tomllib
+
+    metadata = tomllib.loads((Path(__file__).resolve().parents[1] / "pyproject.toml").read_text(encoding="utf-8"))
+    assert "version" not in metadata["project"]
+    assert "version" in metadata["project"]["dynamic"]
+    assert metadata["tool"]["setuptools"]["dynamic"]["version"]["attr"] == "udp_log_viewer.__version__"
+    assert __version__
     assert __display_version__.startswith(__version__)
 
 

@@ -680,8 +680,10 @@ class MainWindow(QMainWindow):
             self.ed_server_id,
             self.ed_max_lines,
             self.btn_filter_add,
+            self.cb_filter_operator,
             self.btn_filter_reset,
             self.btn_exclude_add,
+            self.cb_exclude_operator,
             self.btn_exclude_reset,
             self.btn_hl_add,
             self.btn_hl_reset,
@@ -883,6 +885,17 @@ class MainWindow(QMainWindow):
         self.btn_filter_add.clicked.connect(self.on_filter_add_clicked)
         fx_row.addWidget(self.btn_filter_add)
 
+        self.cb_filter_operator = QComboBox()
+        self.cb_filter_operator.addItems(["AND", "OR"])
+        self.cb_filter_operator.setAccessibleName("Filter rule combination")
+        self.cb_filter_operator.setToolTip(
+            "Combine active filter slots: AND requires every slot; OR requires at least one. "
+            "Applies to new log lines and live-file entries; visualizers are unaffected. "
+            "Matching within each slot is unchanged."
+        )
+        self.cb_filter_operator.currentTextChanged.connect(self.on_rule_operators_changed)
+        fx_row.addWidget(self.cb_filter_operator)
+
         self._filter_chips_container = QWidget()
         self._filter_chips_layout = QHBoxLayout(self._filter_chips_container)
         self._filter_chips_layout.setContentsMargins(0, 0, 0, 0)
@@ -905,6 +918,19 @@ class MainWindow(QMainWindow):
         self.btn_exclude_add.setToolTip("Add or edit an exclude rule. Matching log lines are hidden.")
         self.btn_exclude_add.clicked.connect(self.on_exclude_add_clicked)
         fx_row.addWidget(self.btn_exclude_add)
+
+        self.cb_exclude_operator = QComboBox()
+        self.cb_exclude_operator.addItems(["AND", "OR"])
+        self.cb_exclude_operator.setCurrentText("OR")
+        self.cb_exclude_operator.setAccessibleName("Exclude rule combination")
+        self.cb_exclude_operator.setToolTip(
+            "Combine active exclude slots: OR excludes a line matching any slot; "
+            "AND excludes only lines matching every slot. Exclude takes priority over Filter. "
+            "Applies to new log lines and live-file entries; visualizers are unaffected. "
+            "Matching within each slot is unchanged."
+        )
+        self.cb_exclude_operator.currentTextChanged.connect(self.on_rule_operators_changed)
+        fx_row.addWidget(self.cb_exclude_operator)
 
         self._exclude_chips_container = QWidget()
         self._exclude_chips_layout = QHBoxLayout(self._exclude_chips_container)
@@ -981,6 +1007,8 @@ class MainWindow(QMainWindow):
     def _apply_state_to_widgets(self) -> None:
         """Internal helper for apply state to widgets."""
         widgets = [
+            self.cb_filter_operator,
+            self.cb_exclude_operator,
             self.chk_discovery,
             self.sp_discovery_port,
             self.cb_protocol,
@@ -993,6 +1021,8 @@ class MainWindow(QMainWindow):
         for widget in widgets:
             widget.blockSignals(True)
         try:
+            self.cb_filter_operator.setCurrentText(self._ui_state.filter_operator)
+            self.cb_exclude_operator.setCurrentText(self._ui_state.exclude_operator)
             self.chk_discovery.setChecked(self._ui_state.discovery_enabled)
             self.sp_discovery_port.setValue(self._ui_state.discovery_port)
             self.ed_server_id.setText(self._ui_state.server_id)
@@ -1005,6 +1035,12 @@ class MainWindow(QMainWindow):
         finally:
             for widget in widgets:
                 widget.blockSignals(False)
+
+    def on_rule_operators_changed(self) -> None:
+        """Persist independent slot combinations for subsequently received lines."""
+        self._ui_state.filter_operator = self.cb_filter_operator.currentText()
+        self._ui_state.exclude_operator = self.cb_exclude_operator.currentText()
+        self._save_settings()
 
     def on_settings_edited(self) -> None:
         """Handle settings edited events."""
@@ -1126,11 +1162,11 @@ class MainWindow(QMainWindow):
 
     def _match_include_slots(self, line: str) -> bool:
         """Return whether include slots."""
-        return match_include_slots(line, self._filter_slot_patterns)
+        return match_include_slots(line, self._filter_slot_patterns, self._ui_state.filter_operator)
 
     def _match_exclude_slots(self, line: str) -> bool:
         """Return whether exclude slots."""
-        return match_exclude_slots(line, self._exclude_slot_patterns)
+        return match_exclude_slots(line, self._exclude_slot_patterns, self._ui_state.exclude_operator)
 
     def _rebuild_filter_patterns(self) -> None:
         """Rebuild filter patterns."""

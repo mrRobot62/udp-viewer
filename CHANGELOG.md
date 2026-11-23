@@ -6,6 +6,53 @@ this file.
 The format is based on Keep a Changelog and follows semantic versioning
 principles where applicable.
 
+## 0.18.1 -- Unreleased
+
+Changes in the current 0.18.x development line since 0.17.0. The source
+version is 0.18.1; this entry does not indicate a published release.
+
+### Added
+
+- Selectable UDP/TCP transport with UDP as the backward-compatible default.
+- A background TCP server for one active sender, with UTF-8 LF/CRLF framing,
+  fragmented-message handling, a 1 MiB payload limit and explicit reporting
+  of discarded incomplete messages. Additional clients are rejected while
+  the current client remains connected.
+- Optional UDP discovery for compatible TCP senders, with configurable
+  discovery port, persistent server identity and replies only while the
+  TCP sender slot is available.
+- Independent AND/OR selectors for include and exclude slots. Defaults
+  remain include AND and exclude OR; exclude matches take priority.
+- Persistent transport, discovery and rule-operator settings with defaults
+  for older configurations.
+- A standalone UDP/TCP manual test sender with a 512-message combination
+  matrix, broadcast support, TCP fragmentation/batching and line-ending options.
+- A manual test guide documenting sent, displayed and hidden message counts.
+
+### Improved
+
+- Shared log processing, filtering, live-file output and visualizer input
+  for both transports, with UDP datagram/line and TCP byte/line counters.
+- TCP status displays concrete local destination addresses and connected
+  sender information instead of presenting the wildcard bind address as
+  the sender's destination.
+- TCP continues listening after sender disconnects, retaining received data;
+  keepalive helps detect lost senders.
+- Listener start/stop and reconnect handling avoids blocking the GUI and
+  ignores late signals from obsolete sessions. Reset handling preserves
+  the visualizer runtime-state regression fix from 0.17.0.
+- English and German READMEs describe current transport, discovery, filter,
+  persistence, build and manual-test behavior.
+
+### Technical
+
+- Centralized version metadata in `src/udp_log_viewer/__init__.py`;
+  setuptools reads `__version__` dynamically through `pyproject.toml`.
+- The root macOS build script explicitly selects `.venv/bin/python`, prints
+  interpreter/dependency versions and stops on build or dependency errors.
+- Expanded automated coverage for TCP framing and lifecycle, discovery,
+  persistence, AND/OR rules, shared processing and reset/reconnect behavior.
+
 ------------------------------------------------------------------------
 ## 0.17.0 -- 2026-04-22
 ### Added
